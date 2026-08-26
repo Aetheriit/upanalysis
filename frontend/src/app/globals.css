@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  /* Premium Soft Pearl White Theme */
+  --bg-app: #FAF9F6;
+  --bg-surface: #FFFFFF;
+  --border-subtle: #E8E6E1;
+  --text-primary: #1A1A1A;
+  --text-secondary: #595959;
+  --text-tertiary: #8C8C8C;
+  --accent-primary: #D4AF37; /* Golden Pearl */
+  --accent-primary-hover: #C5A028;
+  --accent-secondary: #0F172A; /* Slate Navy */
+  
+  --shadow-elevation-1: 0 4px 24px -8px rgba(0, 0, 0, 0.05);
+  --shadow-elevation-2: 0 12px 48px -12px rgba(0, 0, 0, 0.08);
+  --shadow-inset-clay: inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='dark'] {
+  /* Midnight Royal Dark Theme */
+  --bg-app: #0B0D12;
+  --bg-surface: #13161C;
+  --border-subtle: #222631;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #475569;
+  --accent-primary: #E5C365; /* Royal Gold */
+  --accent-primary-hover: #F3D17A;
+  --accent-secondary: #1E293B;
+
+  --shadow-elevation-1: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-2: 0 12px 48px -12px rgba(0, 0, 0, 0.5);
+  --shadow-inset-clay: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .claymorphism {
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-elevation-1), var(--shadow-inset-clay);
+    border: 1px solid var(--border-subtle);
+  }
+}

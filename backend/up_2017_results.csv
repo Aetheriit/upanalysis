@@ -1,0 +1,404 @@
+District District,Constituency #,Constituency Name,Winner Candidate,Winner Party,Winner Party.1,Winner Votes,Winner %,Runner-up Candidate,Runner-up Party,Runner-up Party.1,Runner-up Votes,Runner-up %,Margin Margin
+Saharanpur,1,Behat,Naresh Saini,,INC,97035,38.66,Mahaveer Singh Rana,,BJP,71449,28.47,25586
+Saharanpur,2,Nakur,Dharam Singh Saini,,BJP,94375,37.11,Imran Masood,,INC,90318,35.52,4057
+Saharanpur,3,Saharanpur Nagar,Sanjay Garg,,SP,127210,46.8,Rajiv Gumber,,BJP,122574,45.09,4636
+Saharanpur,4,Saharanpur,Masood Akhtar,,INC,87689,37.08,Jagpal Singh,,BSP,75365,31.87,12324
+Saharanpur,5,Deoband,Brijesh Singh,,BJP,102244,43.79,Majid Ali,,BSP,72844,31.2,29400
+Saharanpur,6,Rampur Maniharan (SC),Devendra Kumar Nim,,BJP,76465,35.08,Ravinder Kumar Molhu,,BSP,75870,34.81,595
+Saharanpur,7,Gangoh,Pradeep Kumar,,BJP,99446,38.78,Nauman Masood,,INC,61418,23.95,38028
+Shamli,8,Kairana,Nahid Hasan,,SP,98830,47.5,Mriganka Singh,,BJP,77668,37.33,21162
+Shamli,9,Thana Bhawan,Suresh Rana,,BJP,90995,42.96,Abdul Warish Khan,,BSP,74178,35.02,16817
+Shamli,10,Shamli,Tejendra Nirwal,,BJP,70085,35.86,Pankaj Kumar Malik,,INC,40365,20.65,29720
+Muzaffarnagar,11,Budhana,Umesh Malik,,BJP,97781,40.77,Pramod Tyagi,,SP,84580,35.27,13201
+Muzaffarnagar,12,Charthawal,Vijay Kumar Kashyap,,BJP,82046,39.84,Mukesh Kumar Chaudhary,,SP,58815,28.56,23231
+Muzaffarnagar,13,Purqazi (SC),Pramod Utwal,,BJP,77491,38.14,Deepak Kumar,,INC,66238,32.6,11253
+Muzaffarnagar,14,Muzaffarnagar,Kapil Dev Aggarwal,,BJP,97838,45.62,Gaurav Swarup Bansal,,SP,87134,40.63,10704
+Muzaffarnagar,15,Khatauli,Vikram Singh Saini,,BJP,94771,44.62,Chandan Chauhan,,SP,63397,29.85,31374
+Muzaffarnagar,16,Meerapur,Avtar Singh Bhadana,,BJP,69035,33.95,Liyakat Ali,,SP,68842,33.86,193
+Bijnor,17,Najibabad,Tasleem,,SP,81082,37.81,Rajiv Kumar Agarwal,,BJP,79080,36.88,2002
+Bijnor,18,Nagina (SC),Manoj Kumar Paras,,SP,77145,37.0,Omvati Devi,,BJP,69178,33.18,7967
+Bijnor,19,Barhapur,Kunwar Sushant Singh,,BJP,78744,35.54,Husain Ahmad,,INC,68920,31.1,9824
+Bijnor,20,Dhampur,Ashok Kumar Rana,,BJP,82169,42.81,Thakur Moolchand Chauhan,,SP,64305,33.5,17864
+Bijnor,21,Nehtaur (SC),Om Kumar,,BJP,76644,41.0,Munnalal Premi,,INC,53493,28.62,23151
+Bijnor,22,Bijnor,Suchi,,BJP,105548,43.16,Ruchi Veera,,SP,78267,32.01,27281
+Bijnor,23,Chandpur,Kamlesh Saini,,BJP,92345,42.45,Mohammad Iqbal,,BSP,56696,26.06,35649
+Bijnor,24,Noorpur,Lokendra Singh,,BJP,79172,39.2,Naim Ul Hasan,,SP,66436,32.89,12736
+Moradabad,25,Kanth,Rajesh Kumar Singh,,BJP,76307,30.29,Anees Ur Rehman,,SP,73959,29.36,2348
+Moradabad,26,Thakurdwara,Nawab Jan,,SP,107865,42.24,Rajpal Singh Chauhan,,BJP,94456,36.99,13409
+Moradabad,27,Moradabad Rural,Haji Ikram Qureshi,,SP,97916,44.36,Hari Om Sharma,,BJP,69135,31.32,28781
+Moradabad,28,Moradabad Nagar,Ritesh Kumar Gupta,,BJP,123467,44.74,Mohammad Yusuf Ansari,,SP,120274,43.59,3193
+Moradabad,29,Kundarki,Mohammad Rizwan,,SP,110561,42.01,Ramveer Singh,,BJP,99740,37.9,10821
+Moradabad,30,Bilari,Mohd. Faheem,,SP,85682,37.58,Suresh Saini,,BJP,72241,31.69,13441
+Sambhal,31,Chandausi (SC),Gulab Devi,,BJP,104806,47.22,Vimesh Kumari,,INC,59337,26.74,45469
+Sambhal,32,Asmoli,Pinki Singh Yadav,,SP,97610,39.33,Narendra Singh,,BJP,76484,30.82,21126
+Sambhal,33,Sambhal,Iqbal Mehmood,,SP,79248,33.07,Ziaurrehman Barq,,AIMIM,60426,25.04,18822
+Rampur,34,Suar,Abdullah Azam Khan,,SP,106443,51.9,Laxmi Saini,,BJP,53347,26.01,53096
+Rampur,35,Chamraua,Naseer Ahmed Khan,,SP,87400,45.24,Ali Yusuf Ali,,BSP,53024,27.44,34376
+Rampur,36,Bilaspur,Baldev Singh Aulakh,,BJP,99100,44.55,Sanjay Kapoor,,INC,76741,34.5,22359
+Rampur,37,Rampur,Mohammad Azam Khan,,SP,102100,47.74,Shiv Bahadur Saxena,,BJP,55258,25.84,46842
+Rampur,38,Milak (SC),Rajbala,,BJP,89861,41.82,Vijay Singh,,SP,73194,34.07,16667
+Amroha,39,Dhanaura (SC),Rajeev Tarara,,BJP,102943,46.09,Jagram Singh,,SP,64714,28.97,38229
+Amroha,40,Naugawan Sadat,Chetan Chauhan,,BJP,97030,41.63,Javed Abbas,,SP,76382,32.77,20648
+Amroha,41,Amroha,Mehboob Ali,,SP,74713,37.33,Naushad Ali,,BSP,59671,29.81,15042
+Amroha,42,Hasanpur,Mahender Singh Khadakvanshi,,BJP,111269,43.94,Kamal Akhtar,,SP,83499,32.97,27770
+Meerut,43,Siwalkhas,Jitendra Pal Singh,,BJP,72842,32.48,Ghulam Mohammed,,SP,61421,27.39,11421
+Meerut,44,Sardhana,Sangeet Singh Som,,BJP,97921,41.11,Atul Pradhan,,SP,76296,32.04,21625
+Meerut,45,Hastinapur,Dinesh Khatik,,BJP,99436,45.12,Yogesh Verma,,BSP,63374,28.76,36062
+Meerut,46,Kithore,Satyavir Tyagi,,BJP,90622,37.5,Shahid Manzoor,,SP,79800,33.02,10822
+Meerut,47,Meerut Cantt,Satya Prakash Agarwal,,BJP,132518,56.2,Satendra Solanki,,BSP,55899,23.7,76619
+Meerut,48,Meerut,Rafiq Ansari,,SP,103217,52.99,Laxmikant Bajpai,,BJP,74448,38.22,28769
+Meerut,49,Meerut South,Somendra Tomar,,BJP,113225,42.03,Haji Mohammad Yaqub,,BSP,77830,28.89,35395
+Baghpat,50,Chhaprauli,Sahender Singh Ramala,,RLD,65124,32.71,Satender Singh,,BJP,61282,30.78,3842
+Baghpat,51,Baraut,Krishna Pal Malik,,BJP,79427,43.09,Sahab Singh,,RLD,52941,28.72,26486
+Baghpat,52,Bagpat,Yogesh Dhama,,BJP,92566,46.83,Ahmed Hameed,,BSP,61206,30.97,31360
+Ghaziabad,53,Loni,Nand Kishor Gurjar,,BJP,113088,41.44,Zakir Ali,,BSP,70275,25.75,42813
+Ghaziabad,54,Muradnagar,Ajit Pal Tyagi,,BJP,140759,55.75,Sudhan Kumar,,BSP,51147,20.26,89612
+Ghaziabad,55,Sahibabad,Sunil Kumar Sharma,,BJP,262741,62.14,Amarpal Sharma,,INC,112056,26.5,150685
+Ghaziabad,56,Ghaziabad,Atul Garg,,BJP,124201,55.28,Suresh Bansal,,BSP,53696,23.9,70505
+Ghaziabad,57,Modinagar,Manju Shiwach,,BJP,108631,50.57,Wahab Chaudhary,,BSP,42049,19.58,66582
+Hapur,58,Dholana,Aslam Choudhary,,BSP,88580,35.07,Ramesh Chand Tomar,,BJP,85004,33.66,3576
+Hapur,59,Hapur,Vijay Pal,,BJP,84532,38.13,Gajraj Singh,,INC,69526,31.36,15006
+Hapur,60,Garhmukteshwar,Kamal Singh Malik,,BJP,91086,41.18,Prashant Choudhary,,BSP,55792,25.22,35294
+Gautam Buddha Nagar,61,Noida,Pankaj Singh,,BJP,162417,64.29,Sunil Choudhary,,SP,58401,23.12,104016
+Gautam Buddha Nagar,62,Dadri,Tejpal Singh Nagar,,BJP,141226,53.57,Satveer Singh Gurjar,,BSP,61049,23.16,80177
+Gautam Buddha Nagar,63,Jewar,Dhirendra Singh,,BJP,102979,49.01,Vedram Bhati,,BSP,80806,38.45,22173
+Bulandshahr,64,Sikandrabad,Bimla Singh Solanki,,BJP,104956,41.83,Mohammad Imran,,BSP,76333,30.42,28623
+Bulandshahr,65,Bulandshahr,Virendra Singh Sirohi,,BJP,111538,45.82,Mohd. Aleem Khan,,BSP,88454,36.33,23084
+Bulandshahr,66,Syana,Devendra Singh Lodhi,,BJP,125854,54.47,Dilnawaz Khan,,BSP,54224,23.47,71630
+Bulandshahr,67,Anupshahr,Sanjay Sharma,,BJP,112431,49.28,Gajendra Singh,,BSP,52117,22.84,60314
+Bulandshahr,68,Debai,Anita Singh Rajput,,BJP,111807,53.82,Harish Kumar,,SP,46177,22.23,65630
+Bulandshahr,69,Shikarpur,Anil Kumar,,BJP,101912,50.79,Mukul Upadhyay,,BSP,51667,25.75,50245
+Bulandshahr,70,Khurja (SC),Vijendra Singh Khatik,,BJP,119493,50.79,Arjun Singh,,BSP,55194,23.46,64299
+Aligarh,71,Khair (SC),Anoop Pradhan,,BJP,124198,53.89,Rakesh Kumar,,SP,53477,23.2,70721
+Aligarh,72,Barauli,Dalveer Singh,,BJP,125545,53.7,Thakur Jaivir Singh,,BSP,86782,37.12,38763
+Aligarh,73,Atrauli,Sandeep Kumar Singh,,BJP,115397,49.9,Viresh Yadav,,SP,64430,27.86,50967
+Aligarh,74,Chharra,Thakur Ravendra Pal Singh,,BJP,110738,48.62,Thakur Rakesh Singh,,SP,54604,23.98,56134
+Aligarh,75,Koil,Anil Parashar,,BJP,93814,41.33,Shaz Ishaq,,SP,42851,18.88,50963
+Aligarh,76,Aligarh,Sanjeev Raja,,BJP,113752,46.48,Zafar Alam,,SP,98312,40.17,15440
+Aligarh,77,Iglas (SC),Rajvir Singh Diler,,BJP,128000,55.05,Rajendra Kumar,,BSP,53200,22.88,74800
+Hathras,78,Hathras (SC),Hari Shankar Mahor,,BJP,133840,56.4,Braj Mohan Rahi,,BSP,63179,26.62,70661
+Hathras,79,Sadabad,Ramveer Upadhyay,,BSP,91365,40.51,Anil Chaudhary,,RLD,64775,28.72,26587
+Hathras,80,Sikandra Rao,Birendra Singh Rana,,BJP,76129,35.44,Bani Singh Baghel,,BSP,61357,28.56,14772
+Mathura,81,Chhata,Chaudhary Laxmi Narayan Singh,,BJP,117537,51.98,Atul Singh,,Ind,53699,23.75,63838
+Mathura,82,Mant,Shyam Sunder Sharma,,BSP,65862,31.46,Yogesh Chaudhary,,RLD,65430,31.25,432
+Mathura,83,Goverdhan,Karinda Singh,,BJP,93538,45.48,Rajkumar Rawat,,BSP,60529,29.43,33009
+Mathura,84,Mathura,Shrikant Sharma,,BJP,143361,56.93,Pradeep Mathur,,INC,42200,16.76,101161
+Mathura,85,Baldev (SC),Pooran Prakash,,BJP,88411,38.41,Niranjan Singh Dhangar,,RLD,75203,32.67,13208
+Agra,86,Etmadpur,Ram Pratap Singh,,BJP,137381,48.66,Dharmpal Singh,,BSP,90126,31.92,47255
+Agra,87,Agra Cantonment (SC),Girraj Singh Dharmesh,,BJP,113178,44.98,Gutiyari Lal Duwesh,,BSP,66853,26.57,46325
+Agra,88,Agra South,Yogendra Upadhyaya,,BJP,111882,51.68,Zulfiqar Ahmad Bhutto,,BSP,57657,26.63,54225
+Agra,89,Agra North,Jagan Prasad Garg,,BJP,135120,58.88,Er Gyanendra Gautam,,BSP,48800,21.26,86320
+Agra,90,Agra Rural (SC),Hemlata Divakar,,BJP,129887,52.36,Kali Charan Suman,,BSP,64591,26.04,65296
+Agra,91,Fatehpur Sikri,Ch. Udaybhan Singh,,BJP,108586,47.73,Surajpal Singh,,BSP,56249,24.72,52337
+Agra,92,Kheragarh,Mahesh Kumar Goyal,,BJP,93510,47.33,Bhagvan Singh Kushwaha,,BSP,61511,31.14,31999
+Agra,93,Fatehabad,Jitendra Verma,,BJP,101960,48.94,Rajendra Singh,,SP,67596,32.45,34364
+Agra,94,Bah,Rani Pakshalika Singh,,BJP,80567,42.28,Madhusudan Sharma,,BSP,57427,30.13,23140
+Firozabad,95,Tundla (SC),S.P. Singh Baghel,,BJP,118584,48.96,Rakesh Babu,,BSP,62514,25.81,56070
+Firozabad,96,Jasrana,Ramgopal,,BJP,103426,45.27,Shiv Pratap Singh,,SP,83098,36.37,20328
+Firozabad,97,Firozabad,Manish Asiza,,BJP,102654,44.37,Azim Bhai,,SP,60927,26.33,41727
+Firozabad,98,Shikohabad,Mukesh Verma,,BJP,87851,41.24,Sanjay Kumar,,SP,77074,36.18,10777
+Firozabad,99,Sirsaganj,Hariom Yadav,,SP,90281,44.8,Jaiveer Singh,,BJP,79605,39.5,10676
+Kasganj,100,Kasganj,Devendra Singh Rajput,,BJP,101908,46.73,Hasrat Ullah Sherwani,,SP,49878,22.87,52030
+Kasganj,101,Amanpur,Devendra Pratap,,BJP,85199,46.68,Virendra Singh,,SP,43395,23.77,41804
+Kasganj,102,Patiyali,Mamtesh,,BJP,72414,35.98,Kiran Yadav,,SP,68643,34.11,3771
+Etah,103,Aliganj,Satyapal Singh Rathaur,,BJP,88695,41.25,Rameshwar Singh Yadav,,SP,74844,34.81,13851
+Etah,104,Etah,Vipin Kumar David,,BJP,82516,41.18,Jugendra Singh Yadav,,SP,61387,30.64,21129
+Etah,105,Marhara,Virendra,,BJP,92507,48.69,Amit Gaurav,,SP,59075,31.09,33432
+Etah,106,Jalesar (SC),Sanjeev Kumar Diwakar,,BJP,81502,44.43,Ranjeet Suman,,SP,61694,33.63,19808
+Mainpuri,107,Mainpuri,Rajkumar Raju Yadav,,SP,75787,38.73,Ashok Kumar,,BJP,66956,34.22,8831
+Mainpuri,108,Bhongaon,Ram Naresh Agnihorti,,BJP,92697,47.66,Alok Kumar,,SP,72400,37.22,20297
+Mainpuri,109,Kishni (SC),Brijesh Kumar,,SP,80475,45.1,Sunil Kumar,,BJP,63946,35.84,16529
+Mainpuri,110,Karhal,Sobaran Singh Yadav,,SP,104221,49.81,Rama Shakya,,BJP,65816,31.45,38405
+Sambhal,111,Gunnaur,Ajeet Kumar,,BJP,107344,47.69,Ram Khiladi Singh,,SP,95958,42.63,11386
+Budaun,112,Bisauli (SC),Kushagra Sagar,,BJP,100287,44.25,Ashutosh Maurya,,SP,89599,39.53,10688
+Budaun,113,Sahaswan,Omkar Singh,,SP,77543,32.6,Arshad Ali,,BSP,73274,30.8,4269
+Budaun,114,Bilsi,Pt. Radha Krishan Sharma,,BJP,82070,42.28,Musarrat Ali Bittan,,BSP,55091,28.38,26979
+Budaun,115,Badaun,Mahesh Chandra Gupta,,BJP,87314,41.33,Abid Raza Khan,,SP,70847,33.54,16467
+Budaun,116,Shekhupur,Dharmendra Kumar Singh Shakya,,BJP,93702,40.04,Ashish Yadav,,SP,70316,30.05,23386
+Budaun,117,Dataganj,Rajeev Kumar Singh,,BJP,79110,35.5,Sinod Kumar Shakya,,BSP,53351,23.94,25759
+Bareilly,118,Baheri,Chhatra Pal Singh,,BJP,108846,44.19,Naseem Ahmad,,BSP,66009,26.8,42837
+Bareilly,119,Meerganj,D. C. Verma,,BJP,108789,52.17,Sultan Beg,,BSP,54289,26.03,54500
+Bareilly,120,Bhojipura,Bahoran Lal Maurya,,BJP,100381,42.38,Shazil Islam Ansari,,SP,72617,30.66,27764
+Bareilly,121,Nawabganj,Kesar Singh,,BJP,93711,43.9,Bhagwat Saran Gangwar,,SP,54569,25.56,39142
+Bareilly,122,Faridpur (SC),Shyam Bihari Lal,,BJP,83656,44.41,Siyaram Sagar,,SP,58935,31.29,24721
+Bareilly,123,Bithari Chainpur,Rajesh Kumar Mishra,,BJP,96397,41.49,Veer Pal Singh Yadav,,SP,76886,33.1,19511
+Bareilly,124,Bareilly,Arun Kumar,,BJP,115270,51.7,Prem Prakash Agarwal,,INC,86559,38.82,28667
+Bareilly,125,Bareilly Cantt,Rajesh Agarwal,,BJP,88441,48.5,Mujahid Hassan Khan,,INC,75777,41.55,12664
+Bareilly,126,Aonla,Dharmpal Singh,,BJP,63165,35.11,Sidhraj Singh,,SP,59619,33.14,3546
+Pilibhit,127,Pilibhit,Sanjay Singh Gangwar,,BJP,136486,54.59,Riaz Ahmad,,SP,93130,37.25,43356
+Pilibhit,128,Barkhera,Kishan Lal Rajpoot,,BJP,104595,49.91,Hemraj Verma,,SP,46665,22.27,57930
+Pilibhit,129,Puranpur (SC),Babu Ram Paswan,,BJP,128493,52.54,Peetam Ram,,SP,89251,36.49,39242
+Pilibhit,130,Bisalpur,Agys Ramsaran Verma,,BJP,103498,46.91,Anis Ahmad Khan,,INC,62502,28.33,40996
+Shahjahanpur,131,Katra,Veer Vikram Singh Prince,,BJP,76509,40.02,Rajesh Yadav,,SP,59779,31.27,16730
+Shahjahanpur,132,Jalalabad,Sharadvir Singh,,SP,75326,36.44,Manoj Kashyap,,BJP,66029,31.94,9297
+Shahjahanpur,133,Tilhar,Roshan Lal Verma,,BJP,81770,40.37,Jitin Prasada,,INC,76065,37.55,5705
+Shahjahanpur,134,Powayan (SC),Chetram,,BJP,126635,55.75,Shakuntla Devi,,SP,54218,23.87,72417
+Shahjahanpur,135,Shahjahanpur,Suresh Kumar Khanna,,BJP,100734,49.17,Tanveer Khan,,SP,81531,39.8,19203
+Shahjahanpur,136,Dadraul,Manvendra Singh,,BJP,86435,40.36,Rammurti Singh Verma,,SP,69037,32.23,17398
+Lakhimpur Kheri,137,Palia,Harvinder Kumar Sahani,,BJP,118069,51.4,Saif Ali Naqvi,,INC,48841,21.26,69228
+Lakhimpur Kheri,138,Nighasan,Patel Ramkumar Verma,,BJP,107487,48.97,Krishna Gopal Patel,,SP,61364,27.96,46123
+Lakhimpur Kheri,139,Gola Gokrannath,Arvind Giri,,BJP,122497,49.43,Vinay Tiwari,,SP,67480,27.23,55017
+Lakhimpur Kheri,140,Sri Nagar (SC),Manju Tyagi,,BJP,112941,51.17,Meera Bano,,SP,58002,26.28,54939
+Lakhimpur Kheri,141,Dhaurahra,Awasthi Bala Prasad,,BJP,79809,36.62,Yeshpal Singh Chaudhari,,SP,76456,35.08,3353
+Lakhimpur Kheri,142,Lakhimpur,Yogesh Verma,,BJP,122677,48.45,Utkarsh Verma,,SP,84929,33.54,37748
+Lakhimpur Kheri,143,Kasta (SC),"Saurabh Singh, politician",,BJP,92824,44.62,Sunil Kumar Lala,,SP,68551,32.96,24273
+Lakhimpur Kheri,144,Mohammdi,Lokendra Pratap Singh,,BJP,93000,42.89,Sanjay Sharma,,INC,59082,27.25,33918
+Sitapur,145,Maholi,Shashank Trivedi,,BJP,80938,33.72,Anoop Kumar Gupta,,SP,77221,32.17,3717
+Sitapur,146,Sitapur,Rakesh Rathore,,BJP,98850,42.54,Radhey Shyam Jaiswal,,SP,74011,31.85,24839
+Sitapur,147,Hargaon (SC),Suresh Rahi,,BJP,101680,46.42,Ramhet Bharti,,BSP,56685,25.88,4995
+Sitapur,148,Laharpur,Suneel Verma,,BJP,79467,35.05,Md. Jasmeer Ansari,,BSP,70349,31.03,9118
+Sitapur,149,Biswan,Mahendra Singh,,BJP,81907,36.25,Afzaal Kausar,,SP,71672,31.72,10235
+Sitapur,150,Sevata,Gyan Tiwari,,BJP,94697,44.86,Er. Mohammad Nasim,,BSP,51038,24.18,43659
+Sitapur,151,Mahmoodabad,Narendra Singh Verma,,SP,81469,39.02,Asha Maurya,,BJP,79563,38.11,1906
+Sitapur,152,Sidhauli (SC),Hargovind Bhargava,,BSP,78506,34.05,Manish Rawat,,SP,75996,32.96,2510
+Sitapur,153,Misrikh (SC),Ram Krishna Bhargava,,BJP,86403,39.73,Manish Kumar Rawar,,BSP,65731,30.22,20672
+Hardoi,154,Sawayazpur,Kunvar Madhavendra Pratap,,BJP,92601,40.26,Padamrag Singh Yadav,,SP,65631,28.53,26970
+Hardoi,155,Shahabad,Rajani Tiwari,,BJP,99624,45.84,Asif Khan,,BSP,95364,43.88,4260
+Hardoi,156,Hardoi,Nitin Agarwal,,SP,97735,42.84,Raja Bux Singh,,BJP,92626,40.6,5109
+Hardoi,157,Gopamau (SC),Shyam Prakash,,BJP,87871,43.76,Rajeshwari,,SP,56493,28.14,31378
+Hardoi,158,Sandi (SC),Prabhash Kumar,,BJP,72044,39.26,Omendra Kumar Verma,,INC,51819,28.24,20225
+Hardoi,159,Bilgram-Mallanwan,Ashish Kumar Singh,,BJP,83405,37.92,Subhash Pal,,SP,75380,34.27,8025
+Hardoi,160,Balamau (SC),Ram Pal Verma,,BJP,74917,40.28,Neelu Satyarthi,,BSP,52029,27.97,22888
+Hardoi,161,Sandila,Raj Kumar Agrawal,,BJP,90362,45.84,Abdul Mannan,,SP,69959,35.49,20403
+Unnao,162,Bangarmau,Kuldeep Singh Sengar,,BJP,87657,43.79,Badaloo Khan,,SP,59330,29.64,28237
+Unnao,163,Safipur (SC),Bamba Lal,,BJP,84068,43.02,Ram Baran,,BSP,56832,29.08,27236
+Unnao,164,Mohan (SC),Brijesh Kumar Rawat,,BJP,104884,52.36,Radhe Lal Rawat,,BSP,50789,25.36,54095
+Unnao,165,Unnao,Pankaj Gupta,,BJP,119669,52.12,Manisha Deepak,,SP,73597,32.05,46072
+Unnao,166,Bhagwantnagar,Hriday Narayan Dikshit,,BJP,103698,44.77,Shashank Singh,,BSP,50332,21.73,53366
+Unnao,167,Purwa,Anil Singh,,BSP,97567,40.28,Uttam Chandra,,BJP,71084,29.35,26483
+Lucknow,168,Malihabad (SC),Jai Devi,,BJP,94677,41.89,Rajbala,,SP,72009,31.86,22668
+Lucknow,169,Bakshi Kaa Talab,Avinash Trivedi,,BJP,96482,36.76,Nakul Dubey,,BSP,78898,30.06,17584
+Lucknow,170,Sarojini Nagar,Swati Singh,,BJP,108506,37.56,Anurag Yadav,,SP,74327,25.73,34179
+Lucknow,171,Lucknow West,Suresh Kumar Srivastava,,BJP,93022,42.88,Mohammad Rehan,,SP,79950,36.86,13072
+Lucknow,172,Lucknow North,Neeraj Bora,,BJP,109315,48.57,Abhishek Mishra,,SP,82039,36.45,27276
+Lucknow,173,Lucknow East,Ashutosh Tandon,,BJP,135167,59.71,Anurag Bhadouria,,INC,55937,24.71,79230
+Lucknow,174,Lucknow Central,Brajesh Pathak,,BJP,78400,40.37,Ravidas Mehrotra,,SP,73306,37.75,5094
+Lucknow,175,Lucknow Cantonment,Rita Bahuguna,,BJP,95402,51.21,Aparna Yadav,,SP,61606,33.07,33796
+Lucknow,176,Mohanlalganj (SC),Ambrish Singh Pushkar,,SP,71574,32.67,Rambahadur,,BSP,71044,32.43,530
+Raebareli,177,Bachhrawan (SC),Ram Naresh Rawat,,BJP,65324,33.53,Shahab Sharan,,INC,43015,22.08,22309
+Amethi,178,Tiloi,Mayankeshwar Sharan Singh,,BJP,96119,49.76,Mohd. Saood,,BSP,52072,26.96,44047
+Raebareli,179,Harchandpur,Rakesh Singh,,INC,65104,35.55,Kusuma Lodhi,,BJP,61452,33.56,3652
+Raebareli,180,Rae Bareli,Aditi Singh,,INC,128319,62.94,Mhmd Shabaz Khan,,BSP,39156,19.21,89163
+Raebareli,181,Salon (SC),Dal Bahadur,,BJP,78028,41.19,Suresh Chaudary,,INC,61973,32.72,16055
+Raebareli,182,Sareni,Dhirendra Bahadur Singh,,BJP,65873,32.56,Thakur Prasad Yadav,,BSP,52866,26.13,13007
+Raebareli,183,Unchahar,Manoj Kumar Pandey,,SP,59103,28.89,Utkrist Maruya,,BJP,57169,27.95,1934
+Amethi,184,Jagdishpur (SC),Suresh Kumar,,BJP,84219,44.36,Radhey Shyam,,INC,67619,35.61,16600
+Amethi,185,Gauriganj,Rakesh Pratap Singh,,SP,77915,38.98,Mohammed Nayem,,INC,51496,25.76,26419
+Amethi,186,Amethi,Garima Singh,,BJP,64226,34.34,Gaytri Prasad,,SP,59161,31.63,5065
+Sultanpur,187,Isauli,Abrar Ahmed,,SP,51583,27.26,Om Prakash Pandey,,BJP,47342,25.02,4241
+Sultanpur,188,Sultanpur,Surya Bhan Singh,,BJP,86786,42.62,Syed Mujeed Ahmad,,BSP,54393,26.71,32393
+Sultanpur,189,Sadar,Sitaram Verma,,BJP,68950,36.81,Raj Prasad Upadhyay,,BSP,50177,26.79,18773
+Sultanpur,190,Lambhua,Devmani Dwivedi,,BJP,78627,39.33,Vinod Singh,,BSP,65724,32.88,12903
+Sultanpur,191,Kadipur (SC),Rajesh Gautam,,BJP,87353,42.03,Bhageluram,,BSP,60749,29.23,26604
+Farrukhabad,192,Kaimganj (SC),Amar Singh,,BJP,116304,50.19,Surabhi Singh,,SP,79779,34.43,36622
+Farrukhabad,193,Amritpur,Suhil Kumar Shakya,,BJP,93502,53.93,Narendra Singh Yadav,,SP,52995,30.56,40507
+Farrukhabad,194,Farrukhabad,Major Sunil Dutt Dwivedi,,BJP,93626,45.09,Mohd Umar Khan,,BSP,48199,23.21,45427
+Farrukhabad,195,Bhojpur,Nagendra Singh Rathore,,BJP,93673,49.98,Arshad Jamal Siddiqui,,SP,58796,31.37,34877
+Kannauj,196,Chhibramau,Archana Pandey,,BJP,112209,42.04,Tahir Hussain Siddiqui,,BSP,74985,28.1,37224
+Kannauj,197,Tirwa,Kailash Singh Rajput,,BJP,100426,47.12,Vijay Bahadur Pal,,SP,76217,35.76,24209
+Kannauj,198,Kannauj (SC),Anil Kumar Dohare,,SP,99635,40.44,Banwari Lal Dohare,,BJP,97181,39.45,2454
+Etawah,199,Jaswantnagar,Shivpal Singh Yadav,,SP,126834,54.73,Manish Yadav Patre,,BJP,74218,32.03,52616
+Etawah,200,Etawah,Sarita Bhadauriya,,BJP,91234,41.39,Kuldeep Gupta,,SP,73892,33.53,17342
+Etawah,201,Bharthana (SC),Savitri Katheria,,BJP,82005,35.88,Kamlesh Kumar Katheria,,SP,80037,35.02,1968
+Auraiya,202,Bidhuna,Vinay Shakya,,BJP,81905,37.73,Dinesh Kumar Verma,,SP,77995,35.92,3910
+Auraiya,203,Dibiyapur,Lakhan Singh,,BJP,71480,37.44,Pradeep Kumar Yadav,,SP,59386,31.1,12094
+Auraiya,204,Auraiya (SC),Ramesh Chandra,,BJP,83580,45.52,Bhimrao Ambedkar,,BSP,51718,28.16,31862
+Kanpur Dehat,205,Rasulabad (SC),Nirmala Sankhwar,,BJP,88390,47.02,Arun Kumari Kori,,SP,54996,29.26,33394
+Kanpur Dehat,206,Akbarpur-Raniya,Pratibha Shukla,,BJP,87430,43.26,Neeraj Singh,,SP,58701,29.04,28729
+Kanpur Dehat,207,Sikandra,Mathura Prasad Pal,,BJP,87879,45.7,Mahendra Katiyar,,BSP,49776,25.88,38103
+Kanpur Dehat,208,Bhognipur,Vinod Kumar Katiyar,,BJP,71466,33.85,Dharmpal Singh Bhadauria,,BSP,52461,24.85,19005
+Kanpur Nagar,209,Bilhaur (SC),Bhagwati Prasad Sagar,,BJP,102326,42.86,Kamlesh Chandra Diwakar,,BSP,71160,29.81,31166
+Kanpur Nagar,210,Bithoor,Abhijeet Singh Sanga,,BJP,113289,49.55,Munindra Shukla,,SP,54302,23.75,58987
+Kanpur Nagar,211,Kalyanpur,Neelima Katiyar,,BJP,86620,48.94,Satish Kumar Nigam,,SP,63278,35.75,23342
+Kanpur Nagar,212,Govindnagar,Satyadev Pachauri,,BJP,112029,60.88,Ambuj Shukla,,INC,40520,22.02,71509
+Kanpur Nagar,213,Sishamau,Haji Irfan Solanki,,SP,73030,47.6,Suresh Awasthi,,BJP,67204,43.8,5826
+Kanpur Nagar,214,Arya Nagar,Amitabh Bajpai,,SP,70993,48.37,Salil Vishnoi,,BJP,65270,44.47,5723
+Kanpur Nagar,215,Kidwai Nagar,Mahesh Trivedi,,BJP,111407,54.61,Ajay Kapoor,,INC,77424,37.95,33983
+Kanpur Nagar,216,Kanpur Cantonment,Sohil Akhtar Ansari,,INC,81169,46.19,Raghunandan Bhadauria,,BJP,71805,40.86,9364
+Kanpur Nagar,217,Maharajpur,Satish Mahana,,BJP,132394,56.25,Manoj Kumar Shukla,,BSP,40568,17.24,91826
+Kanpur Nagar,218,Ghatampur (SC),Kamal Rani,,BJP,92776,49.07,Saroj Kureel,,BSP,47598,25.18,45178
+Jalaun,219,Madhogarh,Moolchandra Singh,,BJP,108737,43.49,Girish Kumar,,BSP,62752,25.1,45985
+Jalaun,220,Kalpi,Narandra Pal Singh,,BJP,105988,46.7,Chhote Singh,,BSP,54504,24.01,51484
+Jalaun,221,Orai (SC),Gauri Shankar,,BJP,140485,53.42,Mahendra Singh,,SP,61606,23.43,78879
+Jhansi,222,Babina,Rajeev Singh Parichha,,BJP,96713,42.38,Yashpal Singh Yadav,,SP,79876,35.01,16837
+Jhansi,223,Jhansi Nagar,Ravi Sharma,,BJP,117873,48.87,Sita Ram Kushwaha,,BSP,62095,25.74,55778
+Jhansi,224,Mauranipur (SC),Bihari Lal Arya,,BJP,98905,37.29,Rashmi Arya,,SP,81934,30.89,16971
+Jhansi,225,Garautha,Jawahar Lal Rajput,,BJP,93378,41.29,Deep Narayan Singh,,SP,77547,34.29,15831
+Lalitpur,226,Lalitpur,Ramratan Kushwaha,,BJP,156942,50.14,Jyoti Singh,,SP,88687,28.34,68255
+Lalitpur,227,Mehroni (SC),Manohar Lal,,BJP,159291,52.46,Feran Lal,,BSP,59727,19.67,99564
+Hamirpur,228,Hamirpur,Ashok Kumar Singh Chandel,,BJP,110888,44.49,Manoj Kumar Prajapati,,SP,62233,24.97,48655
+Hamirpur,229,Rath (SC),Manisha Anuragi,,BJP,147526,62.14,Gayadeen Anuragi,,INC,42883,18.06,104643
+Mahoba,230,Mahoba,Rakesh Kumar Goswami,,BJP,88291,45.38,Siddh Gopal Sahu,,SP,56904,29.25,31387
+Mahoba,231,Charkhari,Brijbhusan Rajput,,BJP,98360,46.63,Urmila Devi,,SP,54346,25.76,44014
+Banda,232,Tindwari,Brajesh Kumar Prajapati,,BJP,82197,45.18,Jagdish Prasad Prajapati,,BSP,44790,24.62,37407
+Banda,233,Baberu,Chandrapal Kushwaha,,BJP,76187,40.03,Kiran Yadav,,BSP,53886,28.31,22301
+Banda,234,Naraini (SC),Raj Karan Kabir,,BJP,92412,46.13,Bharat Lal Diwakar,,INC,47405,23.66,45007
+Banda,235,Banda,Prakash Dwivedi,,BJP,83169,45.86,Madhusudan Kushwaha,,BSP,50341,27.76,32828
+Chitrakoot,236,Chitrakoot,Chandrika Prasad Upadhyay,,BJP,90366,41.52,Veer Singh,,SP,63430,29.14,26936
+Chitrakoot,237,Manikpur,R. K. Singh Patel,,BJP,84988,44.54,Sampat Patel,,INC,40524,21.24,44464
+Fatehpur,238,Jahanabad,Jai Kumar Singh Jaiki,,AD(S),81438,45.18,Madangopal Verma,,SP,33832,18.77,47606
+Fatehpur,239,Bindki,Karan Singh Patel,,BJP,97996,53.89,Rameshwar Dayal,,SP,41618,22.89,56378
+Fatehpur,240,Fatehpur,Vikram Singh,,BJP,89481,46.31,Chandra Prakash Lodhi,,SP,57983,30.01,31498
+Fatehpur,241,Ayah Shah,Vikas Gupta,,BJP,81203,54.38,Ayodhya Prasad,,SP,29238,19.58,51965
+Fatehpur,242,Husainganj,Ranvendra Pratap Singh,,BJP,73595,42.47,Usha Maurya,,INC,55002,31.74,18593
+Fatehpur,243,Khaga (SC),Krishna Paswan,,BJP,94954,52.53,Om Prakash Gihar,,INC,38520,21.31,56434
+Pratapgarh,244,Rampur Khas,Aradhana Misra,,INC,81463,48.19,Nagesh Pratap Singh,,BJP,64397,38.09,17066
+Pratapgarh,245,Babaganj (SC),Vinod Kumar,,Ind,87778,53.33,Pawan Kumar,,BJP,50618,30.75,37160
+Pratapgarh,246,Kunda,Raghuraj Pratap Singh,,Ind,136597,69.32,Janaki Sharan,,BJP,32950,16.72,103647
+Pratapgarh,247,Vishwanathganj,Rakesh Kumar Verma,,AD(S),81899,42.07,Sanjay Pandey,,INC,58541,30.07,23358
+Pratapgarh,248,Pratapgarh,Sangam Lal Gupta,,AD(S),80828,44.17,Nagrenda Singh,,SP,46274,25.29,34554
+Pratapgarh,249,Patti,Rajendra Pratap Singh,,BJP,75011,36.47,Ram Singh,,SP,73538,35.75,1476
+Pratapgarh,250,Raniganj,Dhiraj Ojha,,BJP,67031,38.1,Shakeel Ahmad Khan,,BSP,58022,32.98,9009
+Kaushambi,251,Sirathu,Sheetla Prasad,,BJP,78621,40.45,Vachaspati,,SP,52418,26.97,26203
+Kaushambi,252,Manjhanpur (SC),Lal Bahadur,,BJP,92818,42.25,Indrajeet Saroj,,BSP,88658,40.36,4160
+Kaushambi,253,Chail,Sanjay Kumar,,BJP,85713,42.43,Talat Azim,,INC,45597,22.57,40116
+Prayagraj,254,Phaphamau,Vikramjeet,,BJP,83239,41.07,Ansar Ahmad,,SP,57254,28.25,25985
+Prayagraj,255,Soraon (SC),Jamuna Prasad,,AD(S),77814,37.02,Geeta Devi,,BSP,60079,28.58,17735
+Prayagraj,256,Phulpur,Praveen Patel,,BJP,93912,42.24,Mansoor Alam,,SP,67299,30.27,26613
+Prayagraj,257,Pratappur,Mohd Mujtaba Siddqui,,BSP,66805,32.63,Karan Singh,,AD(S),64151,31.33,2654
+Prayagraj,258,Handia,Hakim Lal Bind,,BSP,72446,36.28,Pramila Devi,,AD(S),63920,32.01,8526
+Prayagraj,259,Meja,Neelam Karwariya,,BJP,67807,37.94,Ram Sewak Singh,,SP,47964,26.84,19843
+Prayagraj,260,Karachhana,Ujjwal Raman Singh,,SP,80806,41.14,Piyush Ranjan Nishad,,BJP,65782,33.49,15024
+Prayagraj,261,Allahabad West,Sidharth Nath Singh,,BJP,85518,43.4,Richa Singh,,SP,60182,30.54,25336
+Prayagraj,262,Allahabad North,Harshvardhan Bajpai,,BJP,89191,51.68,Anugrah Narayan Singh,,INC,54166,31.39,35025
+Prayagraj,263,Allahabad South,Nand Gopal Gupta Nandi,,BJP,93011,52.73,Parvez Ahmad,,SP,64424,36.52,28587
+Prayagraj,264,Bara (SC),Ajai Kumar,,BJP,79209,42.21,Ajay,,SP,45156,24.06,34053
+Prayagraj,265,Koraon (SC),Rajmani Kol,,BJP,100427,52.03,Ram Kripal,,INC,46731,24.21,53696
+Barabanki,266,Kursi,Sakendra Pratap Verma,,BJP,108403,41.49,Fareed Kidwai,,SP,79724,30.51,28679
+Barabanki,267,Ramnagar,Sharad Kumar Awasthi,,BJP,88937,40.25,Arvinda Kumar Singh,,SP,66210,29.96,22727
+Barabanki,268,Barabanki,Dharamraj Singh Yadav,,SP,99453,40.81,Suredra Singh,,BSP,69748,28.62,29704
+Barabanki,269,Zaidpur (SC),Upendra Singh,,BJP,111064,43.84,Tanuj Punia,,INC,81883,32.32,29181
+Barabanki,270,Dariyabad,Satishchandra Sharma,,BJP,119173,47.37,Rajiv Kumar Singh,,SP,68487,27.23,50686
+Ayodhya,271,Rudauli,Ram Chandra Yadav,,BJP,90311,43.42,Abbas Ali Zaidi,,SP,59052,28.39,31259
+Barabanki,272,Haidergarh (SC),Baidnath Rawat,,BJP,97497,46.41,Ram Magan,,SP,63977,30.45,33520
+Ayodhya,273,Milkipur (SC),Gorakh Nath,,BJP,86960,44.11,Awadesh Prasad,,SP,58684,29.77,28276
+Ayodhya,274,Bikapur,Shobha Singh Chauhan,,BJP,94074,42.63,Anand Sen,,SP,67422,30.55,26652
+Ayodhya,275,Ayodhya,Ved Prakash Gupta,,BJP,107014,49.56,Tej Narayan Pandey,,SP,56574,26.2,50440
+Ayodhya,276,Goshainganj,Indra Pratap Tiwari,,BJP,89586,39.91,Abhay Singh,,SP,77966,34.73,11620
+Ambedkar Nagar,277,Katehari,Lal Ji verma,,BSP,84358,36.33,Awadesh Kumar Diwedi,,BJP,78071,33.63,6287
+Ambedkar Nagar,278,Tanda,Sanju Devi,,BJP,74768,36.62,Azeemul Haq Pahalwan,,BSP,73043,35.78,1723
+Ambedkar Nagar,279,Alapur (SC),Anita,,BJP,72366,36.95,Sangeeta,,SP,59853,30.56,12513
+Ambedkar Nagar,280,Jalalpur,Ritesh Pandey,,BSP,90309,37.75,Rajesh Singh,,BJP,77279,32.3,13030
+Ambedkar Nagar,281,Akbarpur,Ram Achal Rajbhar,,BSP,72325,35.7,Ram Murti Verma,,SP,58312,28.78,14013
+Bahraich,282,Balha (SC),Akshaibar Lal,,BJP,104135,52.33,Kiran Bharti,,BSP,57519,28.91,46616
+Bahraich,283,Nanpara,Madhuri Verma,,BJP,86312,45.45,Waris Ali,,INC,67643,35.62,18669
+Bahraich,284,Matera,Yasar Shah,,SP,79188,39.99,Arun Veer Singh,,BJP,77593,39.19,1595
+Bahraich,285,Mahasi,Sureshwar Singh,,BJP,104654,53.96,Ali Akbar,,INC,45685,23.56,58969
+Bahraich,286,Bahraich,Anupma Jaiswal,,BJP,87479,41.5,Rubab Sayeda,,SP,80777,38.32,6702
+Bahraich,287,Payagpur,Subhash Tripathi,,BJP,102254,50.29,Mukesh Srivastava,,SP,60713,29.86,41541
+Bahraich,288,Kaiserganj,Mukut Bihari,,BJP,85212,41.32,Khalid Khan,,BSP,57849,28.05,27363
+Shrawasti,289,Bhinga,Mohammad Aslam,,BSP,76040,34.43,Alekshendra Kant Singh,,BJP,69950,31.67,6090
+Shrawasti,290,Shrawasti,Ram Feran,,BJP,79437,33.46,Mohd Ramzan,,SP,78992,33.27,445
+Balrampur,291,Tulsipur,Kailash Nath Shukla,,BJP,62296,31.94,Zeba Rizwan,,INC,43637,22.38,18659
+Balrampur,292,Gainsari,Shailesh Kumar Singh,,BJP,55716,28.69,Alauddin,,BSP,53413,27.51,2303
+Balrampur,293,Utraula,Shashikant Verma,,BJP,85240,43.37,Arif Anwar Hashmi,,SP,56066,28.53,29174
+Balrampur,294,Balrampur (SC),Palturam,,BJP,89401,47.08,Shivlal,,INC,64541,33.99,24860
+Gonda,295,Mehnaun,Vinay Kumar Dwivedi,,BJP,84304,41.13,Arshad Ali Khan,,BSP,47926,23.38,36378
+Gonda,296,Gonda,Prateek Bhushan Singh,,BJP,58254,30.35,Mo Jaleel Khan,,BSP,46576,24.26,11678
+Gonda,297,Katra Bazar,Bawan Singh,,BJP,92095,42.14,Baij Nath,,SP,61284,28.04,30811
+Gonda,298,Colonelganj,Ajay Pratap Singh,,BJP,82867,46.11,Yogesh Pratap Singh,,SP,54462,30.3,28405
+Gonda,299,Tarabganj,Prem Narayan Pandey,,BJP,100294,50.18,Vinod Kumar,,SP,61852,30.94,38442
+Gonda,300,Mankapur (SC),Rampati Shastri,,BJP,102862,58.2,Ramesh Chandra,,BSP,42701,24.16,60161
+Gonda,301,Gaura,Prabhat Kumar Verma,,BJP,72455,42.14,Ram Pratap Singh,,SP,42600,24.78,29855
+Siddharthnagar,302,Shohratgarh,Amar Singh Chaudhary,,AD(S),67653,36.53,Mohd Jameel,,BSP,45529,24.58,22124
+Siddharthnagar,303,Kapilvastu (SC),Shyam Dhani,,BJP,114082,49.07,Vijay Kumar,,SP,75928,32.66,38154
+Siddharthnagar,304,Bansi,Jai Pratap Singh,,BJP,77548,42.41,Lal Ji,,SP,58606,32.05,18942
+Siddharthnagar,305,Itwa,Satish Chandra Dwivedi,,BJP,59524,37.39,Arshad Khursheed,,BSP,49316,30.98,10208
+Siddharthnagar,306,Domariyaganj,Raghvendra Pratap Singh,,BJP,67227,33.62,Saiyada Khatoon,,BSP,67056,33.53,171
+Basti,307,Harraiya,Ajay Kumar Singh,,BJP,97014,45.68,Raj Kishore Singh,,SP,66908,31.51,30106
+Basti,308,Kaptanganj,Chandra Prakash,,BJP,70527,35.4,Ram Prasad Chaudhary,,BSP,63700,31.97,6827
+Basti,309,Rudhauli,Sanjay Pratap Jaiswal,,BJP,90228,40.94,Rajendra Prasad Chaudhary,,BSP,68423,31.05,21805
+Basti,310,Basti Sadar,Dayaram Chaudhary,,BJP,92697,45.13,Mahendra Nath Yadav,,SP,50103,24.39,42594
+Basti,311,Mahadewa (SC),Ravi Kumar Sonkar,,BJP,82429,41.82,Doodhram,,BSP,56545,28.69,25884
+Sant Kabir Nagar,312,Menhdawal,Rakesh Singh Baghel,,BJP,86976,39.15,Anil Kumar Tripathi,,BSP,44062,19.83,42914
+Sant Kabir Nagar,313,Khalilabad,Digvijay Narayan Chaubey,,BJP,72061,32.29,Mashhoor Alam Choudhary,,BSP,56024,25.1,16037
+Sant Kabir Nagar,314,Dhanghata (SC),Sriram Chauhan,,BJP,79572,40.11,Agloo Prasad,,SP,62663,31.58,16909
+Maharajganj,315,Pharenda,Bajrang Bahadur Singh,,BJP,76312,38.75,Virendra Chaudhary,,INC,73958,37.55,2354
+Maharajganj,316,Nautanwa,Aman Mani Tripathi,,Ind,79666,37.68,Kunwar Kaushal Kishore Singh,,SP,47410,22.42,32256
+Maharajganj,317,Siswa,Prem Sagar Patel,,BJP,122884,51.88,Shivendra Singh,,SP,54698,23.09,68186
+Maharajganj,318,Maharajganj (SC),Jai Mangal,,BJP,125154,51.16,Nirmesh Mangal,,BSP,56793,23.21,68361
+Maharajganj,319,Paniyara,Gyanendra,,BJP,119308,49.35,Ganesh Shankar Pandey,,BSP,51817,21.43,67491
+Gorakhpur,320,Caimpiyarganj,Fateh Bahadur Singh,,BJP,91636,42.64,Chinta Yadav,,INC,58782,27.35,32854
+Gorakhpur,321,Pipraich,Mahendra Pal Singh,,BJP,82739,33.8,Aftab Alam,,BSP,69930,28.56,12809
+Gorakhpur,322,Gorakhpur Urban,Radha Mohan Das Agarwal,,BJP,122221,56.07,Rana Rahul Singh,,INC,61491,28.21,60730
+Gorakhpur,323,Gorakhpur Rural,Bipin Singh,,BJP,83686,35.71,Vijay Bahadur Yadav,,SP,79276,33.83,4410
+Gorakhpur,324,Sahajanwa,Sheetal Pandey,,BJP,72213,34.77,Yaspal Singh Rawat,,SP,56836,27.37,15377
+Gorakhpur,325,Khajani (SC),Sant Prasad,,BJP,71492,38.5,Rajkumar,,BSP,51413,27.68,20079
+Gorakhpur,326,Chauri-Chaura,Sangeeta Yadav,,BJP,87863,45.63,Manurojan Yadav,,SP,42203,21.92,45660
+Gorakhpur,327,Bansgaon (SC),Vimlesh Paswan,,BJP,71966,40.73,Dharmendra Kumar,,BSP,49093,27.79,22873
+Gorakhpur,328,Chillupar,Vijay Shankar Tiwari,,BSP,78177,35.89,Rajesh Tripathi,,BJP,74818,34.35,3359
+Kushinagar,329,Khadda,Jatashanker Tripathi,,BJP,82537,42.72,Vijay Pratap Kushwaha,,BSP,44040,22.8,38497
+Kushinagar,330,Padrauna,Swami Prasad Maurya,,BJP,93649,44.79,Javed Iqbal,,BSP,53097,25.4,40552
+Kushinagar,331,Tamkuhi Raj,Ajay Kumar Lallu,,INC,61211,28.88,Jagadish Mishra,,BJP,43097,20.33,18114
+Kushinagar,332,Fazilnagar,Ganga,,BJP,102778,48.57,Vishwnath,,SP,60856,28.76,41922
+Kushinagar,333,Kushinagar,Rajnikant Mani Tripathi,,BJP,97132,48.24,Rajesh Pratap Rao,,BSP,49029,24.35,48103
+Kushinagar,334,Hata,Pawan Kumar,,BJP,103864,50.34,Radheshyam Singh,,SP,50788,24.62,53076
+Kushinagar,335,Ramkola (SC),Ramanand Baudh,,SBSP,102782,52.95,Purnmasi Dehati,,SP,47053,24.24,55729
+Deoria,336,Rudrapur,Jai Prakash Nishad,,BJP,77754,48.06,Akhilesh Pratap Singh,,INC,50965,31.5,26789
+Deoria,337,Deoria,Janmejai Singh,,BJP,88030,48.41,J.P. Jaiswal,,SP,41794,22.98,46236
+Deoria,338,Pathardeva,Surya Pratap Shahi,,BJP,99812,52.49,Shakir Ali,,SP,56815,29.88,42997
+Deoria,339,Rampur Karkhana,Kamlesh Shukla,,BJP,62886,33.04,Fasiha Manzer Ghazala Lari,,SP,52899,27.79,9987
+Deoria,340,Bhatpar Rani,Ashutosh Upadhyay,,SP,61862,34.48,Jayanth Kushwaha,,BJP,50765,28.29,11097
+Deoria,341,Salempur (SC),Kalicharan Prasad,,BJP,76175,47.47,Vijay Laxmi Gautam,,SP,50521,31.48,25654
+Deoria,342,Barhaj,Suresh Tiwari,,BJP,61996,37.06,Murli Manohar Jaiswal,,SP,50280,30.06,11716
+Azamgarh,343,Atrauliya,Sangram Yadav,,SP,74276,35.5,Kanhaiya Lal Nishad,,BJP,71809,34.32,2467
+Azamgarh,344,Gopalpur,Nafees Ahmad,,SP,70980,37.8,Shrikrishna Pal,,BJP,56020,29.83,14960
+Azamgarh,345,Sagri,Bandana Singh,,BSP,62203,34.91,Jairam Patel,,SP,56728,31.84,5475
+Azamgarh,346,Mubarakpur,Shah Alam,,BSP,70705,36.95,Akhilesh Yadav,,SP,70017,36.59,688
+Azamgarh,347,Azamgarh,Durga Prasad Yadav,,SP,88087,41.59,Akhilesh,,BJP,61825,29.19,26262
+Azamgarh,348,Nizamabad,Alambadi,,SP,67274,40.47,Chandra Dev Ram,,BSP,48745,29.32,18529
+Azamgarh,349,Phoolpur Pawai,Arun Kumar Yadav,,BJP,68435,38.7,Abul Qais Azmi,,BSP,61140,34.57,7295
+Azamgarh,350,Didarganj,Sukhdev Rajbhar,,BSP,62125,33.44,Adil Sheikh,,SP,58480,31.48,3645
+Azamgarh,351,Lalganj (SC),Azad Ari Mardan,,BSP,72715,36.08,Daroga Prasad Saroj,,BJP,70488,34.98,2227
+Azamgarh,352,Mehnagar (SC),Kalpnath Paswan,,SP,69037,34.58,Manjoo Saroj,,SBSP,63625,31.87,5412
+Mau,353,Madhuban,Dara Singh Chauhan,,BJP,86238,40.39,Amresh Chand,,INC,56823,26.61,29415
+Mau,354,Ghosi,Fagu Chauhan,,BJP,88298,36.78,Abbas Ansari,,BSP,81295,33.87,7003
+Mau,355,Muhammadabad (SC),Shriram Sonkar,,BJP,73493,35.02,Rajendra,,BSP,72955,34.77,538
+Mau,356,Mau,Mukhtar Ansari,,BSP,96793,36.62,Mahendra Rajbhar,,SBSP,88095,33.33,8698
+Ballia,357,Belthara Road (SC),Dhananjay Kannoujia,,BJP,77504,41.1,Gorakh Paswan,,SP,59185,31.39,18319
+Ballia,358,Rasara,Umashankar Singh,,BSP,92272,48.16,Ram Iqball Singh,,BJP,58385,30.47,33887
+Ballia,359,Sikanderpur,Sanjay Yadav,,BJP,69536,42.53,Ziauddin Rizwi,,SP,45988,28.13,23548
+Ballia,360,Phephana,Upendra Tiwari,,BJP,70588,39.84,Ambika Choudhary,,BSP,52691,29.74,17897
+Ballia,361,Ballia Nagar,Anand,,BJP,92889,50.42,Laxman,,SP,52878,28.7,40011
+Ballia,362,Bansdih,Ram Govind Chaudhary,,SP,51201,24.5,Ketakee Singh,,Ind,49514,23.69,1687
+Ballia,363,Bairia,Surendra,,BJP,64868,40.21,Jai Prakash Anchal,,SP,47791,29.62,17077
+Jaunpur,364,Badlapur,Ramesh Chandra Mishra,,BJP,60237,31.88,Lalji Yadav,,BSP,57865,30.62,2372
+Jaunpur,365,Shahganj,Shailendra Yadav Lalai,,SP,67818,31.87,Rana Ajeet Pratap Singh,,SBSP,58656,27.57,9162
+Jaunpur,366,Jaunpur,Girish Chandra Yadav,,BJP,90324,40.39,Nadeem Javed,,INC,78040,34.9,12284
+Jaunpur,367,Malhani,Parasnath Yadava,,SP,69351,33.67,Dhananjay Singh,,NISHAD,48141,23.37,21210
+Jaunpur,368,Mungra Badshahpur,Sushma Patel,,BSP,69557,34.42,Seema Dwivedi,,BJP,63637,31.49,5920
+Jaunpur,369,Machhlishahr (SC),Jagdish Sonkar,,SP,72368,35.1,Anita Rawat,,BJP,68189,33.07,4179
+Jaunpur,370,Mariyahu,Leena Tiwari,,AD(S),58804,32.88,Shraddha Yadav,,SP,47454,26.53,11350
+Jaunpur,371,Zafrabad,Dr Harendra Prasad Singh,,BJP,85989,41.89,Sachindra Nath Tripathi,,SP,61124,29.78,24865
+Jaunpur,372,Kerakat (SC),Dinesh Choudahry,,BJP,84078,37.44,Sajai Kumar Saroj,,SP,68819,30.64,15259
+Ghazipur,373,Jakhanian (SC),Triveni Ram,,SBSP,84158,35.26,Gareeb,,SP,79001,33.1,5157
+Ghazipur,374,Saidpur (SC),Subhash Pasi,,SP,76664,36.26,Vidyasagar Sonkar,,BJP,67954,32.14,8710
+Ghazipur,375,Ghazipur Sadar,Sangeeta Balwant,,BJP,92090,43.42,Rajesh Kuswaha,,SP,59483,28.05,32607
+Ghazipur,376,Jangipur,Virendra Kumar Yadav,,SP,71441,33.46,Ramesh Narayan Kushwaha,,BJP,68202,31.94,3239
+Ghazipur,377,Zahoorabad,Om Prakash Rajbhar,,SBSP,86583,37.81,Kalicharan,,BSP,68502,29.91,18081
+Ghazipur,378,Mohammadabad,Alka Rai,,BJP,122156,53.61,Sibakatullah Ansari,,BSP,89429,39.25,32727
+Ghazipur,379,Zamania,Sunita,,BJP,76823,35.67,Atul Kumar,,BSP,67559,31.37,9264
+Chandauli,380,Mughalsarai,Sadhana Singh,,BJP,87401,37.89,Babulal,,SP,74158,32.15,13243
+Chandauli,381,Sakaldiha,Prabhunarayan Yadav,,SP,79875,39.82,Suryamuni Tiwari,,BJP,64906,32.36,14969
+Chandauli,382,Saiyadraja,Sushil Singh,,BJP,78869,40.19,Shyam Narayan Singh,,BSP,64375,32.8,14494
+Chandauli,383,Chakia (SC),Sharada Prasad,,BJP,96890,41.87,Jitendra Kumar,,BSP,76827,33.2,20063
+Varanasi,384,Pindra,Avadhesh Singh,,BJP,90614,44.97,Babulal,,BSP,53765,26.68,36849
+Varanasi,385,Ajagara (SC),Kailash Nath Sonkar,,SBSP,83778,38.52,Lalji Sonkar,,SP,62429,28.7,21349
+Varanasi,386,Shivpur,Anil Rajbhar,,BJP,110453,48.64,Anand Mohan Yadav,,SP,56194,24.75,54259
+Varanasi,387,Rohaniya,Surendra Narayan Singh,,BJP,119885,51.77,Mahendra Singh Patel,,SP,62332,26.91,57553
+Varanasi,388,Varanasi North,Ravindra Jaiswal,,BJP,116017,51.2,Abdul Samad Ansari,,INC,70515,31.12,45502
+Varanasi,389,Varanasi South,Neelkanth Tiwari,,BJP,92560,51.89,Rajesh Mishra,,INC,75334,42.23,17226
+Varanasi,390,Varanasi Cantt.,Saurabh Srivastava,,BJP,132609,58.46,Anil Srivastava,,INC,71283,31.42,61326
+Varanasi,391,Sevapuri,Neel Ratan Singh Patel Neelu,,AD(S),103423,50.48,Surendra Singh Patel,,SP,54241,26.47,49182
+Bhadohi,392,Bhadohi,Ravindra Nath Tripathi,,BJP,79519,33.32,Zahid Beg,,SP,78414,32.85,1105
+Bhadohi,393,Gyanpur,Vijay Mishra,,NISHAD,66448,31.97,Mahendra Kumar Bind,,BJP,46218,22.23,20230
+Bhadohi,394,Aurai (SC),Dinanath Bhaskar,,BJP,83325,40.94,Madhubala,,SP,63546,31.22,19779
+Mirzapur,395,Chhanbey (SC),Rahul Prakash,,AD(S),107007,50.62,Dhaneswar,,BSP,43539,20.6,63468
+Mirzapur,396,Mirzapur,Ratnakar Mishra,,BJP,109196,48.77,Kailash Chaurasiya,,SP,51784,23.13,57412
+Mirzapur,397,Majhawan,Suchismita Maurya,,BJP,107839,45.21,Ramesh Chand Bind,,BSP,66680,27.96,41159
+Mirzapur,398,Chunar,Anurag Singh,,BJP,105608,49.34,Jagtamba Singh Patel,,SP,43380,20.27,62228
+Mirzapur,399,Marihan,Rama Shankar Singh,,BJP,106517,45.19,Lalitesh Pati Tripathi,,INC,59919,25.42,46598
+Sonbhadra,400,Ghorawal,Anil Kumar Maurya,,BJP,114305,48.89,Ramesh Chandra,,SP,56656,24.23,57649
+Sonbhadra,401,Robertsganj,Bhupesh Chaubey,,BJP,89932,44.46,Avinash Kushvaha,,SP,49394,24.42,40538
+Sonbhadra,402,Obra (ST),Sanjiv Kumar,,BJP,78058,49.24,Ravi Gond,,SP,33789,21.31,44269
+Sonbhadra,403,Duddhi (ST),Hariram,,AD(S),64399,34.24,Vijay Singh Gond,,BSP,63314,33.66,1085
