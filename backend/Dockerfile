@@ -2,15 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
+# Only install what's truly needed — no build-essential, use pre-compiled wheels
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies using pre-compiled wheels where possible
+COPY requirements-prod.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-prod.txt
 
 # Copy app code
 COPY . .
