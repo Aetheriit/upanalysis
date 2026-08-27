@@ -13,20 +13,21 @@ from sqlalchemy.future import select
 from sqlalchemy import delete
 
 from app.core.config import settings
-from app.core.database import Base
+from app.core.database import Base, database_url
 from app.models.project import Project
 from app.models.election import Election
 from app.models.constituency import Constituency
 from app.models.booth import Booth, VoteRecord
 from app.models.candidate import Candidate
 
-DATA_DIR = Path("2022 data") if Path("2022 data").exists() else Path("../../2022 data")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = Path("/2022 data") if Path("/2022 data").exists() else PROJECT_ROOT / "2022 data"
 EXCEL_DIR = DATA_DIR / "excel_outputs"
-CONSTITUENCIES_JSON = Path("2017 data") / "constituencies.json" if Path("2017 data").exists() else Path("../../2017 data/constituencies.json")
+CONSTITUENCIES_JSON = Path("/2017 data/constituencies.json") if Path("/2017 data").exists() else PROJECT_ROOT / "2017 data" / "constituencies.json"
 
 async def ingest():
     print("Connecting to database...")
-    engine = create_async_engine(settings.DATABASE_URL, echo=False)
+    engine = create_async_engine(database_url, echo=False)
     async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
