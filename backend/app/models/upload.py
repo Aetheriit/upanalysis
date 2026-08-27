@@ -1,8 +1,7 @@
 """UploadedFile model — tracks file uploads and processing status."""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, JSON, Uuid
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -10,8 +9,8 @@ from app.core.database import Base
 class UploadedFile(Base):
     __tablename__ = "uploaded_files"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(Uuid(as_uuid=True), ForeignKey("projects.id"), nullable=False)
     filename = Column(String(500), nullable=False)
     original_filename = Column(String(500), nullable=False)
     file_type = Column(String(50), nullable=False)  # "csv", "excel", "json"

@@ -1,8 +1,7 @@
 """Demographic model — population demographics for a constituency."""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Uuid
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -10,8 +9,8 @@ from app.core.database import Base
 class Demographic(Base):
     __tablename__ = "demographics"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    constituency_id = Column(UUID(as_uuid=True), ForeignKey("constituencies.id"), nullable=False)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    constituency_id = Column(Uuid(as_uuid=True), ForeignKey("constituencies.id"), nullable=False)
     category = Column(String(100), nullable=False)  # "caste", "religion", "age", "gender", "education", "income"
     subcategory = Column(String(255), nullable=False)  # "Hindu", "Muslim", "SC", "ST", "OBC", "18-25", "Male"
     population = Column(Integer, default=0)

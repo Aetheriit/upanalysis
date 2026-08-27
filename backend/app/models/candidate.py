@@ -1,8 +1,7 @@
 """Candidate model — election contestant with full profile."""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, BigInteger
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, BigInteger, Uuid
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -10,10 +9,10 @@ from app.core.database import Base
 class Candidate(Base):
     __tablename__ = "candidates"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    election_id = Column(UUID(as_uuid=True), ForeignKey("elections.id"), nullable=False)
-    constituency_id = Column(UUID(as_uuid=True), ForeignKey("constituencies.id"), nullable=True)
-    party_id = Column(UUID(as_uuid=True), ForeignKey("parties.id"), nullable=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    election_id = Column(Uuid(as_uuid=True), ForeignKey("elections.id"), nullable=False)
+    constituency_id = Column(Uuid(as_uuid=True), ForeignKey("constituencies.id"), nullable=True)
+    party_id = Column(Uuid(as_uuid=True), ForeignKey("parties.id"), nullable=True)
     name = Column(String(255), nullable=False)
     age = Column(Integer, nullable=True)
     gender = Column(String(20), nullable=True)
