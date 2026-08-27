@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { Search, Filter, Download, MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 
 export default function ConstituenciesPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -18,8 +19,8 @@ export default function ConstituenciesPage() {
       try {
         if (isComparison) {
           const [res17, res22] = await Promise.all([
-            fetch("http://localhost:8000/api/v1/analytics/constituencies?election_year=2017"),
-            fetch("http://localhost:8000/api/v1/analytics/constituencies?election_year=2022")
+            fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017")),
+            fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022"))
           ]);
           const data17 = await res17.json();
           const data22 = await res22.json();
@@ -44,7 +45,7 @@ export default function ConstituenciesPage() {
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
-          const res = await fetch(`http://localhost:8000/api/v1/analytics/constituencies?election_year=${year}`);
+          const res = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`));
           const json = await res.json();
           
           const formatted = json.constituencies.map((c: any) => ({

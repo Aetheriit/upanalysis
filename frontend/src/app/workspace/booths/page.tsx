@@ -6,6 +6,7 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { Search, Download, Building2, Users, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 
 export default function BoothsPage() {
   const { viewMode, isComparison } = useElectionContext();
@@ -20,8 +21,8 @@ export default function BoothsPage() {
       try {
         if (isComparison) {
           const [res17, res22] = await Promise.all([
-            fetch("http://localhost:8000/api/v1/analytics/booths?election_year=2017"),
-            fetch("http://localhost:8000/api/v1/analytics/booths?election_year=2022")
+            fetch(apiUrl("/api/v1/analytics/booths?election_year=2017")),
+            fetch(apiUrl("/api/v1/analytics/booths?election_year=2022"))
           ]);
           const data17 = await res17.json();
           const data22 = await res22.json();
@@ -42,7 +43,7 @@ export default function BoothsPage() {
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
-          const res = await fetch(`http://localhost:8000/api/v1/analytics/booths?election_year=${year}`);
+          const res = await fetch(apiUrl(`/api/v1/analytics/booths?election_year=${year}`));
           const json = await res.json();
           const formatted = json.booths.map((b: any) => ({
             id: b.booth_number,

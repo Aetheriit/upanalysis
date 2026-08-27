@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 import dynamic from "next/dynamic";
 
 const UPMap = dynamic(() => import("@/components/UPMap"), { ssr: false, loading: () => (
@@ -50,11 +51,11 @@ export default function ExecutiveDashboard() {
     async function fetchData() {
       try {
         const [kpi17Res, kpi22Res, vote17Res, vote22Res, swingRes] = await Promise.all([
-          fetch("http://localhost:8000/api/v1/analytics/dashboard?election_year=2017"),
-          fetch("http://localhost:8000/api/v1/analytics/dashboard?election_year=2022"),
-          fetch("http://localhost:8000/api/v1/analytics/vote-share?election_year=2017"),
-          fetch("http://localhost:8000/api/v1/analytics/vote-share?election_year=2022"),
-          fetch("http://localhost:8000/api/v1/analytics/swing")
+          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2017")),
+          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2022")),
+          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2017")),
+          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2022")),
+          fetch(apiUrl("/api/v1/analytics/swing"))
         ]);
         
         const kpi17Data = await kpi17Res.json();

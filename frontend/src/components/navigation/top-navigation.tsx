@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { Search, Bell, MessageSquare, Sun, Moon, MapPin, User, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 
 export function TopNavigation() {
   const { theme, setTheme } = useTheme();
@@ -39,7 +40,7 @@ export function TopNavigation() {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/search?q=${encodeURIComponent(query.trim())}`);
+        const res = await fetch(apiUrl(`/api/v1/search?q=${encodeURIComponent(query.trim())}`));
         if (res.ok) {
           const data = await res.json();
           setResults(data);
