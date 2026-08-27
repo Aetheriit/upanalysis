@@ -11,9 +11,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: str = "election-intel-secret-key-change-in-production"
     
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/election_intel"
-    DATABASE_SYNC_URL: str = "postgresql://postgres:postgres@localhost:5432/election_intel"
+    # Database (defaults to SQLite for zero-config deployment)
+    DATABASE_URL: str = "sqlite+aiosqlite:///./election_data.db"
+    DATABASE_SYNC_URL: str = "sqlite:///./election_data.db"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
