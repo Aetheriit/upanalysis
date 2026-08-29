@@ -5,7 +5,7 @@
  * to a browser-local backend. Set NEXT_PUBLIC_API_URL to localhost:8000 for
  * local development.
  */
-const DEPLOYED_API_URL = "https://upanalysis.onrender.com";
+const DEPLOYED_API_URL = "https://212.38.94.114.sslip.io";
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
 const isLocalApiUrl = configuredApiUrl?.includes("localhost:8000") || configuredApiUrl?.includes("127.0.0.1:8000");
 
