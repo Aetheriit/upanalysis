@@ -238,10 +238,12 @@ async def get_constituency_analysis(
     # If no year is specified, default to 2017 for DB query
     year_to_fetch = election_year if election_year is not None else 2017
     
+    from sqlalchemy import cast, Integer
+    
     # We only have 2017 real data. If 2022 is requested, we skip DB to trigger mock.
     consts_db = []
     if True:
-        query = select(Constituency).join(Election).filter(Election.year == year_to_fetch).order_by(Constituency.name)
+        query = select(Constituency).join(Election).filter(Election.year == year_to_fetch).order_by(cast(Constituency.code, Integer))
         if district:
             query = query.filter(Constituency.district == district)
         result = await db.execute(query)

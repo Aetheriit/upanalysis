@@ -20,60 +20,61 @@ async def update_aggregates():
     engine = create_async_engine(db_url, echo=False)
     
     async with AsyncSession(engine) as session:
-        # Get 2017 election
-        result = await session.execute(select(Election).filter_by(year=2017))
-        election = result.scalars().first()
+        # Process all elections
+        result = await session.execute(select(Election))
+        elections = result.scalars().all()
         
-        if not election:
-            print("Election 2017 not found")
-            return
+        for election in elections:
+            print(f"Processing Election {election.year}...")
             
-        result = await session.execute(select(Constituency).filter_by(election_id=election.id))
-        constituencies = result.scalars().all()
-        
-        for c in constituencies:
-            print(f"Processing {c.name} ({c.code})...")
-            # Compute total_electors, total_votes_polled
-            booth_res = await session.execute(
-                select(
-                    func.sum(Booth.total_electors),
-                    func.sum(Booth.total_votes_polled)
-                ).filter_by(constituency_id=c.id)
-            )
-            te, tv = booth_res.first()
-            te = te or 0
-            tv = tv or 0
+            result = await session.execute(select(Constituency).filter_by(election_id=election.id))
+            constituencies = result.scalars().all()
             
-            c.total_electors = te
-            c.total_votes_polled = tv
-            c.turnout_pct = (tv / te * 100) if te > 0 else 0.0
-            
-            # Compute candidate votes
-            cand_res = await session.execute(
-                select(
-                    Candidate.id,
-                    Candidate.name,
-                    func.sum(VoteRecord.votes).label('total_votes')
+            for c in constituencies:
+                print(f"Processing {c.name} ({c.code})...")
+                # Compute total_electors, total_votes_polled
+                booth_res = await session.execute(
+                    select(
+                        func.sum(Booth.total_electors),
+                        func.sum(Booth.total_votes_polled)
+                    ).filter_by(constituency_id=c.id)
                 )
-                .join(VoteRecord, VoteRecord.candidate_id == Candidate.id)
-                .filter(Candidate.constituency_id == c.id)
-                .group_by(Candidate.id)
-                .order_by(func.sum(VoteRecord.votes).desc())
-            )
-            candidates = cand_res.all()
-            
-            if len(candidates) > 0:
-                # Find winner (exclude NOTA)
-                valid_cands = [cand for cand in candidates if cand.name != 'NOTA']
-                if valid_cands:
-                    c.winner_name = valid_cands[0].name
-                    c.winner_party = "Unknown"  
-                    if len(valid_cands) > 1:
-                        c.winning_margin = valid_cands[0].total_votes - valid_cands[1].total_votes
-                    else:
-                        c.winning_margin = valid_cands[0].total_votes
-                        
-            session.add(c)
+                te, tv = booth_res.first()
+                te = te or 0
+                tv = tv or 0
+                
+                c.total_electors = te
+                c.total_votes_polled = tv
+                c.turnout_pct = (tv / te * 100) if te > 0 else 0.0
+                
+                # Compute candidate votes
+                cand_res = await session.execute(
+                    select(
+                        Candidate.id,
+                        Candidate.name,
+                        func.sum(VoteRecord.votes).label('total_votes')
+                    )
+                    .join(VoteRecord, VoteRecord.candidate_id == Candidate.id)
+                    .filter(Candidate.constituency_id == c.id)
+                    .group_by(Candidate.id)
+                    .order_by(func.sum(VoteRecord.votes).desc())
+                )
+                candidates = cand_res.all()
+                
+                if len(candidates) > 0:
+                    # Find winner (exclude NOTA)
+                    valid_cands = [cand for cand in candidates if cand.name != 'NOTA']
+                    if valid_cands:
+                        c.winner_name = valid_cands[0].name
+                        # Only set to Unknown if not already set by other scripts
+                        if not c.winner_party:
+                            c.winner_party = "Unknown"  
+                        if len(valid_cands) > 1:
+                            c.winning_margin = valid_cands[0].total_votes - valid_cands[1].total_votes
+                        else:
+                            c.winning_margin = valid_cands[0].total_votes
+                            
+                session.add(c)
             
         await session.commit()
         print("Done!")

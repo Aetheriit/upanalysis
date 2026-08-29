@@ -55,8 +55,16 @@ async def update_data():
                 session.add(c)
                 updates += 1
                 
+        # Copy district to 2022 constituencies
+        result = await session.execute(select(Constituency).filter(Constituency.election_id != election.id))
+        other_consts = result.scalars().all()
+        for oc in other_consts:
+            if oc.code in const_dict:
+                oc.district = const_dict[oc.code].district
+                session.add(oc)
+                
         await session.commit()
-        print(f"Updated {updates} constituencies with District and Winner Party.")
+        print(f"Updated {updates} constituencies with District and Winner Party for 2017, and copied districts to 2022.")
 
 if __name__ == "__main__":
     asyncio.run(update_data())
