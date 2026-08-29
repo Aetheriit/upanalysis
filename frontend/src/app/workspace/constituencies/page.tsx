@@ -41,7 +41,7 @@ export default function ConstituenciesPage() {
               winner22: c22.winner_party,
               status: c17.winning_margin < 5000 ? "Close Contest" : "Safe"
             };
-          }).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
+            }).sort((a: any, b: any) => parseInt(String(a.code).replace('AC-', '') || '0') - parseInt(String(b.code).replace('AC-', '') || '0'));
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
@@ -57,7 +57,7 @@ export default function ConstituenciesPage() {
             margin: c.winning_margin,
             winner: c.winner_party,
             status: c.winning_margin < 5000 ? "Close Contest" : "Safe"
-          })).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
+          })).sort((a: any, b: any) => parseInt(String(a.code).replace('AC-', '') || '0') - parseInt(String(b.code).replace('AC-', '') || '0'));
           setData(formatted);
         }
       } catch (err) {

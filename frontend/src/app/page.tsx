@@ -41,6 +41,8 @@ export default function ExecutiveDashboard() {
   const [kpis2022, setKpis2022] = useState<any>(null);
   const { viewMode } = useElectionContext();
   const [voteShare, setVoteShare] = useState<any[]>([]);
+  const [seats17, setSeats17] = useState<any>({});
+  const [seats22, setSeats22] = useState<any>({});
   const [swingData, setSwingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,14 +71,20 @@ export default function ExecutiveDashboard() {
         
         // Transform vote share data for Recharts — merge 2017 and 2022 by abbreviation
         if (vote17Data.vote_share && vote22Data.vote_share) {
+          const s17: any = {};
+          const s22: any = {};
           const transformed = vote17Data.vote_share.map((v17: any) => {
+            s17[v17.abbreviation] = v17.seats_won;
             const v22 = vote22Data.vote_share.find((v: any) => v.abbreviation === v17.abbreviation);
+            if (v22) s22[v22.abbreviation] = v22.seats_won;
             return {
               name: v17.abbreviation,
               2017: v17.vote_share,
               2022: v22 ? v22.vote_share : 0,
             };
           });
+          setSeats17(s17);
+          setSeats22(s22);
           setVoteShare(transformed);
         }
         
@@ -294,36 +302,30 @@ export default function ExecutiveDashboard() {
 
             {/* Seat Tally Row */}
             <div className="grid grid-cols-6 gap-4 mt-6 pt-6 border-t border-[var(--border-subtle)]">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#F97316]" /> <span className="text-xs font-bold">BJP</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "312" : "255"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 312 <span className="text-rose-500">↓ 57</span></div>}
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#EF4444]" /> <span className="text-xs font-bold">SP</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "47" : "111"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 47 <span className="text-emerald-500">↑ 64</span></div>}
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#2563EB]" /> <span className="text-xs font-bold">BSP</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "19" : "1"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 19 <span className="text-rose-500">↓ 18</span></div>}
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#22C55E]" /> <span className="text-xs font-bold">INC</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "7" : "2"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 7 <span className="text-rose-500">↓ 5</span></div>}
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#EAB308]" /> <span className="text-xs font-bold">RLD</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "1" : "8"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 1 <span className="text-emerald-500">↑ 7</span></div>}
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#94A3B8]" /> <span className="text-xs font-bold">Others</span></div>
-                <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "17" : "26"}</div>
-                {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 17 <span className="text-emerald-500">↑ 9</span></div>}
-              </div>
+              {[
+                { label: "BJP", key: "BJP", color: "#F97316" },
+                { label: "SP", key: "SP", color: "#EF4444" },
+                { label: "BSP", key: "BSP", color: "#2563EB" },
+                { label: "INC", key: "INC", color: "#22C55E" },
+                { label: "RLD", key: "RLD", color: "#EAB308" },
+                { label: "OTH", key: "OTH", color: "#94A3B8" }
+              ].map(party => {
+                const s17 = seats17[party.key] || 0;
+                const s22 = seats22[party.key] || 0;
+                const activeSeat = viewMode === "2017 Only" ? s17 : s22;
+                const diff = s22 - s17;
+                return (
+                  <div className="text-center" key={party.key}>
+                    <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: party.color }} /> <span className="text-xs font-bold">{party.label}</span></div>
+                    <div className="text-2xl font-bold">{activeSeat}</div>
+                    {viewMode === "Comparison (17 vs 22)" && (
+                      <div className="text-[10px] text-[var(--text-secondary)]">
+                        2017: {s17} <span className={diff >= 0 ? "text-emerald-500" : "text-rose-500"}>{diff > 0 ? `↑ ${diff}` : (diff < 0 ? `↓ ${Math.abs(diff)}` : "-")}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </PremiumCard>
 
