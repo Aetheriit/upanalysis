@@ -22,7 +22,7 @@ const voteShareTrend = [
   { year: "2022", BJP: 41.3, SP: 32.1, BSP: 12.9, INC: 2.3 },
 ];
 
-const COLORS: Record<string, string> = { BJP: "#F97316", SP: "#22C55E", BSP: "#1E3A8A", INC: "#3B82F6", Others: "#94A3B8" };
+const COLORS: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", INC: "#22C55E", Others: "#94A3B8" };
 
 export default function TrendsPage() {
   return (

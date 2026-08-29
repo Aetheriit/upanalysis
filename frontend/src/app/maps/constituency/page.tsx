@@ -7,9 +7,9 @@ import { Map, ZoomIn, Layers, Info } from "lucide-react";
 
 const legendItems = [
   { party: "BJP", color: "#F97316", seats: 255 },
-  { party: "SP", color: "#22C55E", seats: 111 },
-  { party: "BSP", color: "#1E3A8A", seats: 1 },
-  { party: "INC", color: "#3B82F6", seats: 2 },
+  { party: "SP", color: "#EF4444", seats: 111 },
+  { party: "BSP", color: "#2563EB", seats: 1 },
+  { party: "INC", color: "#22C55E", seats: 2 },
   { party: "RLD", color: "#EAB308", seats: 8 },
   { party: "Others", color: "#94A3B8", seats: 26 },
 ];

@@ -37,22 +37,42 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: election_intel_api
-    ports:
-      - "8000:8000"
+    # We no longer expose the backend directly, Caddy will proxy to it
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/election_intel
       - REDIS_URL=redis://redis:6379/0
-      - DEBUG=true
+      - DEBUG=false # Set to false for production
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
       - uploads:/app/uploads
       - "./2017 data:/2017 data"
+      - "./2022 data:/2022 data"
+      - "./2022 data 2:/2022 data 2"
+      - "./2022 missing:/2022 missing"
+
+  # Caddy Reverse Proxy
+  caddy:
+    image: caddy:2-alpine
+    container_name: election_intel_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
   uploads:
+  caddy_data:
+  caddy_config:

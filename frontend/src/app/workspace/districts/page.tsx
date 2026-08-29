@@ -115,7 +115,7 @@ export default function DistrictsPage() {
                   <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}</td>
                   <td className="px-6 py-4 text-sm font-medium text-emerald-500">{d.swing}</td>
                   <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#F97316]/10 text-[#F97316]">{d.bjp}</span></td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#22C55E]/10 text-[#22C55E]">{d.sp}</span></td>
+                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#EF4444]/10 text-[#EF4444]">{d.sp}</span></td>
                   <td className="px-6 py-4 text-right"><button className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-app)] transition-colors opacity-0 group-hover:opacity-100"><MoreHorizontal className="w-5 h-5" /></button></td>
                 </tr>
               ))}

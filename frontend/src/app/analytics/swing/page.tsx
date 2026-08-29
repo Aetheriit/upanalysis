@@ -71,8 +71,8 @@ export default function SwingPage() {
                 <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
                 <Bar dataKey="toBJP" name="To BJP" fill="#F97316" radius={[4, 4, 0, 0]} stackId="a" />
-                <Bar dataKey="toSP" name="To SP" fill="#22C55E" radius={[0, 0, 0, 0]} stackId="a" />
-                <Bar dataKey="toBSP" name="To BSP" fill="#1E3A8A" radius={[0, 0, 0, 0]} stackId="a" />
+                <Bar dataKey="toSP" name="To SP" fill="#EF4444" radius={[0, 0, 0, 0]} stackId="a" />
+                <Bar dataKey="toBSP" name="To BSP" fill="#2563EB" radius={[0, 0, 0, 0]} stackId="a" />
                 <Bar dataKey="toOthers" name="To Others" fill="#94A3B8" radius={[4, 4, 0, 0]} stackId="a" />
               </BarChart>
             </ResponsiveContainer>

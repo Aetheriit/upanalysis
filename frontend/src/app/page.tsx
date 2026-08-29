@@ -23,9 +23,9 @@ const UPMap = dynamic(() => import("@/components/UPMap"), { ssr: false, loading:
 
 const COLORS = {
   BJP: "#F97316",
-  SP: "#22C55E",
-  BSP: "#1E3A8A",
-  INC: "#3B82F6",
+  SP: "#EF4444",
+  BSP: "#2563EB",
+  INC: "#22C55E",
   RLD: "#EAB308",
   Others: "#94A3B8",
   OTH: "#94A3B8"
@@ -33,7 +33,7 @@ const COLORS = {
 
 const defaultSeatChangesData = [
   { name: 'Won by same party', value: 306, color: '#10B981' },
-  { name: 'Changed hands', value: 97, color: '#22C55E' },
+  { name: 'Changed hands', value: 97, color: '#EF4444' },
 ];
 
 export default function ExecutiveDashboard() {
@@ -204,7 +204,7 @@ export default function ExecutiveDashboard() {
                 <span className="text-emerald-500">↑ 14.3%</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="font-medium text-[#22C55E]">SP</span>
+                <span className="font-medium text-[#EF4444]">SP</span>
                 <span className="text-rose-500">↓ 9.8%</span>
               </div>
             </div>
@@ -300,17 +300,17 @@ export default function ExecutiveDashboard() {
                 {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 312 <span className="text-rose-500">↓ 57</span></div>}
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#22C55E]" /> <span className="text-xs font-bold">SP</span></div>
+                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#EF4444]" /> <span className="text-xs font-bold">SP</span></div>
                 <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "47" : "111"}</div>
                 {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 47 <span className="text-emerald-500">↑ 64</span></div>}
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#1E3A8A]" /> <span className="text-xs font-bold">BSP</span></div>
+                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#2563EB]" /> <span className="text-xs font-bold">BSP</span></div>
                 <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "19" : "1"}</div>
                 {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 19 <span className="text-rose-500">↓ 18</span></div>}
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> <span className="text-xs font-bold">INC</span></div>
+                <div className="flex items-center justify-center gap-1.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#22C55E]" /> <span className="text-xs font-bold">INC</span></div>
                 <div className="text-2xl font-bold">{viewMode === "2017 Only" ? "7" : "2"}</div>
                 {viewMode === "Comparison (17 vs 22)" && <div className="text-[10px] text-[var(--text-secondary)]">2017: 7 <span className="text-rose-500">↓ 5</span></div>}
               </div>
@@ -431,7 +431,7 @@ export default function ExecutiveDashboard() {
                    </div>
                    <div>
                      <div className="flex items-center justify-between text-sm font-medium mb-1">
-                       <div className="flex items-center gap-2"><span className="w-2 h-2 bg-[#22C55E]" /> Changed hands</div>
+                       <div className="flex items-center gap-2"><span className="w-2 h-2 bg-[#EF4444]" /> Changed hands</div>
                        <span>97</span>
                      </div>
                      <div className="text-xs text-[var(--text-tertiary)] ml-4">(24.1%)</div>

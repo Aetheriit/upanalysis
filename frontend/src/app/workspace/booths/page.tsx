@@ -192,7 +192,7 @@ export default function BoothsPage() {
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)] text-center">{b.voters || '-'}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{b.turnout ? `${b.turnout}%` : '-'}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[#F97316]">{b.bjpVotes || '-'}</td>
-                      <td className="px-6 py-4 text-sm font-mono text-[#22C55E]">{b.spVotes || '-'}</td>
+                      <td className="px-6 py-4 text-sm font-mono text-[#EF4444]">{b.spVotes || '-'}</td>
                       <td className="px-6 py-4"><span className={`text-sm font-bold ${b.margin > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{b.margin > 0 ? '+' : ''}{b.margin}</span></td>
                     </>
                   )}

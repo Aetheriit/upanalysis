@@ -186,16 +186,16 @@ export default function ConstituenciesPage() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold
                           ${row.winner17 === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
-                            row.winner17 === 'SP' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
-                            row.winner17 === 'BSP' ? 'bg-[#1E3A8A]/10 text-[#1E3A8A]' : 
+                            row.winner17 === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
+                            row.winner17 === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner17 || '-'}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold
                           ${row.winner22 === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
-                            row.winner22 === 'SP' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
-                            row.winner22 === 'BSP' ? 'bg-[#1E3A8A]/10 text-[#1E3A8A]' : 
+                            row.winner22 === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
+                            row.winner22 === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner22 || '-'}</span>
                       </td>
@@ -207,8 +207,8 @@ export default function ConstituenciesPage() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold
                           ${row.winner === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
-                            row.winner === 'SP' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
-                            row.winner === 'BSP' ? 'bg-[#1E3A8A]/10 text-[#1E3A8A]' : 
+                            row.winner === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
+                            row.winner === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner || '-'}</span>
                       </td>

@@ -24,7 +24,7 @@ const CANDIDATES_2017 = [
   { name: "Azam Khan", party: "SP", constituency: "Rampur", district: "Rampur", result: "Won", margin: "46,842", voteShare: "47.7%", status: "Veteran" },
 ];
 
-const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#22C55E", BSP: "#1E3A8A", INC: "#3B82F6", AIMIM: "#06B6D4", IND: "#94A3B8" };
+const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", INC: "#22C55E", AIMIM: "#06B6D4", IND: "#94A3B8" };
 
 export default function CandidatesPage() {
   const { viewMode, isComparison, is2017 } = useElectionContext();

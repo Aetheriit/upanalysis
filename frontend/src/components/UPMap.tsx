@@ -163,9 +163,9 @@ const DISTRICT_DATA_2022: Record<string, { winner: string; bjp: number; sp: numb
 
 const PARTY_COLORS: Record<string, string> = {
   BJP: "#F97316",
-  SP: "#22C55E",
-  BSP: "#1E3A8A",
-  INC: "#3B82F6",
+  SP: "#EF4444",
+  BSP: "#2563EB",
+  INC: "#22C55E",
   Others: "#94A3B8",
 };
 
@@ -252,9 +252,9 @@ export default function UPMap() {
                 <div style="font-size: 11px; color: #666; margin-top: 2px;">${total} constituencies</div>
                 ${d ? `<div style="margin-top: 6px; font-size: 11px;">
                   <span style="color: #F97316;">BJP: ${d.bjp}</span> · 
-                  <span style="color: #22C55E;">SP: ${d.sp}</span> · 
-                  <span style="color: #1E3A8A;">BSP: ${d.bsp}</span>
-                  ${d.inc > 0 ? ` · <span style="color: #3B82F6;">INC: ${d.inc}</span>` : ''}
+                  <span style="color: #EF4444;">SP: ${d.sp}</span> · 
+                  <span style="color: #2563EB;">BSP: ${d.bsp}</span>
+                  ${d.inc > 0 ? ` · <span style="color: #22C55E;">INC: ${d.inc}</span>` : ''}
                   ${d.oth > 0 ? ` · <span style="color: #94A3B8;">Oth: ${d.oth}</span>` : ''}
                 </div>
                 <div style="margin-top: 4px; font-size: 11px; font-weight: 600; color: ${PARTY_COLORS[d.winner] || '#333'};">

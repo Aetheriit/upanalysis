@@ -23,7 +23,7 @@ const alliancePartners = [
   { mainParty: "SP", ally: "PSPL", seatsContested: 2, seatsWon: 1, voteShare: "0.1%", impactSeats: 2 },
 ];
 
-const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#22C55E" };
+const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#EF4444" };
 
 export default function AlliancePage() {
   return (
@@ -47,7 +47,7 @@ export default function AlliancePage() {
           <div className="text-xs text-[var(--text-secondary)]">Alliance Seats Won</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
-          <Users className="w-5 h-5 text-[#22C55E] mx-auto mb-2" />
+          <Users className="w-5 h-5 text-[#EF4444] mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">INDIA: 126</div>
           <div className="text-xs text-[var(--text-secondary)]">Alliance Seats Won</div>
         </PremiumCard>
@@ -70,8 +70,8 @@ export default function AlliancePage() {
               <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
               <Bar dataKey="bjpAlone" name="BJP Standalone" fill="#F97316" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
               <Bar dataKey="bjpAlliance" name="NDA Alliance" fill="#F97316" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="spAlone" name="SP Standalone" fill="#22C55E" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="spAlliance" name="INDIA Alliance" fill="#22C55E" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="spAlone" name="SP Standalone" fill="#EF4444" fillOpacity={0.4} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="spAlliance" name="INDIA Alliance" fill="#EF4444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

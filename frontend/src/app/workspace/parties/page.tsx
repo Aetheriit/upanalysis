@@ -8,9 +8,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const PARTIES = [
   { name: "BJP", fullName: "Bharatiya Janata Party", seats2017: 312, seats2022: 255, voteShare2022: "41.3%", color: "#F97316", allies: "Apna Dal, NISHAD" },
-  { name: "SP", fullName: "Samajwadi Party", seats2017: 47, seats2022: 111, voteShare2022: "32.1%", color: "#22C55E", allies: "RLD, SBSP, Mahan Dal" },
-  { name: "BSP", fullName: "Bahujan Samaj Party", seats2017: 19, seats2022: 1, voteShare2022: "12.9%", color: "#1E3A8A", allies: "None" },
-  { name: "INC", fullName: "Indian National Congress", seats2017: 7, seats2022: 2, voteShare2022: "2.3%", color: "#3B82F6", allies: "None" },
+  { name: "SP", fullName: "Samajwadi Party", seats2017: 47, seats2022: 111, voteShare2022: "32.1%", color: "#EF4444", allies: "RLD, SBSP, Mahan Dal" },
+  { name: "BSP", fullName: "Bahujan Samaj Party", seats2017: 19, seats2022: 1, voteShare2022: "12.9%", color: "#2563EB", allies: "None" },
+  { name: "INC", fullName: "Indian National Congress", seats2017: 7, seats2022: 2, voteShare2022: "2.3%", color: "#22C55E", allies: "None" },
   { name: "RLD", fullName: "Rashtriya Lok Dal", seats2017: 1, seats2022: 8, voteShare2022: "2.8%", color: "#EAB308", allies: "SP Alliance" },
   { name: "AIMIM", fullName: "All India MIM", seats2017: 0, seats2022: 0, voteShare2022: "0.4%", color: "#06B6D4", allies: "None" },
 ];

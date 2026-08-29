@@ -28,7 +28,7 @@ const closeContests = [
   { constituency: "Hapur", winner: "BJP", runnerUp: "SP", margin: 3567, turnout: "63.7%" },
 ];
 
-const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#22C55E", BSP: "#1E3A8A", RLD: "#EAB308" };
+const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", RLD: "#EAB308" };
 
 export default function MarginPage() {
   return (

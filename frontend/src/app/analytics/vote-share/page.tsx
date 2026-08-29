@@ -36,9 +36,9 @@ const demographicRadarData = [
 
 const COLORS = {
   BJP: "#F97316",
-  SP: "#22C55E",
-  BSP: "#1E3A8A",
-  INC: "#3B82F6",
+  SP: "#EF4444",
+  BSP: "#2563EB",
+  INC: "#22C55E",
   RLD: "#EAB308",
 };
 

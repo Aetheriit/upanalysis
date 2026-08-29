@@ -113,9 +113,9 @@ async def get_vote_share(
     if year_to_fetch == 2022:
         parties = [
             {"party": "BJP", "abbreviation": "BJP", "votes": 38051721, "vote_share": 41.3, "seats_won": 255, "color": "#F97316"},
-            {"party": "SP", "abbreviation": "SP", "votes": 29543934, "vote_share": 32.1, "seats_won": 111, "color": "#22C55E"},
-            {"party": "BSP", "abbreviation": "BSP", "votes": 11873137, "vote_share": 12.9, "seats_won": 1, "color": "#1E3A8A"},
-            {"party": "INC", "abbreviation": "INC", "votes": 2146972, "vote_share": 2.3, "seats_won": 2, "color": "#3B82F6"},
+            {"party": "SP", "abbreviation": "SP", "votes": 29543934, "vote_share": 32.1, "seats_won": 111, "color": "#EF4444"},
+            {"party": "BSP", "abbreviation": "BSP", "votes": 11873137, "vote_share": 12.9, "seats_won": 1, "color": "#2563EB"},
+            {"party": "INC", "abbreviation": "INC", "votes": 2146972, "vote_share": 2.3, "seats_won": 2, "color": "#22C55E"},
             {"party": "RLD", "abbreviation": "RLD", "votes": 2630168, "vote_share": 2.9, "seats_won": 8, "color": "#EAB308"},
             {"party": "Others", "abbreviation": "OTH", "votes": 7924000, "vote_share": 8.5, "seats_won": 26, "color": "#94A3B8"},
         ]
@@ -123,9 +123,9 @@ async def get_vote_share(
     else:
         parties = [
             {"party": "BJP", "abbreviation": "BJP", "votes": 34400000, "vote_share": 39.7, "seats_won": 312, "color": "#F97316"},
-            {"party": "SP", "abbreviation": "SP", "votes": 18900000, "vote_share": 21.8, "seats_won": 47, "color": "#22C55E"},
-            {"party": "BSP", "abbreviation": "BSP", "votes": 19200000, "vote_share": 22.2, "seats_won": 19, "color": "#1E3A8A"},
-            {"party": "INC", "abbreviation": "INC", "votes": 5400000, "vote_share": 6.2, "seats_won": 7, "color": "#3B82F6"},
+            {"party": "SP", "abbreviation": "SP", "votes": 18900000, "vote_share": 21.8, "seats_won": 47, "color": "#EF4444"},
+            {"party": "BSP", "abbreviation": "BSP", "votes": 19200000, "vote_share": 22.2, "seats_won": 19, "color": "#2563EB"},
+            {"party": "INC", "abbreviation": "INC", "votes": 5400000, "vote_share": 6.2, "seats_won": 7, "color": "#22C55E"},
             {"party": "RLD", "abbreviation": "RLD", "votes": 1500000, "vote_share": 1.9, "seats_won": 1, "color": "#EAB308"},
             {"party": "Others", "abbreviation": "OTH", "votes": 7100000, "vote_share": 8.2, "seats_won": 17, "color": "#94A3B8"},
         ]
@@ -311,7 +311,7 @@ async def get_party_analysis(
             {
                 "name": "Samajwadi Party",
                 "abbreviation": "SP",
-                "color": "#22C55E",
+                "color": "#EF4444",
                 "total_seats_contested": 311,
                 "seats_won": 47,
                 "vote_share": 21.8,
