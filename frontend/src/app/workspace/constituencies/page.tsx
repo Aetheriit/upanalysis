@@ -41,7 +41,7 @@ export default function ConstituenciesPage() {
               winner22: c22.winner_party,
               status: c17.winning_margin < 5000 ? "Close Contest" : "Safe"
             };
-          });
+          }).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
@@ -57,7 +57,7 @@ export default function ConstituenciesPage() {
             margin: c.winning_margin,
             winner: c.winner_party,
             status: c.winning_margin < 5000 ? "Close Contest" : "Safe"
-          }));
+          })).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
           setData(formatted);
         }
       } catch (err) {
@@ -188,6 +188,7 @@ export default function ConstituenciesPage() {
                           ${row.winner17 === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
                             row.winner17 === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
                             row.winner17 === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
+                            row.winner17 === 'INC' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner17 || '-'}</span>
                       </td>
@@ -196,6 +197,7 @@ export default function ConstituenciesPage() {
                           ${row.winner22 === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
                             row.winner22 === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
                             row.winner22 === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
+                            row.winner22 === 'INC' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner22 || '-'}</span>
                       </td>
@@ -209,6 +211,7 @@ export default function ConstituenciesPage() {
                           ${row.winner === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
                             row.winner === 'SP' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 
                             row.winner === 'BSP' ? 'bg-[#2563EB]/10 text-[#2563EB]' : 
+                            row.winner === 'INC' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner || '-'}</span>
                       </td>

@@ -9,12 +9,14 @@ import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 
 export default function BoothsPage() {
-  const { viewMode, isComparison } = useElectionContext();
+  const { viewMode, isComparison, is2017 } = useElectionContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [boothDataChart, setBoothDataChart] = useState<any[]>([]);
   
+  const activeYear = is2017 ? "2017" : "2022";
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -92,8 +94,8 @@ export default function BoothsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <PremiumCard padding="sm" className="text-center">
           <Building2 className="w-5 h-5 text-[var(--accent-primary)] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">1,63,335</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Booths (2022)</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">{is2017 ? '1,47,148' : '1,63,335'}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Total Booths ({activeYear})</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />
@@ -102,7 +104,7 @@ export default function BoothsPage() {
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">61.65%</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">{is2017 ? '61.04%' : '61.65%'}</div>
           <div className="text-xs text-[var(--text-secondary)]">Avg Turnout</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
@@ -144,6 +146,8 @@ export default function BoothsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--bg-app)]/50 border-b border-[var(--border-subtle)]">
+              <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Booth No.</th>
+              <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Booth Name</th>
               {isComparison ? (
                 <>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Voters '17</th>

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { Search, Download, ArrowUpDown, MoreHorizontal, Users, TrendingUp, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useElectionContext } from "@/context/ElectionContext";
 
 const DISTRICTS = [
   { name: "Lucknow", constituencies: 9, turnout2017: "57.2%", turnout2022: "59.8%", bjp: 7, sp: 2, swing: "+2.6%", population: "45.9L" },
@@ -29,6 +30,9 @@ const turnoutComparison = [
 ];
 
 export default function DistrictsPage() {
+  const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
+  const activeYear = is2017 ? "2017" : "2022";
+
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
@@ -56,12 +60,12 @@ export default function DistrictsPage() {
         <PremiumCard padding="sm" className="text-center">
           <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">15.02 Cr</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Voters (2022)</div>
+          <div className="text-xs text-[var(--text-secondary)]">Total Voters ({activeYear})</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">61.65%</div>
-          <div className="text-xs text-[var(--text-secondary)]">Avg Turnout 2022</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">{is2017 ? '61.04%' : '61.65%'}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Avg Turnout {activeYear}</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <TrendingUp className="w-5 h-5 text-rose-500 mx-auto mb-2" />
@@ -72,7 +76,9 @@ export default function DistrictsPage() {
 
       {/* Chart */}
       <PremiumCard className="p-6 h-[350px] flex flex-col">
-        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">District Turnout Comparison (2017 vs 2022)</h2>
+        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">
+          {isComparison ? "District Turnout Comparison (2017 vs 2022)" : `District Turnout (${activeYear})`}
+        </h2>
         <div className="flex-1 w-full min-h-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={turnoutComparison} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -80,8 +86,12 @@ export default function DistrictsPage() {
               <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={[45, 70]} tickFormatter={(v) => `${v}%`} />
               <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-              <Bar dataKey="2017" fill="#D4AF37" fillOpacity={0.5} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="2022" fill="#D4AF37" radius={[4, 4, 0, 0]} />
+              {(isComparison || is2017) && (
+                <Bar dataKey="2017" fill="#D4AF37" fillOpacity={isComparison ? 0.5 : 1} radius={[4, 4, 0, 0]} />
+              )}
+              {(isComparison || is2022) && (
+                <Bar dataKey="2022" fill="#D4AF37" fillOpacity={1} radius={[4, 4, 0, 0]} />
+              )}
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -99,9 +109,17 @@ export default function DistrictsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[var(--bg-app)]/50 border-b border-[var(--border-subtle)]">
-                {["District", "Constituencies", "Population", "Turnout '17", "Turnout '22", "Swing", "BJP Seats", "SP Seats"].map(h => (
-                  <th key={h} className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">District</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Constituencies</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Population</th>
+                
+                {(isComparison || is2017) && <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Turnout '17</th>}
+                {(isComparison || is2022) && <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Turnout '22</th>}
+                
+                {isComparison && <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Swing</th>}
+                
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BJP Seats</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">SP Seats</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
@@ -111,9 +129,12 @@ export default function DistrictsPage() {
                   <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{d.name}</td>
                   <td className="px-6 py-4 text-sm text-[var(--text-secondary)] text-center">{d.constituencies}</td>
                   <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{d.population}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2017}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-emerald-500">{d.swing}</td>
+                  
+                  {(isComparison || is2017) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2017}</td>}
+                  {(isComparison || is2022) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}</td>}
+                  
+                  {isComparison && <td className="px-6 py-4 text-sm font-medium text-emerald-500">{d.swing}</td>}
+                  
                   <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#F97316]/10 text-[#F97316]">{d.bjp}</span></td>
                   <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#EF4444]/10 text-[#EF4444]">{d.sp}</span></td>
                   <td className="px-6 py-4 text-right"><button className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-app)] transition-colors opacity-0 group-hover:opacity-100"><MoreHorizontal className="w-5 h-5" /></button></td>

@@ -28,6 +28,7 @@ const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP:
 
 export default function CandidatesPage() {
   const { viewMode, isComparison, is2017 } = useElectionContext();
+  const activeYear = is2017 ? "2017" : "2022";
   
   const currentCandidates = is2017 && !isComparison ? CANDIDATES_2017 : CANDIDATES_2022;
   return (
@@ -42,8 +43,8 @@ export default function CandidatesPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <PremiumCard padding="sm" className="text-center">
           <Users className="w-5 h-5 text-[var(--accent-primary)] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">4,442</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Candidates (2022)</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">{is2017 ? '4,823' : '4,442'}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Total Candidates ({activeYear})</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <Trophy className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
