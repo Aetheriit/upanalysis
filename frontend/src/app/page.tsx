@@ -206,15 +206,21 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <PieChart className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Vote Share Change</span>
             </div>
-            <div className="w-full px-4 text-left">
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="font-medium text-[#F97316]">BJP</span>
-                <span className="text-emerald-500">↑ 14.3%</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-medium text-[#EF4444]">SP</span>
-                <span className="text-rose-500">↓ 9.8%</span>
-              </div>
+            <div className="w-full px-4 text-left overflow-y-auto max-h-[80px] scrollbar-hide">
+              {['BJP', 'SP', 'BSP', 'INC'].map(party => {
+                const partyData = voteShare.find(v => v.name === party);
+                if (!partyData) return null;
+                const diff = (partyData[2022] || 0) - (partyData[2017] || 0);
+                if (diff === 0 && !partyData[2017] && !partyData[2022]) return null;
+                return (
+                  <div key={party} className="flex justify-between items-center text-xs mb-1">
+                    <span className="font-medium" style={{ color: (COLORS as any)[party] || '#ccc' }}>{party === 'INC' ? 'INC (Congress)' : party}</span>
+                    <span className={diff > 0 ? "text-emerald-500" : (diff < 0 ? "text-rose-500" : "text-[var(--text-secondary)]")}>
+                      {diff > 0 ? '↑' : (diff < 0 ? '↓' : '')} {Math.abs(diff).toFixed(1)}%
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </PremiumCard>
 

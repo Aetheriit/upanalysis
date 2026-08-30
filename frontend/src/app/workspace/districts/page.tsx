@@ -104,8 +104,8 @@ export default function DistrictsPage() {
     d.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Take top 10 for chart
-  const turnoutComparison = districts.slice(0, 10);
+  // Show all districts for chart
+  const turnoutComparison = districts;
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -149,25 +149,27 @@ export default function DistrictsPage() {
       </div>
 
       {/* Chart */}
-      <PremiumCard className="p-6 h-[350px] flex flex-col">
+      <PremiumCard className="p-6 h-[400px] flex flex-col">
         <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">
           {isComparison ? "District Turnout Comparison (2017 vs 2022)" : `District Turnout (${activeYear})`}
         </h2>
-        <div className="flex-1 w-full min-h-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={turnoutComparison} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-              <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={[45, 75]} tickFormatter={(v) => `${v}%`} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-              {(isComparison || is2017) && (
-                <Bar dataKey="2017" fill="#D4AF37" fillOpacity={isComparison ? 0.5 : 1} radius={[4, 4, 0, 0]} />
-              )}
-              {(isComparison || is2022) && (
-                <Bar dataKey="2022" fill="#D4AF37" fillOpacity={1} radius={[4, 4, 0, 0]} />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="flex-1 w-full min-h-0 overflow-x-auto scrollbar-hide">
+          <div style={{ minWidth: '2500px', height: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={turnoutComparison} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
+                <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={[40, 80]} tickFormatter={(v) => `${v}%`} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} cursor={{fill: 'var(--bg-app)'}} />
+                {(isComparison || is2017) && (
+                  <Bar dataKey="2017" fill="#D4AF37" fillOpacity={isComparison ? 0.5 : 1} radius={[4, 4, 0, 0]} />
+                )}
+                {(isComparison || is2022) && (
+                  <Bar dataKey="2022" fill="#D4AF37" fillOpacity={1} radius={[4, 4, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </PremiumCard>
 

@@ -44,3 +44,11 @@ scratch/
 *.mov
 *.avi
 *.mkv
+
+# Ignore deployment files
+deploy.tar.gz
+deployment.tar.gz
+# Ignore virtual environments
+backend/.venv312/
+# Ignore scratch scripts
+*.py
