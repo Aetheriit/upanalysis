@@ -37,16 +37,20 @@ export default function DistrictsPage() {
               constituencies: 0,
               turnout2017_sum: 0,
               turnout2022_sum: 0,
-              bjp17: 0, sp17: 0,
-              bjp22: 0, sp22: 0,
-              population: "N/A" // Real population not in DB
+              bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
+              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
+              pop17: 0,
+              pop22: 0
             };
           }
           const d = districtMap[c.district];
           d.constituencies += 1;
           d.turnout2017_sum += c.turnout_pct || 0;
+          d.pop17 += c.total_electors || 0;
           if (c.winner_party === "BJP") d.bjp17 += 1;
           if (c.winner_party === "SP") d.sp17 += 1;
+          if (c.winner_party === "BSP") d.bsp17 += 1;
+          if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc17 += 1;
         });
 
         // Process 2022
@@ -54,8 +58,11 @@ export default function DistrictsPage() {
           if (districtMap[c.district]) {
             const d = districtMap[c.district];
             d.turnout2022_sum += c.turnout_pct || 0;
+            d.pop22 += c.total_electors || 0;
             if (c.winner_party === "BJP") d.bjp22 += 1;
             if (c.winner_party === "SP") d.sp22 += 1;
+            if (c.winner_party === "BSP") d.bsp22 += 1;
+            if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc22 += 1;
           }
         });
 
@@ -69,10 +76,15 @@ export default function DistrictsPage() {
             turnout2022: t22.toFixed(1),
             bjp17: d.bjp17,
             sp17: d.sp17,
+            bsp17: d.bsp17,
+            inc17: d.inc17,
             bjp22: d.bjp22,
             sp22: d.sp22,
+            bsp22: d.bsp22,
+            inc22: d.inc22,
             swing: (t22 - t17).toFixed(1) + "%",
-            population: d.population,
+            pop17: d.pop17,
+            pop22: d.pop22,
             "2017": parseFloat(t17.toFixed(1)),
             "2022": parseFloat(t22.toFixed(1))
           };
@@ -188,6 +200,8 @@ export default function DistrictsPage() {
                 
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BJP Seats</th>
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">SP Seats</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BSP Seats</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">INC Seats</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
@@ -196,7 +210,7 @@ export default function DistrictsPage() {
                 <tr key={d.name} className="hover:bg-[var(--bg-app)]/30 transition-colors group">
                   <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{d.name}</td>
                   <td className="px-6 py-4 text-sm text-[var(--text-secondary)] text-center">{d.constituencies}</td>
-                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{d.population}</td>
+                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{(is2017 ? d.pop17 : d.pop22).toLocaleString()}</td>
                   
                   {(isComparison || is2017) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2017}%</td>}
                   {(isComparison || is2022) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}%</td>}
@@ -205,6 +219,8 @@ export default function DistrictsPage() {
                   
                   <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#F97316]/10 text-[#F97316]">{is2017 ? d.bjp17 : d.bjp22}</span></td>
                   <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#EF4444]/10 text-[#EF4444]">{is2017 ? d.sp17 : d.sp22}</span></td>
+                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#3B82F6]/10 text-[#3B82F6]">{is2017 ? d.bsp17 : d.bsp22}</span></td>
+                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#10B981]/10 text-[#10B981]">{is2017 ? d.inc17 : d.inc22}</span></td>
                   <td className="px-6 py-4 text-right"><button className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-app)] transition-colors opacity-0 group-hover:opacity-100"><MoreHorizontal className="w-5 h-5" /></button></td>
                 </tr>
               ))}
