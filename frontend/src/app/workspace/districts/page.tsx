@@ -35,17 +35,15 @@ export default function DistrictsPage() {
             districtMap[c.district] = {
               name: c.district,
               constituencies: 0,
-              turnout2017_sum: 0,
-              turnout2022_sum: 0,
+              votes17: 0, pop17: 0,
+              votes22: 0, pop22: 0,
               bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
-              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
-              pop17: 0,
-              pop22: 0
+              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0
             };
           }
           const d = districtMap[c.district];
           d.constituencies += 1;
-          d.turnout2017_sum += c.turnout_pct || 0;
+          d.votes17 += c.votes_polled || 0;
           d.pop17 += c.total_electors || 0;
           if (c.winner_party === "BJP") d.bjp17 += 1;
           if (c.winner_party === "SP") d.sp17 += 1;
@@ -55,20 +53,30 @@ export default function DistrictsPage() {
 
         // Process 2022
         data22.constituencies.forEach((c: any) => {
-          if (districtMap[c.district]) {
-            const d = districtMap[c.district];
-            d.turnout2022_sum += c.turnout_pct || 0;
-            d.pop22 += c.total_electors || 0;
-            if (c.winner_party === "BJP") d.bjp22 += 1;
-            if (c.winner_party === "SP") d.sp22 += 1;
-            if (c.winner_party === "BSP") d.bsp22 += 1;
-            if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc22 += 1;
+          if (!districtMap[c.district]) {
+             // In case 2022 has districts not in 2017 (shouldn't happen but safe)
+             districtMap[c.district] = {
+              name: c.district,
+              constituencies: 0,
+              votes17: 0, pop17: 0,
+              votes22: 0, pop22: 0,
+              bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
+              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0
+             };
           }
+          const d = districtMap[c.district];
+          d.votes22 += c.votes_polled || 0;
+          d.pop22 += c.total_electors || 0;
+          if (c.winner_party === "BJP") d.bjp22 += 1;
+          if (c.winner_party === "SP") d.sp22 += 1;
+          if (c.winner_party === "BSP") d.bsp22 += 1;
+          if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc22 += 1;
         });
 
         const finalDistricts = Object.values(districtMap).map((d: any) => {
-          const t17 = d.constituencies ? (d.turnout2017_sum / d.constituencies) : 0;
-          const t22 = d.constituencies ? (d.turnout2022_sum / d.constituencies) : 0;
+          const t17 = d.pop17 > 0 ? (d.votes17 / d.pop17) * 100 : 0;
+          const pop22ToUse = d.pop22 > 0 ? d.pop22 : d.pop17;
+          const t22 = pop22ToUse > 0 ? (d.votes22 / pop22ToUse) * 100 : 0;
           return {
             name: d.name,
             constituencies: d.constituencies,
@@ -84,7 +92,7 @@ export default function DistrictsPage() {
             inc22: d.inc22,
             swing: (t22 - t17).toFixed(1) + "%",
             pop17: d.pop17,
-            pop22: d.pop22,
+            pop22: pop22ToUse,
             "2017": parseFloat(t17.toFixed(1)),
             "2022": parseFloat(t22.toFixed(1))
           };
@@ -153,12 +161,12 @@ export default function DistrictsPage() {
         <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">
           {isComparison ? "District Turnout Comparison (2017 vs 2022)" : `District Turnout (${activeYear})`}
         </h2>
-        <div className="flex-1 w-full min-h-0 overflow-x-auto scrollbar-hide">
-          <div style={{ minWidth: '2500px', height: '100%' }}>
+        <div className="flex-1 w-full min-h-0 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-[var(--border-subtle)] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+          <div style={{ minWidth: '4000px', height: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={turnoutComparison} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
+                <XAxis dataKey="name" interval={0} stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
                 <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={[40, 80]} tickFormatter={(v) => `${v}%`} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} cursor={{fill: 'var(--bg-app)'}} />
                 {(isComparison || is2017) && (
@@ -190,6 +198,18 @@ export default function DistrictsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
+              <tr>
+                <th className="px-6 py-4 border-b border-[var(--border-subtle)]" colSpan={3}>
+                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[var(--accent-primary)]"/> District Details</div>
+                </th>
+                <th className="px-6 py-4 border-b border-[var(--border-subtle)] text-center bg-[var(--bg-app)]/50" colSpan={isComparison ? 3 : (is2017 || is2022 ? 1 : 1)}>
+                  <div className="flex items-center justify-center gap-2 font-serif text-[var(--text-primary)]">Turnout Stats</div>
+                </th>
+                <th className="px-6 py-4 border-b border-[var(--border-subtle)] text-center" colSpan={4}>
+                  <div className="flex items-center justify-center gap-2 font-serif text-[var(--text-primary)]">BJP, SP, BSP & INC (Congress)</div>
+                </th>
+                <th className="px-6 py-4 border-b border-[var(--border-subtle)]"></th>
+              </tr>
               <tr className="bg-[var(--bg-app)]/50 border-b border-[var(--border-subtle)]">
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">District</th>
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Constituencies</th>
@@ -203,7 +223,7 @@ export default function DistrictsPage() {
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BJP Seats</th>
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">SP Seats</th>
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BSP Seats</th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">INC Seats</th>
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">INC (Congress)</th>
                 <th className="px-6 py-3" />
               </tr>
             </thead>
