@@ -36,9 +36,11 @@ export default function ConstituenciesPage() {
               turnout17: c17.turnout_pct,
               margin17: c17.winning_margin,
               winner17: c17.winner_party,
+              winnerName17: c17.winner,
               turnout22: c22.turnout_pct,
               margin22: c22.winning_margin,
               winner22: c22.winner_party,
+              winnerName22: c22.winner,
               status: c17.winning_margin < 5000 ? "Close Contest" : "Safe"
             };
             }).sort((a: any, b: any) => parseInt(String(a.code).replace('AC-', '') || '0') - parseInt(String(b.code).replace('AC-', '') || '0'));
@@ -56,6 +58,7 @@ export default function ConstituenciesPage() {
             turnout: c.turnout_pct,
             margin: c.winning_margin,
             winner: c.winner_party,
+            winnerName: c.winner,
             status: c.winning_margin < 5000 ? "Close Contest" : "Safe"
           })).sort((a: any, b: any) => parseInt(String(a.code).replace('AC-', '') || '0') - parseInt(String(b.code).replace('AC-', '') || '0'));
           setData(formatted);
@@ -144,14 +147,17 @@ export default function ConstituenciesPage() {
                     <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap text-right">Turnout '22</th>
                     <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap text-right">Margin '17</th>
                     <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap text-right">Margin '22</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner '17</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner '22</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Party '17</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Name '17</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Party '22</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Name '22</th>
                   </>
                 ) : (
                   <>
                     <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap text-right">Turnout</th>
                     <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap text-right">Margin</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Party</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Winner Name</th>
                   </>
                 )}
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">
@@ -192,6 +198,9 @@ export default function ConstituenciesPage() {
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner17 || '-'}</span>
                       </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
+                        {row.winnerName17 || '-'}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold
                           ${row.winner22 === 'BJP' ? 'bg-[#F97316]/10 text-[#F97316]' : 
@@ -200,6 +209,9 @@ export default function ConstituenciesPage() {
                             row.winner22 === 'INC' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner22 || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
+                        {row.winnerName22 || '-'}
                       </td>
                     </>
                   ) : (
@@ -214,6 +226,9 @@ export default function ConstituenciesPage() {
                             row.winner === 'INC' ? 'bg-[#22C55E]/10 text-[#22C55E]' : 
                             'bg-[#EAB308]/10 text-[#EAB308]'}
                         `}>{row.winner || '-'}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
+                        {row.winnerName || '-'}
                       </td>
                     </>
                   )}
