@@ -32,20 +32,10 @@ async def update_aggregates():
             
             for c in constituencies:
                 print(f"Processing {c.name} ({c.code})...")
-                # Compute total_electors, total_votes_polled
-                booth_res = await session.execute(
-                    select(
-                        func.sum(Booth.total_electors),
-                        func.sum(Booth.total_votes_polled)
-                    ).filter_by(constituency_id=c.id)
-                )
-                te, tv = booth_res.first()
-                te = te or 0
-                tv = tv or 0
-                
-                c.total_electors = te
-                c.total_votes_polled = tv
-                c.turnout_pct = (tv / te * 100) if te > 0 else 0.0
+                # Do not overwrite total_electors, total_votes_polled, or turnout_pct 
+                # using booth data, because booth data may be missing (e.g. 2022) 
+                # or incomplete, leading to corrupted constituency totals (e.g. 0% or >100% turnout).
+                # These fields are populated from the source-of-truth CSVs directly.
                 
                 # Compute candidate votes
                 cand_res = await session.execute(
