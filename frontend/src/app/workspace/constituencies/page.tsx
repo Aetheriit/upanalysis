@@ -47,7 +47,7 @@ export default function ConstituenciesPage() {
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
-          const res = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`));
+          const res = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`), { cache: "no-store" });
           const json = await res.json();
           
           const formatted = json.constituencies.map((c: any) => ({
@@ -276,3 +276,4 @@ export default function ConstituenciesPage() {
     </div>
   );
 }
+
