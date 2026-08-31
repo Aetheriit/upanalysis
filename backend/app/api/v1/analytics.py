@@ -628,6 +628,44 @@ async def get_district_winners(
     return {"districts": district_data, "year": year_to_fetch}
 
 
+@router.get("/constituencies-map")
+async def get_constituency_map_winners(
+    election_year: Optional[int] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get constituency-level winning party for the map."""
+    year_to_fetch = election_year if election_year is not None else 2022
+    
+    query = select(Constituency).join(Election).filter(Election.year == year_to_fetch)
+    result = await db.execute(query)
+    constituencies = result.scalars().all()
+    
+    const_data = {}
+    for c in constituencies:
+        if not c.name: continue
+        
+        # normalize string
+        name = c.name.lower().replace('(sc)', '').replace('(st)', '').strip()
+        
+        p = c.winner_party.upper() if c.winner_party else 'OTH'
+        if 'BJP' in p: p = 'BJP'
+        elif 'SP' in p and 'BSP' not in p and 'SBSP' not in p: p = 'SP'
+        elif 'BSP' in p: p = 'BSP'
+        elif 'INC' in p or 'CONGRESS' in p: p = 'INC'
+        elif 'RLD' in p: p = 'RLD'
+        else: p = 'OTH'
+        
+        const_data[name] = {
+            "winner": p,
+            "winner_name": c.winner_name,
+            "margin": c.winning_margin,
+            "original_name": c.name
+        }
+        
+    return {"constituencies": const_data, "year": year_to_fetch}
+
+
 @router.get("/parties")
 
 async def get_party_analysis(

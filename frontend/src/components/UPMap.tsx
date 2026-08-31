@@ -19,7 +19,7 @@ export default function UPMap() {
   const mapRef = useRef<any>(null);
   const geoLayerRef = useRef<any>(null);
   const { viewMode } = useElectionContext();
-  const [districtData, setDistrictData] = useState<Record<string, any>>({});
+  const [constituencyData, setConstituencyData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const activeYear = viewMode === "2017 Only" ? "2017" : "2022";
@@ -28,13 +28,13 @@ export default function UPMap() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(apiUrl(`/api/v1/analytics/districts?election_year=${activeYear}`));
+        const res = await fetch(apiUrl(`/api/v1/analytics/constituencies-map?election_year=${activeYear}`));
         const data = await res.json();
-        if (data.districts) {
-          setDistrictData(data.districts);
+        if (data.constituencies) {
+          setConstituencyData(data.constituencies);
         }
       } catch (err) {
-        console.error("Failed to fetch district map data", err);
+        console.error("Failed to fetch constituency map data", err);
       } finally {
         setIsLoading(false);
       }
@@ -74,42 +74,37 @@ export default function UPMap() {
 
       // Load GeoJSON
       try {
-        const res = await fetch("/up-districts.geojson");
+        const res = await fetch("/up-constituencies.geojson");
         const geojsonData = await res.json();
 
         const geoLayer = L.geoJSON(geojsonData, {
           style: (feature: any) => {
-            const district = feature?.properties?.district || "";
-            const d = districtData[district];
+            const rawName = feature?.properties?.AC_NAME || "";
+            const constName = rawName.toLowerCase().replace('(sc)', '').replace('(st)', '').trim();
+            const d = constituencyData[constName];
             const fillColor = d && d.winner ? (PARTY_COLORS[d.winner] || PARTY_COLORS.Others) : "#D1D5DB";
             
             return {
               fillColor,
-              weight: 1,
+              weight: 0.5,
               opacity: 1,
               color: "#ffffff",
               fillOpacity: 0.75,
             };
           },
           onEachFeature: (feature: any, layer: any) => {
-            const district = feature?.properties?.district || "";
-            const d = districtData[district];
-            const total = d ? d.bjp + d.sp + d.bsp + d.inc + d.rld + d.oth : 0;
+            const rawName = feature?.properties?.AC_NAME || "";
+            const constName = rawName.toLowerCase().replace('(sc)', '').replace('(st)', '').trim();
+            const d = constituencyData[constName];
 
             const tooltipHtml = `<div style="font-family: system-ui; padding: 4px 0;">
-                <strong style="font-size: 13px;">${district}</strong>
-                <div style="font-size: 11px; color: #666; margin-top: 2px;">${total} constituencies</div>
-                ${d ? `<div style="margin-top: 6px; font-size: 11px;">
-                  <span style="color: ${PARTY_COLORS.BJP};">BJP: ${d.bjp}</span> · 
-                  <span style="color: ${PARTY_COLORS.SP};">SP: ${d.sp}</span> · 
-                  <span style="color: ${PARTY_COLORS.BSP};">BSP: ${d.bsp}</span>
-                  ${d.inc > 0 ? ` · <span style="color: ${PARTY_COLORS.INC};">INC: ${d.inc}</span>` : ''}
-                  ${d.rld > 0 ? ` · <span style="color: ${PARTY_COLORS.RLD};">RLD: ${d.rld}</span>` : ''}
-                  ${d.oth > 0 ? ` · <span style="color: ${PARTY_COLORS.Others};">Oth: ${d.oth}</span>` : ''}
+                <strong style="font-size: 13px;">${rawName}</strong>
+                ${d ? `<div style="margin-top: 4px; font-size: 11px; font-weight: 600; color: ${PARTY_COLORS[d.winner] || '#333'};">
+                  Winner: ${d.winner_name || "Unknown"} (${d.winner})
                 </div>
-                <div style="margin-top: 4px; font-size: 11px; font-weight: 600; color: ${PARTY_COLORS[d.winner] || '#333'};">
-                  Winner: ${d.winner}
-                </div>` : ''}
+                <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                  Margin: ${d.margin ? d.margin.toLocaleString() : "Unknown"}
+                </div>` : '<div style="margin-top: 4px; font-size: 11px; color: #666;">Data not available</div>'}
               </div>`;
 
             layer.bindTooltip(tooltipHtml,
@@ -124,7 +119,7 @@ export default function UPMap() {
             layer.on({
               mouseover: (e: any) => {
                 e.target.setStyle({
-                  weight: 2.5,
+                  weight: 2,
                   color: "#1a1a1a",
                   fillOpacity: 0.9,
                 });
@@ -156,7 +151,7 @@ export default function UPMap() {
         mapRef.current = null;
       }
     };
-  }, [activeYear, districtData, isLoading]);
+  }, [activeYear, constituencyData, isLoading]);
 
   return (
     <div className="w-full h-full relative">

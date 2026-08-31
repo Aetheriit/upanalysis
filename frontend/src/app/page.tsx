@@ -297,7 +297,7 @@ export default function ExecutiveDashboard() {
           
           <PremiumCard className="flex flex-col p-6 min-h-[500px]">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-serif font-bold text-[var(--text-primary)]">Uttar Pradesh – {viewMode === "Comparison (17 vs 22)" ? "2022" : viewMode.split(' ')[0]} Winning Party Map</h2>
+              <h2 className="text-xl font-serif font-bold text-[var(--text-primary)]">Uttar Pradesh – {viewMode === "Comparison (17 vs 22)" ? "2022" : viewMode.split(' ')[0]} Constituency Map</h2>
               <button className="text-sm font-medium text-[var(--accent-primary)] hover:underline flex items-center gap-1">
                 View Fullscreen <ChevronRight className="w-4 h-4" />
               </button>
