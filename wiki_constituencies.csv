@@ -1,0 +1,405 @@
+Constituency number,Constituency name,Reserved for (SC/STNone),Electors [6],District[7],Lok Sabha constituency
+1.0,Behat,,372305.0,Saharanpur,Saharanpur
+2.0,Nakur,,355632.0,Saharanpur,Kairana
+3.0,Saharanpur Nagar,,443592.0,Saharanpur,Saharanpur
+4.0,Saharanpur,,359546.0,Saharanpur,Saharanpur
+5.0,Deoband,,348944.0,Saharanpur,Saharanpur
+6.0,Rampur Maniharan,SC,323830.0,Saharanpur,Saharanpur
+7.0,Gangoh,,386148.0,Saharanpur,Kairana
+8.0,Kairana,,322423.0,Shamli,Kairana
+9.0,Thana Bhawan,,326817.0,Shamli,Kairana
+10.0,Shamli,,311974.0,Shamli,Kairana
+11.0,Budhana,,377680.0,Muzaffarnagar,Muzaffarnagar
+12.0,Charthawal,,331171.0,Muzaffarnagar,Muzaffarnagar
+13.0,Purqazi,SC,329110.0,Muzaffarnagar,Bijnor
+14.0,Muzaffarnagar,,358658.0,Muzaffarnagar,Muzaffarnagar
+15.0,Khatauli,,318047.0,Muzaffarnagar,Muzaffarnagar
+16.0,Meerapur,,314587.0,Muzaffarnagar,Bijnor
+17.0,Najibabad,,346687.0,Bijnor,Nagina
+18.0,Nagina,SC,346910.0,Bijnor,Nagina
+19.0,Barhapur,,359056.0,Bijnor,Moradabad
+20.0,Dhampur,,302357.0,Bijnor,Nagina
+21.0,Nehtaur,SC,303720.0,Bijnor,Nagina
+22.0,Bijnor,,390546.0,Bijnor,Bijnor
+23.0,Chandpur,,325858.0,Bijnor,Bijnor
+24.0,Noorpur,,324486.0,Bijnor,Nagina
+25.0,Kanth,,390562.0,Moradabad,Moradabad
+26.0,Thakurdwara,,372490.0,Moradabad,Moradabad
+27.0,Moradabad Rural,,389729.0,Moradabad,Moradabad
+28.0,Moradabad Nagar,,529243.0,Moradabad,Moradabad
+29.0,Kundarki,,380673.0,Moradabad,Sambhal
+30.0,Bilari[a],,359209.0,Moradabad,Sambhal
+31.0,Chandausi,SC,383406.0,Sambhal,Sambhal
+32.0,Asmoli,,379352.0,Sambhal,Sambhal
+33.0,Sambhal,,379786.0,Sambhal,Sambhal
+34.0,Suar,,307421.0,Rampur,Rampur
+35.0,Chamraua,,307984.0,Rampur,Rampur
+36.0,Bilaspur,,345202.0,Rampur,Rampur
+37.0,Rampur,,388175.0,Rampur,Rampur
+38.0,Milak,SC,357452.0,Rampur,Rampur
+39.0,Dhanaura,SC,346449.0,Amroha,Amroha
+40.0,Naugawan Sadat,,328672.0,Amroha,Amroha
+41.0,Amroha,,313755.0,Amroha,Amroha
+42.0,Hasanpur,,364215.0,Amroha,Amroha
+43.0,Siwalkhas,,339738.0,Meerut,Bagpat
+44.0,Sardhana,,361816.0,Meerut,Muzaffarnagar
+45.0,Hastinapur,SC,344527.0,Meerut,Bijnor
+46.0,Kithore,,365516.0,Meerut,Meerut
+47.0,Meerut Cantt.,,430144.0,Meerut,Meerut
+48.0,Meerut,,312368.0,Meerut,Meerut
+49.0,Meerut South,,481365.0,Meerut,Meerut
+50.0,Chhaprauli,,337033.0,Bagpat,Bagpat
+51.0,Baraut,,304200.0,Bagpat,Bagpat
+52.0,Bagpat,,316266.0,Bagpat,Bagpat
+53.0,Loni,,513114.0,Ghaziabad,Ghaziabad
+54.0,Muradnagar,,457759.0,Ghaziabad,Ghaziabad
+55.0,Sahibabad,,1020386.0,Ghaziabad,Ghaziabad
+56.0,Ghaziabad,,473009.0,Ghaziabad,Ghaziabad
+57.0,Modinagar,,332327.0,Ghaziabad,Bagpat
+58.0,Dhaulana[b],,413156.0,Hapur,Ghaziabad
+59.0,Hapur,SC,368481.0,Hapur,Meerut
+60.0,Garhmukteshwar,,348800.0,Hapur,Amroha
+61.0,Noida,,714072.0,Gautam Budh Nagar,Gautam Buddha Nagar
+62.0,Dadri,,606316.0,Gautam Budh Nagar,Gautam Buddha Nagar
+63.0,Jewar,,352164.0,Gautam Budh Nagar,Gautam Buddha Nagar
+64.0,Sikandrabad,,399747.0,Bulandshahr,Gautam Buddha Nagar
+65.0,Bulandshahr,,399775.0,Bulandshahr,Bulandshahr
+66.0,Syana,,387326.0,Bulandshahr,Bulandshahr
+67.0,Anupshahr,,379496.0,Bulandshahr,Bulandshahr
+68.0,Debai,,348309.0,Bulandshahr,Bulandshahr
+69.0,Shikarpur,,334480.0,Bulandshahr,Bulandshahr
+70.0,Khurja,SC,389211.0,Bulandshahr,Gautam Buddha Nagar
+71.0,Khair,SC,407399.0,Aligarh,Aligarh
+72.0,Barauli,,380035.0,Aligarh,Aligarh
+73.0,Atrauli,,402493.0,Aligarh,Aligarh
+74.0,Chharra,,387108.0,Aligarh,Hathras
+75.0,Koil,,404885.0,Aligarh,Aligarh
+76.0,Aligarh,,395352.0,Aligarh,Aligarh
+77.0,Iglas,SC,396755.0,Aligarh,Hathras
+78.0,Hathras,SC,416253.0,Hathras,Hathras
+79.0,Sadabad,,376981.0,Hathras,Hathras
+80.0,Sikandra Rao,,377684.0,Hathras,Hathras
+81.0,Chhata,,364870.0,Mathura,Mathura
+82.0,Mant,,346386.0,Mathura,Mathura
+83.0,Goverdhan,,334234.0,Mathura,Mathura
+84.0,Mathura,,459369.0,Mathura,Mathura
+85.0,Baldev,SC,376964.0,Mathura,Mathura
+86.0,Etmadpur,,444849.0,Agra,Agra
+87.0,Agra Cantt.,SC,467201.0,Agra,Agra
+88.0,Agra South,,367502.0,Agra,Agra
+89.0,Agra North,,435557.0,Agra,Agra
+90.0,Agra Rural,SC,427896.0,Agra,Fatehpur Sikri
+91.0,Fatehpur Sikri,,359005.0,Agra,Fatehpur Sikri
+92.0,Kheragarh,,328680.0,Agra,Fatehpur Sikri
+93.0,Fatehabad,,322495.0,Agra,Fatehpur Sikri
+94.0,Bah,,334525.0,Agra,Fatehpur Sikri
+95.0,Tundla,SC,372750.0,Firozabad,Firozabad
+96.0,Jasrana,,367280.0,Firozabad,Firozabad
+97.0,Firozabad,,439689.0,Firozabad,Firozabad
+98.0,Shikohabad,,357741.0,Firozabad,Firozabad
+99.0,Sirsaganj,,321298.0,Firozabad,Firozabad
+100.0,Kasganj,,364023.0,Kasganj,Etah
+101.0,Amanpur,,310854.0,Kasganj,Etah
+102.0,Patiyali,,359278.0,Kasganj,Etah
+103.0,Aliganj,,342212.0,Etah,Farrukhabad
+104.0,Etah,,337616.0,Etah,Etah
+105.0,Marhara,,309883.0,Etah,Etah
+106.0,Jalesar,SC,297452.0,Etah,Agra
+107.0,Mainpuri,,345335.0,Mainpuri,Mainpuri
+108.0,Bhongaon,,343606.0,Mainpuri,Mainpuri
+109.0,Kishni,SC,310906.0,Mainpuri,Mainpuri
+110.0,Karhal,,373351.0,Mainpuri,Mainpuri
+111.0,Gunnaur,,411191.0,Sambhal,Badaun
+112.0,Bisauli,SC,421258.0,Budaun,Badaun
+113.0,Sahaswan,,426207.0,Budaun,Badaun
+114.0,Bilsi,,355234.0,Budaun,Badaun
+115.0,Badaun,,376111.0,Budaun,Badaun
+116.0,Shekhupur,,403347.0,Budaun,Aonla
+117.0,Dataganj,,407118.0,Budaun,Aonla
+118.0,Baheri,,366445.0,Bareilly,Pilibhit
+119.0,Meerganj,,339587.0,Bareilly,Bareilly
+120.0,Bhojipura,,378098.0,Bareilly,Bareilly
+121.0,Nawabganj,,339503.0,Bareilly,Bareilly
+122.0,Faridpur,SC,328070.0,Bareilly,Aonla
+123.0,Bithari Chainpur,,394190.0,Bareilly,Aonla
+124.0,Bareilly,,457691.0,Bareilly,Bareilly
+125.0,Bareilly Cantt.,,378743.0,Bareilly,Bareilly
+126.0,Aonla,,315035.0,Bareilly,Aonla
+127.0,Pilibhit,,378862.0,Pilibhit,Pilibhit
+128.0,Barkhera,,323808.0,Pilibhit,Pilibhit
+129.0,Puranpur,SC,385107.0,Pilibhit,Pilibhit
+130.0,Bisalpur,,360883.0,Pilibhit,Pilibhit
+131.0,Katra,,338784.0,Shahjahanpur,Shahjahanpur
+132.0,Jalalabad,,367002.0,Shahjahanpur,Shahjahanpur
+133.0,Tilhar,,355825.0,Shahjahanpur,Shahjahanpur
+134.0,Powayan,SC,386868.0,Shahjahanpur,Shahjahanpur
+135.0,Shahjahanpur,,411329.0,Shahjahanpur,Shahjahanpur
+136.0,Dadraul,,355882.0,Shahjahanpur,Shahjahanpur
+137.0,Palia,,360503.0,Lakhimpur Kheri,Kheri
+138.0,Nighasan,,340374.0,Lakhimpur Kheri,Kheri
+139.0,Gola Gokrannath,,396212.0,Lakhimpur Kheri,Kheri
+140.0,Sri Nagar,SC,319314.0,Lakhimpur Kheri,Kheri
+141.0,Dhaurahra,,332131.0,Lakhimpur Kheri,Dhaurahra
+142.0,Lakhimpur,,411807.0,Lakhimpur Kheri,Kheri
+143.0,Kasta,SC,309700.0,Lakhimpur Kheri,Dhaurahra
+144.0,Mohammdi,,338672.0,Lakhimpur Kheri,Dhaurahra
+145.0,Maholi,,378908.0,Sitapur,Dhaurahra
+146.0,Sitapur,,399285.0,Sitapur,Sitapur
+147.0,Hargaon,SC,326771.0,Sitapur,Dhaurahra
+148.0,Laharpur,,354502.0,Sitapur,Sitapur
+149.0,Biswan,,337785.0,Sitapur,Sitapur
+150.0,Sevata,,314101.0,Sitapur,Sitapur
+151.0,Mahmoodabad,,315617.0,Sitapur,Sitapur
+152.0,Sidhauli,SC,355182.0,Sitapur,Mohanlalganj
+153.0,Misrikh,SC,359505.0,Sitapur,Misrikh
+154.0,Sawayazpur,,403324.0,Hardoi,Hardoi
+155.0,Shahabad,,355083.0,Hardoi,Hardoi
+156.0,Hardoi,,414295.0,Hardoi,Hardoi
+157.0,Gopamau,SC,343678.0,Hardoi,Hardoi
+158.0,Sandi,SC,332011.0,Hardoi,Hardoi
+159.0,Bilgram-Mallanwan,,381886.0,Hardoi,Misrikh
+160.0,Balamau,SC,347218.0,Hardoi,Misrikh
+161.0,Sandila,,341211.0,Hardoi,Misrikh
+162.0,Bangarmau,,357452.0,Unnao,Unnao
+163.0,Safipur,SC,346258.0,Unnao,Unnao
+164.0,Mohan,SC,342858.0,Unnao,Unnao
+165.0,Unnao,,409927.0,Unnao,Unnao
+166.0,Bhagwantnagar,,417945.0,Unnao,Unnao
+167.0,Purwa,,415472.0,Unnao,Unnao
+168.0,Malihabad,SC,360275.0,Lucknow,Mohanlalganj
+169.0,Bakshi Kaa Talab,,456965.0,Lucknow,Mohanlalganj
+170.0,Sarojini Nagar,,567252.0,Lucknow,Mohanlalganj
+171.0,Lucknow West,,443178.0,Lucknow,Lucknow
+172.0,Lucknow North,,463839.0,Lucknow,Lucknow
+173.0,Lucknow East,,457521.0,Lucknow,Lucknow
+174.0,Lucknow Central,,370629.0,Lucknow,Lucknow
+175.0,Lucknow Cantonment,,368156.0,Lucknow,Lucknow
+176.0,Mohanlalganj,SC,363044.0,Lucknow,Mohanlalganj
+177.0,Bachhrawan,SC,337025.0,Raebareli,Rae Bareli
+178.0,Tiloi,,351462.0,Amethi,Amethi
+179.0,Harchandpur,,319603.0,Raebareli,Rae Bareli
+180.0,Rae Bareli,,366267.0,Raebareli,Rae Bareli
+181.0,Salon,SC,349294.0,Amethi,Amethi
+182.0,Sareni,,371469.0,Amethi,Amethi
+183.0,Unchahar,,339043.0,Amethi,Rae Bareli
+184.0,Jagdishpur[c],SC,378415.0,Amethi,Amethi
+185.0,Gauriganj,,350093.0,Amethi,Amethi
+186.0,Amethi,,349837.0,Amethi,Amethi
+187.0,Isauli,,358604.0,Sultanpur,Sultanpur
+188.0,Sultanpur,,380581.0,Sultanpur,Sultanpur
+189.0,Sadar,,344326.0,Sultanpur,Sultanpur
+190.0,Lambhua,,369085.0,Sultanpur,Sultanpur
+191.0,Kadipur,SC,379507.0,Sultanpur,Sultanpur
+192.0,Kaimganj,SC,392514.0,Farrukhabad,Farrukhabad
+193.0,Amritpur,,314663.0,Farrukhabad,Farrukhabad
+194.0,Farrukhabad,,372555.0,Farrukhabad,Farrukhabad
+195.0,Bhojpur,,319917.0,Farrukhabad,Farrukhabad
+196.0,Chhibramau,,463433.0,Kannauj,Kannauj
+197.0,Tirwa,,380571.0,Kannauj,Kannauj
+198.0,Kannauj,SC,428851.0,Kannauj,Kannauj
+199.0,Jaswantnagar,,392072.0,Etawah,Mainpuri
+200.0,Etawah,,406509.0,Etawah,Etawah
+201.0,Bharthana,SC,407642.0,Etawah,Etawah
+202.0,Bidhuna,,364682.0,Auraiya,Kannauj
+203.0,Dibiyapur,,323150.0,Auraiya,Etawah
+204.0,Auraiya,SC,332885.0,Auraiya,Etawah
+205.0,Rasulabad,SC,323657.0,Kanpur Dehat,Kannauj
+206.0,Akbarpur-Raniya,,327275.0,Kanpur Dehat,Akbarpur
+207.0,Sikandra,,331601.0,Kanpur Dehat,Etawah
+208.0,Bhognipur,,350293.0,Kanpur Dehat,Jalaun
+209.0,Bilhaur,SC,392993.0,Kanpur Nagar,Misrikh
+210.0,Bithoor,,368419.0,Kanpur Nagar,Akbarpur
+211.0,Kalyanpur,,355100.0,Kanpur Nagar,Akbarpur
+212.0,Govind Nagar,,351663.0,Kanpur Nagar,Kanpur
+213.0,Sishamau,,274888.0,Kanpur Nagar,Kanpur
+214.0,Arya Nagar,,298520.0,Kanpur Nagar,Kanpur
+215.0,Kidwai Nagar,,348846.0,Kanpur Nagar,Kanpur
+216.0,Kanpur Cantonment,,361855.0,Kanpur Nagar,Kanpur
+217.0,Maharajpur,,448458.0,Kanpur Nagar,Akbarpur
+218.0,Ghatampur,SC,324443.0,Kanpur Nagar,Akbarpur
+219.0,Madhogarh,,445421.0,Jalaun,Jalaun
+220.0,Kalpi,,394653.0,Jalaun,Jalaun
+221.0,Orai,SC,444977.0,Jalaun,Jalaun
+222.0,Babina,,331743.0,Jhansi,Jhansi
+223.0,Jhansi Nagar,,422164.0,Jhansi,Jhansi
+224.0,Mauranipur,SC,413770.0,Jhansi,Jhansi
+225.0,Garautha,,351859.0,Jhansi,Jalaun
+226.0,Lalitpur,,487976.0,Lalitpur,Jhansi
+227.0,Mehroni,SC,449905.0,Lalitpur,Jhansi
+228.0,Hamirpur,,412700.0,Hamirpur,Hamirpur
+229.0,Rath,SC,399594.0,Hamirpur,Hamirpur
+230.0,Mahoba,,316799.0,Mahoba,Hamirpur
+231.0,Charkhari,,346471.0,Mahoba,Hamirpur
+232.0,Tindwari,,318385.0,Banda,Hamirpur
+233.0,Baberu,,338211.0,Banda,Banda
+234.0,Naraini,SC,342361.0,Banda,Banda
+235.0,Banda,,310282.0,Banda,Banda
+236.0,Chitrakoot,,375123.0,Chitrakoot,Banda
+237.0,Manikpur,,338989.0,Chitrakoot,Banda
+238.0,Jahanabad,,311482.0,Fatehpur,Fatehpur
+239.0,Bindki,,312930.0,Fatehpur,Fatehpur
+240.0,Fatehpur,,357518.0,Fatehpur,Fatehpur
+241.0,Ayah Shah,,274485.0,Fatehpur,Fatehpur
+242.0,Husainganj,,304518.0,Fatehpur,Fatehpur
+243.0,Khaga,SC,342812.0,Fatehpur,Fatehpur
+244.0,Rampur Khas,,320772.0,Pratapgarh,Pratapgarh
+245.0,Babaganj,SC,319665.0,Pratapgarh,Kaushambi
+246.0,Kunda,,357938.0,Pratapgarh,Kaushambi
+247.0,Vishwanathganj,,399623.0,Pratapgarh,Pratapgarh
+248.0,Pratapgarh,,355158.0,Pratapgarh,Pratapgarh
+249.0,Patti,,366452.0,Pratapgarh,Pratapgarh
+250.0,Raniganj,,336072.0,Pratapgarh,Pratapgarh
+251.0,Sirathu,,381662.0,Kaushambi,Kaushambi
+252.0,Manjhanpur,SC,416731.0,Kaushambi,Kaushambi
+253.0,Chail,,387838.0,Kaushambi,Kaushambi
+254.0,Phaphamau,,366164.0,Prayagraj,Phulpur
+255.0,Soraon,SC,380283.0,Prayagraj,Phulpur
+256.0,Phulpur,,408793.0,Prayagraj,Phulpur
+257.0,Pratappur,,406567.0,Prayagraj,Bhadohi
+258.0,Handia,,401042.0,Prayagraj,Bhadohi
+259.0,Meja,,325904.0,Prayagraj,Prayagraj
+260.0,Karachhana,,349959.0,Prayagraj,Prayagraj
+261.0,Prayagraj West,,459599.0,Prayagraj,Phulpur
+262.0,Prayagraj North,,442351.0,Prayagraj,Phulpur
+263.0,Prayagraj South,,408293.0,Prayagraj,Prayagraj
+264.0,Bara,SC,334880.0,Prayagraj,Prayagraj
+265.0,Koraon,SC,351637.0,Prayagraj,Prayagraj
+266.0,Kursi,,395071.0,Barabanki,Barabanki
+267.0,Ram Nagar,,338326.0,Barabanki,Barabanki
+268.0,Barabanki,,392184.0,Barabanki,Barabanki
+269.0,Zaidpur,SC,396995.0,Barabanki,Barabanki
+270.0,Dariyabad,,412472.0,Barabanki,Ayodhya
+271.0,Rudauli,,356678.0,Ayodhya,Ayodhya
+272.0,Haidergarh,SC,349784.0,Barabanki,Barabanki
+273.0,Milkipur,SC,358203.0,Ayodhya,Ayodhya
+274.0,Bikapur,,380107.0,Ayodhya,Ayodhya
+275.0,Ayodhya,,382056.0,Ayodhya,Ayodhya
+276.0,Goshainganj,,395118.0,Ayodhya,Ambedkar Nagar
+277.0,Katehari,,394267.0,Ambedkar Nagar,Ambedkar Nagar
+278.0,Tanda,,329754.0,Ambedkar Nagar,Ambedkar Nagar
+279.0,Alapur,SC,339969.0,Ambedkar Nagar,Sant Kabir Nagar
+280.0,Jalalpur,,407064.0,Ambedkar Nagar,Ambedkar Nagar
+281.0,Akbarpur,,332577.0,Ambedkar Nagar,Ambedkar Nagar
+282.0,Balha,SC,362718.0,Bahraich,Bahraich
+283.0,Nanpara,,343881.0,Bahraich,Bahraich
+284.0,Matera,,342204.0,Bahraich,Bahraich
+285.0,Mahasi,,339363.0,Bahraich,Bahraich
+286.0,Bahraich,,391794.0,Bahraich,Bahraich
+287.0,Payagpur,,390097.0,Bahraich,Kaiserganj
+288.0,Kaiserganj,,390653.0,Bahraich,Kaiserganj
+289.0,Bhinga,,393315.0,Shrawasti,Shrawasti
+290.0,Shrawasti,,416147.0,Shrawasti,Shrawasti
+291.0,Tulsipur,,383960.0,Balrampur,Shrawasti
+292.0,Gainsari,,365598.0,Balrampur,Shrawasti
+293.0,Utraula,,435310.0,Balrampur,Gonda
+294.0,Balrampur,SC,428009.0,Balrampur,Shrawasti
+295.0,Mehnaun,,366079.0,Gonda,Gonda
+296.0,Gonda,,347946.0,Gonda,Gonda
+297.0,Katra Bazar,,387612.0,Gonda,Kaiserganj
+298.0,Colonelganj,,330403.0,Gonda,Kaiserganj
+299.0,Tarabganj,,367243.0,Gonda,Kaiserganj
+300.0,Mankapur,SC,331841.0,Gonda,Gonda
+301.0,Gaura,,320821.0,Gonda,Gonda
+302.0,Shohratgarh,,359244.0,Siddharthnagar,Domariyaganj
+303.0,Kapilvastu,SC,452988.0,Siddharthnagar,Domariyaganj
+304.0,Bansi,,381240.0,Siddharthnagar,Domariyaganj
+305.0,Itwa,,336392.0,Siddharthnagar,Domariyaganj
+306.0,Domariyaganj,,409760.0,Siddharthnagar,Domariyaganj
+307.0,Harraiya,,388924.0,Basti,Basti
+308.0,Kaptanganj,,365410.0,Basti,Basti
+309.0,Rudhauli,,430608.0,Basti,Basti
+310.0,Basti Sadar,,371546.0,Basti,Basti
+311.0,Mahadewa,SC,360632.0,Basti,Basti
+312.0,Menhdawal,,457864.0,Sant Kabir Nagar,Sant Kabir Nagar
+313.0,Khalilabad,,457995.0,Sant Kabir Nagar,Sant Kabir Nagar
+314.0,Dhanghata,SC,387446.0,Sant Kabir Nagar,Sant Kabir Nagar
+315.0,Pharenda,,351362.0,Maharajganj,Maharajganj
+316.0,Nautanwa,,366588.0,Maharajganj,Maharajganj
+317.0,Siswa,,389369.0,Maharajganj,Maharajganj
+318.0,Maharajganj,SC,413958.0,Maharajganj,Maharajganj
+319.0,Paniyara,,423585.0,Maharajganj,Maharajganj
+320.0,Caimpiyarganj,,383702.0,Gorakhpur,Gorakhpur
+321.0,Pipraich,,406778.0,Gorakhpur,Gorakhpur
+322.0,Gorakhpur Urban,,464784.0,Gorakhpur,Gorakhpur
+323.0,Gorakhpur Rural,,419269.0,Gorakhpur,Gorakhpur
+324.0,Sahajanwa,,379627.0,Gorakhpur,Gorakhpur
+325.0,Khajani,SC,380081.0,Gorakhpur,Sant Kabir Nagar
+326.0,Chauri-Chaura,,355127.0,Gorakhpur,Bansgaon
+327.0,Bansgaon,SC,381065.0,Gorakhpur,Bansgaon
+328.0,Chillupar,,429908.0,Gorakhpur,Bansgaon
+329.0,Khadda,,340053.0,Kushinagar,Kushi Nagar
+330.0,Padrauna,,382530.0,Kushinagar,Kushi Nagar
+331.0,Tamkuhi Raj,,400300.0,Kushinagar,Deoria
+332.0,Fazilnagar,,400053.0,Kushinagar,Deoria
+333.0,Kushinagar,,373232.0,Kushinagar,Kushi Nagar
+334.0,Hata,,373470.0,Kushinagar,Kushi Nagar
+335.0,Ramkola,SC,371916.0,Kushinagar,Kushi Nagar
+336.0,Rudrapur,,321349.0,Deoria,Bansgaon
+337.0,Deoria,,351651.0,Deoria,Deoria
+338.0,Pathardeva,,338872.0,Deoria,Deoria
+339.0,Rampur Karkhana,,356278.0,Deoria,Deoria
+340.0,Bhatpar Rani,,338287.0,Deoria,Salempur
+341.0,Salempur,SC,344224.0,Deoria,Salempur
+342.0,Barhaj,,318521.0,Deoria,Bansgaon
+343.0,Atrauliya,,380092.0,Azamgarh,Lalganj
+344.0,Gopalpur,,350363.0,Azamgarh,Azamgarh
+345.0,Sagri,,336378.0,Azamgarh,Azamgarh
+346.0,Mubarakpur,,354153.0,Azamgarh,Azamgarh
+347.0,Azamgarh,,396271.0,Azamgarh,Azamgarh
+348.0,Nizamabad,,327480.0,Azamgarh,Lalganj
+349.0,Phoolpur Pawai,,328807.0,Azamgarh,Lalganj
+350.0,Didarganj,,365522.0,Azamgarh,Lalganj
+351.0,Lalganj,SC,407539.0,Azamgarh,Lalganj
+352.0,Mehnagar,SC,404280.0,Azamgarh,Azamgarh
+353.0,Madhuban,,403798.0,Mau,Ghosi
+354.0,Ghosi,,438832.0,Mau,Ghosi
+355.0,Muhammadabad-Gohna,SC,380470.0,Mau,Ghosi
+356.0,Mau,,481715.0,Mau,Ghosi
+357.0,Belthara Road,SC,358231.0,Ballia,Salempur
+358.0,Rasara,,356377.0,Ballia,Ghosi
+359.0,Sikanderpur,,307974.0,Ballia,Salempur
+360.0,Phephana,,331153.0,Ballia,Ballia
+361.0,Ballia Nagar,,375300.0,Ballia,Ballia
+362.0,Bansdih,,408263.0,Ballia,Salempur
+363.0,Bairia,,367176.0,Ballia,Ballia
+364.0,Badlapur,,351356.0,Jaunpur,Jaunpur
+365.0,Shahganj,,407439.0,Jaunpur,Jaunpur
+366.0,Jaunpur,,435634.0,Jaunpur,Jaunpur
+367.0,Malhani,,379389.0,Jaunpur,Jaunpur
+368.0,Mungra Badshahpur,,386422.0,Jaunpur,Jaunpur
+369.0,Machhlishahr,SC,402078.0,Jaunpur,Machhlishahr
+370.0,Mariyahu,,337483.0,Jaunpur,Machhlishahr
+371.0,Zafrabad,,398511.0,Jaunpur,Machhlishahr
+372.0,Kerakat,SC,416720.0,Jaunpur,Machhlishahr
+373.0,Jakhanian,SC,432337.0,Ghazipur,Ghazipur
+374.0,Saidpur,SC,400659.0,Ghazipur,Ghazipur
+375.0,Ghazipur Sadar,,365238.0,Ghazipur,Ghazipur
+376.0,Jangipur,,376819.0,Ghazipur,Ghazipur
+377.0,Zahoorabad,,407091.0,Ghazipur,Ballia
+378.0,Mohammadabad,,424837.0,Ghazipur,Ballia
+379.0,Zamania,,425978.0,Ghazipur,Ghazipur
+380.0,Mughalsarai,,400830.0,Chandauli,Chandauli
+381.0,Sakaldiha,,335828.0,Chandauli,Chandauli
+382.0,Saiyadraja,,333280.0,Chandauli,Chandauli
+383.0,Chakia,SC,378414.0,Chandauli,Robertsganj
+384.0,Pindra,,373472.0,Varanasi,Machhlishahr
+385.0,Ajagara,SC,374068.0,Varanasi,Chandauli
+386.0,Shivpur,,374563.0,Varanasi,Chandauli
+387.0,Rohaniya,,408653.0,Varanasi,Varanasi
+388.0,Varanasi North,,427134.0,Varanasi,Varanasi
+389.0,Varanasi South,,323551.0,Varanasi,Varanasi
+390.0,Varanasi Cantt.,,459277.0,Varanasi,Varanasi
+391.0,Sevapuri,,346090.0,Varanasi,Varanasi
+392.0,Bhadohi,,429201.0,Bhadohi,Bhadohi
+393.0,Gyanpur,,390971.0,Bhadohi,Bhadohi
+394.0,Aurai,SC,377692.0,Bhadohi,Bhadohi
+395.0,Chhanbey,SC,374291.0,Mirzapur,Mirzapur
+396.0,Mirzapur,,403374.0,Mirzapur,Mirzapur
+397.0,Majhawan,,397877.0,Mirzapur,Mirzapur
+398.0,Chunar,,354274.0,Mirzapur,Mirzapur
+399.0,Marihan,,366489.0,Mirzapur,Mirzapur
+400.0,Ghorawal,,394231.0,Sonbhadra,Robertsganj
+401.0,Robertsganj,,343485.0,Sonbhadra,Robertsganj
+402.0,Obra,ST,327556.0,Sonbhadra,Robertsganj
+403.0,Duddhi,SC,332033.0,Sonbhadra,Robertsganj
+,,,,,

@@ -1,0 +1,6 @@
+{$DOMAIN_NAME:localhost} {
+    # Route API requests to the FastAPI backend
+    handle_path /* {
+        reverse_proxy backend:8000
+    }
+}

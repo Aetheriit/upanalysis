@@ -1,0 +1,519 @@
+{
+  "2017": {
+    "Unknown": {
+      "bjp": 0,
+      "sp": 0,
+      "bsp": 0,
+      "inc": 0,
+      "rld": 0,
+      "oth": 6,
+      "winner": "OTH"
+    }
+  },
+  "2022": {
+    "Pratapgarh": {
+      "bjp": 1,
+      "sp": 1,
+      "bsp": 2,
+      "inc": 1,
+      "rld": 2,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Lakhimpur Kheri": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 2,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Lucknow": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 4,
+      "inc": 1,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Meerut": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 2,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Amethi": {
+      "bjp": 1,
+      "sp": 2,
+      "bsp": 2,
+      "inc": 2,
+      "rld": 3,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Rae Bareli": {
+      "bjp": 2,
+      "sp": 3,
+      "bsp": 4,
+      "inc": 3,
+      "rld": 5,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Kaushambi": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Aligarh": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 4,
+      "inc": 0,
+      "rld": 2,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Gonda": {
+      "bjp": 1,
+      "sp": 0,
+      "bsp": 3,
+      "inc": 5,
+      "rld": 1,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Etah": {
+      "bjp": 0,
+      "sp": 3,
+      "bsp": 1,
+      "inc": 2,
+      "rld": 0,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Mirzapur": {
+      "bjp": 0,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Sultanpur": {
+      "bjp": 4,
+      "sp": 3,
+      "bsp": 2,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Kanpur Dehat": {
+      "bjp": 4,
+      "sp": 2,
+      "bsp": 3,
+      "inc": 1,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Banda": {
+      "bjp": 2,
+      "sp": 3,
+      "bsp": 2,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Balrampur": {
+      "bjp": 1,
+      "sp": 3,
+      "bsp": 8,
+      "inc": 3,
+      "rld": 2,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Ghaziabad": {
+      "bjp": 1,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Jhansi": {
+      "bjp": 2,
+      "sp": 0,
+      "bsp": 2,
+      "inc": 3,
+      "rld": 2,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Gautam Buddha Nagar": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 2,
+      "rld": 3,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Muzaffarnagar": {
+      "bjp": 0,
+      "sp": 0,
+      "bsp": 0,
+      "inc": 2,
+      "rld": 2,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Kanpur Nagar": {
+      "bjp": 2,
+      "sp": 0,
+      "bsp": 5,
+      "inc": 0,
+      "rld": 3,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Varanasi": {
+      "bjp": 2,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 2,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Sitapur": {
+      "bjp": 2,
+      "sp": 3,
+      "bsp": 3,
+      "inc": 2,
+      "rld": 2,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Lalitpur": {
+      "bjp": 3,
+      "sp": 0,
+      "bsp": 3,
+      "inc": 3,
+      "rld": 3,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Saharanpur": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 3,
+      "inc": 0,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Mahoba": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 2,
+      "inc": 0,
+      "rld": 5,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Etawah": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Fatehpur": {
+      "bjp": 2,
+      "sp": 4,
+      "bsp": 2,
+      "inc": 3,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Ayodhya": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 2,
+      "rld": 0,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Unnao": {
+      "bjp": 1,
+      "sp": 1,
+      "bsp": 3,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Amroha": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 3,
+      "rld": 0,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Shravasti": {
+      "bjp": 0,
+      "sp": 5,
+      "bsp": 0,
+      "inc": 0,
+      "rld": 0,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Ambedkar Nagar": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 3,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Kannauj": {
+      "bjp": 1,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Jalaun": {
+      "bjp": 2,
+      "sp": 0,
+      "bsp": 2,
+      "inc": 4,
+      "rld": 3,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Barabanki": {
+      "bjp": 2,
+      "sp": 3,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 0,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Bahraich": {
+      "bjp": 5,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Hamirpur": {
+      "bjp": 2,
+      "sp": 4,
+      "bsp": 2,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Gorakhpur": {
+      "bjp": 1,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Hardoi": {
+      "bjp": 2,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 2,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Chitrakoot": {
+      "bjp": 2,
+      "sp": 3,
+      "bsp": 2,
+      "inc": 3,
+      "rld": 3,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Mainpuri": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 3,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Rampur": {
+      "bjp": 0,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BSP"
+    },
+    "Auraiya": {
+      "bjp": 4,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Prayagraj": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 5,
+      "rld": 2,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Hapur": {
+      "bjp": 1,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 0,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Bijnor": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 2,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Farrukhabad": {
+      "bjp": 2,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Shamli": {
+      "bjp": 1,
+      "sp": 0,
+      "bsp": 0,
+      "inc": 3,
+      "rld": 1,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Kasganj": {
+      "bjp": 1,
+      "sp": 1,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Agra": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 0,
+      "rld": 2,
+      "oth": 0,
+      "winner": "RLD"
+    },
+    "Baghpat": {
+      "bjp": 2,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 3,
+      "rld": 0,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Hathras": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 2,
+      "inc": 0,
+      "rld": 0,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Moradabad": {
+      "bjp": 0,
+      "sp": 1,
+      "bsp": 0,
+      "inc": 2,
+      "rld": 0,
+      "oth": 0,
+      "winner": "INC"
+    },
+    "Firozabad": {
+      "bjp": 3,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BJP"
+    },
+    "Bulandshahr": {
+      "bjp": 0,
+      "sp": 2,
+      "bsp": 1,
+      "inc": 0,
+      "rld": 1,
+      "oth": 0,
+      "winner": "SP"
+    },
+    "Mathura": {
+      "bjp": 0,
+      "sp": 0,
+      "bsp": 1,
+      "inc": 1,
+      "rld": 1,
+      "oth": 0,
+      "winner": "BSP"
+    }
+  }
+}
