@@ -158,7 +158,17 @@ async def ingest():
                 except:
                     total_votes = 0
 
-                booth_name_raw = str(row.get('Polling Station Name', ''))
+                try:
+                    total_electors = int(row.get('TOTAL ELECTORS', 0))
+                except:
+                    total_electors = 0
+                    
+                try:
+                    turnout_pct = float(row.get('TURNOUT %', 0.0))
+                except:
+                    turnout_pct = 0.0
+
+                booth_name_raw = str(row.get('Polling Station Name', row.get('POLLING STATION NAME', '')))
                 if len(booth_name_raw) > 250:
                     booth_name_raw = booth_name_raw[:250]
 
@@ -168,17 +178,29 @@ async def ingest():
                         nota_votes = int(row.get('NOTA', 0))
                     except:
                         pass
+                        
+                cand_votes = []
+                for c_name in candidate_names:
+                    if c_name == 'NOTA': continue
+                    v = row.get(c_name, 0)
+                    if pd.isna(v): v = 0
+                    try: v = int(v)
+                    except: v = 0
+                    cand_votes.append(v)
+                cand_votes.sort(reverse=True)
+                margin = cand_votes[0] - cand_votes[1] if len(cand_votes) > 1 else (cand_votes[0] if cand_votes else 0)
 
                 booth = Booth(
                     constituency_id=constituency.id,
                     booth_number=str(booth_id_val),
                     booth_name=booth_name_raw,
-                    total_electors=0,
+                    total_electors=total_electors,
                     male_electors=0,
                     female_electors=0,
                     total_votes_polled=total_votes,
-                    turnout_pct=0.0,
-                    nota_votes=nota_votes
+                    turnout_pct=turnout_pct,
+                    nota_votes=nota_votes,
+                    winning_margin=margin
                 )
                 session.add(booth)
                 await session.flush()
