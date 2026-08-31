@@ -12,6 +12,13 @@ export default function ConstituenciesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     async function fetchData() {
@@ -177,7 +184,7 @@ export default function ConstituenciesPage() {
                 <tr>
                   <td colSpan={10} className="px-6 py-8 text-center text-[var(--text-secondary)]">No constituencies found.</td>
                 </tr>
-              ) : filteredData.slice(0, 50).map((row, idx) => (
+              ) : filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row, idx) => (
                 <tr key={idx} className="hover:bg-[var(--bg-app)]/30 transition-colors group">
                   <td className="px-6 py-4 text-sm font-medium text-[var(--text-tertiary)]">{row.code}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{row.name}</td>
@@ -261,15 +268,40 @@ export default function ConstituenciesPage() {
         </div>
         
         {/* Pagination */}
-        <div className="p-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-sm text-[var(--text-secondary)]">
-          <span>Showing {Math.min(filteredData.length, 50)} of {filteredData.length} entries (capped at 50 for demo)</span>
+        <div className="p-4 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-secondary)]">
+          <span>
+            Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
+          </span>
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors disabled:opacity-50" disabled>Previous</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded bg-[var(--accent-primary)] text-[var(--bg-app)] font-medium">1</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors">2</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors">3</button>
-            <span className="px-2">...</span>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors">Next</button>
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
+              .filter(page => page === 1 || page === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(page - currentPage) <= 1)
+              .map((page, i, arr) => (
+                <React.Fragment key={page}>
+                  {i > 0 && arr[i - 1] !== page - 1 && <span className="px-2">...</span>}
+                  <button 
+                    className={`px-3 py-1.5 border rounded transition-colors ${currentPage === page ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[var(--bg-app)] font-medium' : 'border-[var(--border-subtle)] hover:bg-[var(--border-subtle)]'}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                </React.Fragment>
+            ))}
+
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage) || filteredData.length === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / itemsPerPage)))}
+            >
+              Next
+            </button>
           </div>
         </div>
       </PremiumCard>
