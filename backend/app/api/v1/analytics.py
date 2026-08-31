@@ -580,6 +580,52 @@ async def get_constituency_analysis(
 
 
 
+@router.get("/districts")
+async def get_district_winners(
+    election_year: Optional[int] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get district-level winning party (the party that won the most seats in the district)."""
+    year_to_fetch = election_year if election_year is not None else 2022
+    
+    query = select(Constituency.district, Constituency.winner_party, func.count(Constituency.id)).join(Election).filter(Election.year == year_to_fetch).group_by(Constituency.district, Constituency.winner_party)
+    result = await db.execute(query)
+    rows = result.all()
+    
+    districts = {}
+    for d, party, count in rows:
+        if not d: continue
+        d = d.strip()
+        if d not in districts:
+            districts[d] = {'BJP':0, 'SP':0, 'BSP':0, 'INC':0, 'RLD':0, 'OTH':0}
+        
+        p = party.upper() if party else 'OTH'
+        if 'BJP' in p: p = 'BJP'
+        elif 'SP' in p and 'BSP' not in p and 'SBSP' not in p: p = 'SP'
+        elif 'BSP' in p: p = 'BSP'
+        elif 'INC' in p or 'CONGRESS' in p: p = 'INC'
+        elif 'RLD' in p: p = 'RLD'
+        else: p = 'OTH'
+        
+        districts[d][p] += count
+    
+    # Compute the winner for each district
+    district_data = {}
+    for d, counts in districts.items():
+        # Get the party with the max count
+        winner = max(counts, key=counts.get)
+        district_data[d] = {
+            "winner": winner,
+            "bjp": counts["BJP"],
+            "sp": counts["SP"],
+            "bsp": counts["BSP"],
+            "inc": counts["INC"],
+            "rld": counts["RLD"],
+            "oth": counts["OTH"]
+        }
+        
+    return {"districts": district_data, "year": year_to_fetch}
 
 
 @router.get("/parties")
