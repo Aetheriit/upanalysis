@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useElectionContext } from "@/context/ElectionContext";
-import { fetchApi } from "@/lib/api";
+import { apiUrl } from "@/lib/api";
 
 const PARTY_COLORS: Record<string, string> = {
   BJP: "#F97316",
@@ -28,9 +28,10 @@ export default function UPMap() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetchApi(`/analytics/districts?election_year=${activeYear}`);
-        if (res.districts) {
-          setDistrictData(res.districts);
+        const res = await fetch(apiUrl(`/api/v1/analytics/districts?election_year=${activeYear}`));
+        const data = await res.json();
+        if (data.districts) {
+          setDistrictData(data.districts);
         }
       } catch (err) {
         console.error("Failed to fetch district map data", err);
