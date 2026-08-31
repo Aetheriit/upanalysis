@@ -648,12 +648,13 @@ async def get_constituency_map_winners(
         # normalize string
         name = c.name.lower().replace('(sc)', '').replace('(st)', '').strip()
         
-        p = c.winner_party.upper() if c.winner_party else 'OTH'
-        if 'BJP' in p: p = 'BJP'
-        elif 'SP' in p and 'BSP' not in p and 'SBSP' not in p: p = 'SP'
-        elif 'BSP' in p: p = 'BSP'
-        elif 'INC' in p or 'CONGRESS' in p: p = 'INC'
-        elif 'RLD' in p: p = 'RLD'
+        p_raw = c.winner_party.upper().strip() if c.winner_party else 'OTH'
+        
+        if p_raw in ['BJP', 'BHARATIYA JANATA PARTY'] or 'BHARATIYA JANATA PARTY' in p_raw: p = 'BJP'
+        elif p_raw in ['SP', 'SAMAJWADI PARTY'] or 'SAMAJWADI' in p_raw: p = 'SP'
+        elif p_raw in ['BSP', 'BAHUJAN SAMAJ PARTY'] or 'BAHUJAN SAMAJ PARTY' in p_raw: p = 'BSP'
+        elif p_raw in ['INC', 'INDIAN NATIONAL CONGRESS'] or 'CONGRESS' in p_raw: p = 'INC'
+        elif p_raw in ['RLD', 'RASHTRIYA LOK DAL'] or 'RASHTRIYA LOK DAL' in p_raw: p = 'RLD'
         else: p = 'OTH'
         
         const_data[name] = {
