@@ -97,10 +97,10 @@ def process_pdfs():
         title_df = pd.DataFrame(columns=columns)
         title_df.loc[0] = [f'AC {ac_num} Booth-wise Data'] + [float('nan')] * (len(columns) - 1)
         
+        headers_df = pd.DataFrame([columns], columns=columns)
+        
         # Concat
-        final_df = pd.concat([title_df, pd.DataFrame(columns=columns), df], ignore_index=True)
-        # Shift everything down by placing columns as row 1
-        final_df.loc[1] = columns
+        final_df = pd.concat([title_df, headers_df, df], ignore_index=True)
         
         out_file = os.path.join(output_dir, f'{ac_num}_boothwise_data.xlsx')
         final_df.to_excel(out_file, index=False, header=False)
