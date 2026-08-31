@@ -15,6 +15,12 @@ export default function DistrictsPage() {
   const [districts, setDistricts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     async function fetchData() {
@@ -228,7 +234,7 @@ export default function DistrictsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
-              {filteredDistricts.map(d => (
+              {filteredDistricts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(d => (
                 <tr key={d.name} className="hover:bg-[var(--bg-app)]/30 transition-colors group">
                   <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{d.name}</td>
                   <td className="px-6 py-4 text-sm text-[var(--text-secondary)] text-center">{d.constituencies}</td>
@@ -249,13 +255,40 @@ export default function DistrictsPage() {
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-sm text-[var(--text-secondary)]">
-          <span>Showing {filteredDistricts.length} districts</span>
+        <div className="p-4 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-secondary)]">
+          <span>
+            Showing {filteredDistricts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredDistricts.length)} of {filteredDistricts.length} entries
+          </span>
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors disabled:opacity-50" disabled>Previous</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded bg-[var(--accent-primary)] text-[var(--bg-app)] font-medium">1</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors">2</button>
-            <button className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--bg-app)] transition-colors">Next</button>
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.ceil(filteredDistricts.length / itemsPerPage) }, (_, i) => i + 1)
+              .filter(page => page === 1 || page === Math.ceil(filteredDistricts.length / itemsPerPage) || Math.abs(page - currentPage) <= 1)
+              .map((page, i, arr) => (
+                <React.Fragment key={page}>
+                  {i > 0 && arr[i - 1] !== page - 1 && <span className="px-2">...</span>}
+                  <button 
+                    className={`px-3 py-1.5 border rounded transition-colors ${currentPage === page ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[var(--bg-app)] font-medium' : 'border-[var(--border-subtle)] hover:bg-[var(--border-subtle)]'}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                </React.Fragment>
+            ))}
+
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === Math.ceil(filteredDistricts.length / itemsPerPage) || filteredDistricts.length === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredDistricts.length / itemsPerPage)))}
+            >
+              Next
+            </button>
           </div>
         </div>
       </PremiumCard>
