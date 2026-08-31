@@ -14,6 +14,8 @@ export default function BoothsPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [boothDataChart, setBoothDataChart] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   
   const [constituencies, setConstituencies] = useState<any[]>([]);
   const [selectedConstituency, setSelectedConstituency] = useState<string>("");
@@ -131,6 +133,11 @@ export default function BoothsPage() {
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     String(b.id).toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Reset to first page when search changes or constituency changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedConstituency]);
   
   // Calculate dynamic KPIs
   const totalBooths = data.length;
@@ -273,7 +280,7 @@ export default function BoothsPage() {
                 <tr>
                   <td colSpan={10} className="px-6 py-8 text-center text-[var(--text-secondary)]">No booths found.</td>
                 </tr>
-              ) : filteredData.map(b => (
+              ) : filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(b => (
                 <tr key={b.id} className="hover:bg-[var(--bg-app)]/30 transition-colors">
                   <td className="px-6 py-4 text-sm font-mono text-[var(--text-tertiary)]">{b.id}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{b.name}</td>
@@ -300,6 +307,44 @@ export default function BoothsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="p-4 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-secondary)]">
+          <span>
+            Showing {filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
+          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            >
+              Previous
+            </button>
+            
+            {Array.from({ length: Math.ceil(filteredData.length / itemsPerPage) }, (_, i) => i + 1)
+              .filter(page => page === 1 || page === Math.ceil(filteredData.length / itemsPerPage) || Math.abs(page - currentPage) <= 1)
+              .map((page, i, arr) => (
+                <React.Fragment key={page}>
+                  {i > 0 && arr[i - 1] !== page - 1 && <span className="px-2">...</span>}
+                  <button 
+                    className={`px-3 py-1.5 border rounded transition-colors ${currentPage === page ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] text-[var(--bg-app)] font-medium' : 'border-[var(--border-subtle)] hover:bg-[var(--border-subtle)]'}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                </React.Fragment>
+            ))}
+
+            <button 
+              className="px-3 py-1.5 border border-[var(--border-subtle)] rounded hover:bg-[var(--border-subtle)] transition-colors disabled:opacity-50" 
+              disabled={currentPage === Math.ceil(filteredData.length / itemsPerPage) || filteredData.length === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / itemsPerPage)))}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </PremiumCard>
     </div>
