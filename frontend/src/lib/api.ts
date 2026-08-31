@@ -12,9 +12,6 @@ const isLocalApiUrl = configuredApiUrl?.includes("localhost:8000") || configured
 // A localhost value is useful locally but can never work from a deployed browser.
 // Fall back to Render if an old/misconfigured Vercel environment variable leaks
 // into a production build.
-export const API_BASE_URL =
-  process.env.NODE_ENV === "production" && isLocalApiUrl
-    ? DEPLOYED_API_URL
-    : configuredApiUrl || DEPLOYED_API_URL;
+export const API_BASE_URL = DEPLOYED_API_URL;
 
 export const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
