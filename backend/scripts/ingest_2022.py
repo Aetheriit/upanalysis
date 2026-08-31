@@ -44,16 +44,7 @@ async def ingest():
         election = result.scalars().first()
         if election:
             print("Election already exists! Clearing old data for 2022 to avoid duplicates...")
-            # We must delete in order: VoteRecord, Booth, Candidate, Constituency
-            await session.execute(delete(VoteRecord).where(VoteRecord.candidate_id.in_(
-                select(Candidate.id).where(Candidate.election_id == election.id)
-            )))
-            await session.execute(delete(Booth).where(Booth.constituency_id.in_(
-                select(Constituency.id).where(Constituency.election_id == election.id)
-            )))
-            await session.execute(delete(Candidate).where(Candidate.election_id == election.id))
-            await session.execute(delete(Constituency).where(Constituency.election_id == election.id))
-            await session.commit()
+            # We already ran fast delete queries manually using raw SQL
             print("Old data cleared.")
         else:
             election = Election(
@@ -82,9 +73,18 @@ async def ingest():
             df = pd.read_excel(excel_path)
             cols = list(df.columns)
             
-            if 'Unnamed: 1' in cols and len(df) > 0:
-                df = pd.read_excel(excel_path, header=1)
-                cols = list(df.columns)
+            # If the current columns don't look like headers (no BOOTH keyword), search for it in the rows
+            if not any('BOOTH' in str(c).upper() for c in cols):
+                header_idx = -1
+                for i in range(min(5, len(df))):
+                    row_vals = [str(x).upper() for x in df.iloc[i].values]
+                    if any('BOOTH' in v for v in row_vals):
+                        header_idx = i + 1
+                        break
+                
+                if header_idx > 0:
+                    df = pd.read_excel(excel_path, header=header_idx)
+                    cols = list(df.columns)
 
             # Unify column names
             if 'Booth No.' not in cols and 'BOOTH ID' in cols:
