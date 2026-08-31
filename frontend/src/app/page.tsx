@@ -354,8 +354,20 @@ export default function ExecutiveDashboard() {
                     itemStyle={{ color: 'var(--text-primary)' }}
                     cursor={{fill: 'var(--bg-app)'}}
                   />
-                  {viewMode !== "2022 Only" && <Bar dataKey="2017" fill="#D4AF37" fillOpacity={0.5} radius={[4, 4, 0, 0]} />}
-                  {viewMode !== "2017 Only" && <Bar dataKey="2022" fill="#D4AF37" radius={[4, 4, 0, 0]} />}
+                  {viewMode !== "2022 Only" && (
+                    <Bar dataKey="2017" radius={[4, 4, 0, 0]}>
+                      {voteShare.map((entry, index) => (
+                        <Cell key={`cell-2017-${index}`} fill={(COLORS as any)[entry.name] || '#94A3B8'} fillOpacity={0.5} />
+                      ))}
+                    </Bar>
+                  )}
+                  {viewMode !== "2017 Only" && (
+                    <Bar dataKey="2022" radius={[4, 4, 0, 0]}>
+                      {voteShare.map((entry, index) => (
+                        <Cell key={`cell-2022-${index}`} fill={(COLORS as any)[entry.name] || '#94A3B8'} />
+                      ))}
+                    </Bar>
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
