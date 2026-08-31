@@ -370,9 +370,9 @@ async def get_booth_analysis(
 
             query = query.filter(Constituency.name == constituency)
 
-        
+        else:
 
-        query = query.limit(50)
+            query = query.limit(50)
 
         result = await db.execute(query)
 
