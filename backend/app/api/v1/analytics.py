@@ -24,6 +24,10 @@ from app.models.booth import Booth, VoteRecord
 
 from app.models.candidate import Candidate
 
+from app.models.party import Party
+
+from sqlalchemy.orm import joinedload
+
 
 
 router = APIRouter()
@@ -782,5 +786,105 @@ async def get_trend_data(
     
 
     return {"trends": trends, "years": years, "parties": list(parties_data.keys())}
+
+
+
+@router.get("/candidates")
+
+async def get_candidates(
+
+    election_year: Optional[int] = None,
+
+    constituency_id: Optional[str] = None,
+
+    party: Optional[str] = None,
+
+    limit: int = 10000,
+
+    db: AsyncSession = Depends(get_db)
+
+):
+
+    """Get candidates with optional filtering."""
+
+    year_to_fetch = election_year if election_year is not None else 2022
+
+    
+
+    query = (
+
+        select(Candidate, Constituency, Party)
+
+        .join(Constituency, Candidate.constituency_id == Constituency.id)
+
+        .join(Election, Candidate.election_id == Election.id)
+
+        .outerjoin(Party, Candidate.party_id == Party.id)
+
+        .filter(Election.year == year_to_fetch)
+
+    )
+
+
+
+    if constituency_id:
+
+        query = query.filter(Constituency.id == constituency_id)
+
+    if party:
+
+        query = query.filter(Party.abbreviation == party)
+
+
+
+    # Filter out NOTA and bad records
+
+    query = query.filter(Candidate.name.not_in(['NOTA', 'TOTAL VOTES POLLED', 'TOTAL VOTES']))
+
+
+
+    query = query.order_by(Candidate.votes_received.desc().nulls_last()).limit(min(max(limit, 1), 10000))
+
+
+
+    result = await db.execute(query)
+
+    rows = result.all()
+
+
+
+    candidates = []
+
+    for cand, const, pty in rows:
+
+        candidates.append({
+
+            "id": str(cand.id),
+
+            "name": cand.name,
+
+            "party": pty.abbreviation if pty else "IND",
+
+            "constituency": const.name,
+
+            "district": const.district or "Unknown",
+
+            "votes_received": cand.votes_received or 0,
+
+            "vote_share_pct": cand.vote_share_pct or 0.0,
+
+            "margin": cand.margin or 0,
+
+            "position": cand.position or 0,
+
+            "is_winner": cand.is_winner or False,
+
+            "deposit_lost": cand.deposit_lost or False
+
+        })
+
+
+
+    return {"candidates": candidates, "total": len(candidates)}
 
 

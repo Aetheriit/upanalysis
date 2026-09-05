@@ -53,6 +53,7 @@ services:
       - "./2022 data:/2022 data"
       - "./2022 data 2:/2022 data 2"
       - "./2022 missing:/2022 missing"
+      - "./up_2017_results.csv:/app/up_2017_results.csv:ro"
 
   # Caddy Reverse Proxy
   caddy:
