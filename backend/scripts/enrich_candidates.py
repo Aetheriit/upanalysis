@@ -36,10 +36,14 @@ def extract_2022_candidates(data_dir):
             continue
         
         try:
-            wb = openpyxl.load_workbook(fpath, read_only=True, data_only=True)
-            ws = wb.active
-            rows = list(ws.iter_rows(max_row=6, values_only=True))
-            wb.close()
+            if fpath.lower().endswith('.xls'):
+                import pandas as pd
+                rows = pd.read_excel(fpath, header=None, nrows=6, engine='xlrd').fillna('').values.tolist()
+            else:
+                wb = openpyxl.load_workbook(fpath, read_only=True, data_only=True)
+                ws = wb.active
+                rows = list(ws.iter_rows(max_row=6, values_only=True))
+                wb.close()
             
             if len(rows) < 5:
                 continue
@@ -66,8 +70,7 @@ def extract_2022_candidates(data_dir):
                     party = None
                     if i + 1 < len(party_row) and party_row[i + 1]:
                         party_val = str(party_row[i + 1]).strip()
-                        if party_val and party_val != 'nan' and party_val != 'Party Affilication':
-                            party = party_val.upper()
+                        party = normalize_party(party_val)
                     
                     if not party:
                         party = 'IND'
@@ -80,6 +83,31 @@ def extract_2022_candidates(data_dir):
             print(f"Error reading AC{ac_num}: {e}")
     
     return results
+
+
+def normalize_party(value):
+    """Map noisy ECI header text to a safe, stable party abbreviation."""
+    text = str(value or '').upper().replace('\n', ' ')
+    mappings = (
+        ('SUHELDEV BHARATIYA SAMAJ PARTY', 'SBSP'),
+        ('SUHELDEO BHARATIYA SAMAJ PARTY', 'SBSP'),
+        ('BAHUJAN SAMAJ PARTY', 'BSP'),
+        ('BHARATIYA JANATA PARTY', 'BJP'),
+        ('SAMAJWADI PARTY', 'SP'),
+        ('INDIAN NATIONAL CONGRESS', 'INC'),
+        ('ALL INDIA MAJLIS', 'AIMIM'),
+        ('APNA DAL', 'AD(S)'),
+        ('NISHAD', 'NISHAD'),
+        ('RASHTRIYA LOK DAL', 'RLD'),
+        ('AAM AADMI PARTY', 'AAP'),
+        ('JANATA DAL', 'JD(U)'),
+        ('NATIONALIST CONGRESS', 'NCP'),
+        ('INDEPENDENT', 'IND'),
+    )
+    for marker, abbreviation in mappings:
+        if marker in text:
+            return abbreviation
+    return None
 
 
 def load_2017_party_map(csv_path):
