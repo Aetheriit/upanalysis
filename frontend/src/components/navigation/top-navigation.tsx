@@ -58,7 +58,7 @@ export function TopNavigation() {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(apiUrl(`/api/v1/search?q=${encodeURIComponent(query.trim())}`));
+        const res = await fetch(apiUrl(`/api/v1/search/?q=${encodeURIComponent(query.trim())}`));
         if (res.ok) {
           const data = await res.json();
           setResults(data);

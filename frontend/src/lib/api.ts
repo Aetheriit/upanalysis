@@ -12,6 +12,14 @@ const isLocalApiUrl = configuredApiUrl?.includes("localhost:8000") || configured
 // A localhost value is useful locally but can never work from a deployed browser.
 // Fall back to Render if an old/misconfigured Vercel environment variable leaks
 // into a production build.
-export const API_BASE_URL = DEPLOYED_API_URL;
+export const API_BASE_URL = "http://212.38.94.114"; // Fallback absolute URL for SSR
 
-export const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
+export const apiUrl = (path: string) => {
+  // If running in the browser (client-side), always use relative paths
+  // This avoids CORS issues and correctly inherits the user's protocol/host (e.g. HTTP vs HTTPS)
+  if (typeof window !== "undefined") {
+    return path;
+  }
+  // For Server-Side Rendering (SSR), use the absolute URL
+  return `${API_BASE_URL}${path}`;
+};
