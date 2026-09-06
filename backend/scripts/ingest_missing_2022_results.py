@@ -13,6 +13,12 @@ import asyncpg
 import pandas as pd
 
 MISSING_ACS = [119, 176, 177, 179, 187, 242, 295, 299, 321, 371, 381, 386, 389, 390]
+SLUGS = {
+    119: "meerganj", 176: "mohanlalganj", 177: "bachhrawan", 179: "harchandpur",
+    187: "isauli", 242: "husainganj", 295: "mehnaun", 299: "tarabganj",
+    321: "pipraich", 371: "zafrabad", 381: "sakaldiha", 386: "shivpur",
+    389: "varanasi-south", 390: "varanasi-cantt",
+}
 
 
 def party_abbreviation(value):
@@ -34,17 +40,25 @@ def party_abbreviation(value):
 def read_result_rows(ac):
     url = f"https://results.eci.gov.in/ResultAcGenMar2022/ConstituencywiseS24{ac}.htm?ac={ac}"
     request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 ElectionIntelligenceDataAudit/1.0"})
-    html = urllib.request.urlopen(request, timeout=30).read().decode("utf-8", "ignore")
-    tables = pd.read_html(StringIO(html))
+    try:
+        html = urllib.request.urlopen(request, timeout=30).read().decode("utf-8", "ignore")
+        tables = pd.read_html(StringIO(html))
+    except Exception:
+        # Some constituency pages are unavailable on the current ECI result UI.
+        # Use the public constituency result mirror only for these missing rows.
+        fallback = f"https://election-analytics.ajaikumark.com/state/uttar-pradesh/2022/{SLUGS[ac]}/"
+        fallback_request = urllib.request.Request(fallback, headers={"User-Agent": "Mozilla/5.0 ElectionIntelligenceDataAudit/1.0"})
+        html = urllib.request.urlopen(fallback_request, timeout=30).read().decode("utf-8", "ignore")
+        tables = pd.read_html(StringIO(html))
     for table in tables:
         columns = [str(c).lower() for c in table.columns]
-        if any("candidate" in c for c in columns) and any("total" in c for c in columns):
+        if any("candidate" in c for c in columns) and any("vote" in c for c in columns):
             candidate_col = next(c for c in table.columns if "candidate" in str(c).lower())
             party_col = next(c for c in table.columns if "party" in str(c).lower())
-            total_col = next(c for c in table.columns if "total" in str(c).lower())
+            total_col = next(c for c in table.columns if "total" in str(c).lower() or "votes" in str(c).lower())
             rows = []
             for _, row in table.iterrows():
-                name = str(row[candidate_col]).strip()
+                name = str(row[candidate_col]).replace("✓ Winner", "").strip()
                 if not name or name.lower() == "nan":
                     continue
                 try:
