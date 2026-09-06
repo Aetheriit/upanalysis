@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { Brain, LineChart, Target, AlertTriangle, TrendingUp, ShieldCheck } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { Cell } from "recharts";
+import { getPartyColor } from "@/lib/party-colors";
 
 const forecastData = [
   { party: "BJP", predicted: 240, low: 220, high: 265 },
@@ -59,9 +61,15 @@ export default function ForecastingPage() {
                 <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="low" name="Low Estimate" fill="#D4AF37" fillOpacity={0.2} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="predicted" name="Predicted" fill="#D4AF37" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="high" name="High Estimate" fill="#D4AF37" fillOpacity={0.5} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="low" name="Low Estimate" fillOpacity={0.2} radius={[4, 4, 0, 0]}>
+                  {forecastData.map(entry => <Cell key={`low-${entry.party}`} fill={getPartyColor(entry.party)} />)}
+                </Bar>
+                <Bar dataKey="predicted" name="Predicted" radius={[4, 4, 0, 0]}>
+                  {forecastData.map(entry => <Cell key={`predicted-${entry.party}`} fill={getPartyColor(entry.party)} />)}
+                </Bar>
+                <Bar dataKey="high" name="High Estimate" fillOpacity={0.5} radius={[4, 4, 0, 0]}>
+                  {forecastData.map(entry => <Cell key={`high-${entry.party}`} fill={getPartyColor(entry.party)} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

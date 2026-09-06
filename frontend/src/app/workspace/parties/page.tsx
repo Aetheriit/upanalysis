@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
+import { getPartyColor } from "@/lib/party-colors";
 import { Search, Download, MoreHorizontal, Flag } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
@@ -54,10 +55,14 @@ export default function PartiesPage() {
                 <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
                 {(isComparison || is2017) && (
-                  <Bar dataKey="2017" fill="#D4AF37" fillOpacity={isComparison ? 0.4 : 1} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="2017" fillOpacity={isComparison ? 0.4 : 1} radius={[4, 4, 0, 0]}>
+                    {seatData.map(entry => <Cell key={`2017-${entry.name}`} fill={getPartyColor(entry.name)} />)}
+                  </Bar>
                 )}
                 {(isComparison || is2022) && (
-                  <Bar dataKey="2022" fill="#D4AF37" fillOpacity={1} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="2022" fillOpacity={1} radius={[4, 4, 0, 0]}>
+                    {seatData.map(entry => <Cell key={`2022-${entry.name}`} fill={getPartyColor(entry.name)} />)}
+                  </Bar>
                 )}
               </BarChart>
             </ResponsiveContainer>

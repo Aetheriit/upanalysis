@@ -6,8 +6,9 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { Search, Download, Users, Trophy, IndianRupee, Calendar, MapPin, Loader2 } from "lucide-react";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { getPartyColor } from "@/lib/party-colors";
 
-const partyColor: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", INC: "#22C55E", AIMIM: "#06B6D4", IND: "#94A3B8" };
+const partyColor = getPartyColor;
 
 export default function CandidatesPage() {
   const { is2017 } = useElectionContext();
@@ -205,7 +206,7 @@ export default function CandidatesPage() {
                       {c.position > 0 && <div className="text-xs text-[var(--text-tertiary)]">Position: {c.position}</div>}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: `${partyColor[c.party] || '#94A3B8'}20`, color: partyColor[c.party] || '#94A3B8' }}>
+                      <span className="px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: `${partyColor(c.party)}20`, color: partyColor(c.party) }}>
                         {c.party}
                       </span>
                     </td>
@@ -227,7 +228,7 @@ export default function CandidatesPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-mono text-[var(--text-primary)]">{Number(c.vote_share_pct || 0).toFixed(1)}%</span>
                         <div className="w-16 h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${Math.min(100, c.vote_share_pct)}%`, backgroundColor: partyColor[c.party] || '#94A3B8' }} />
+                          <div className="h-full rounded-full" style={{ width: `${Math.min(100, c.vote_share_pct)}%`, backgroundColor: partyColor(c.party) }} />
                         </div>
                       </div>
                     </td>

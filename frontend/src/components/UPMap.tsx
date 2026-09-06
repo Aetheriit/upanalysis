@@ -3,16 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
-
-const PARTY_COLORS: Record<string, string> = {
-  BJP: "#F97316",
-  SP: "#EF4444",
-  BSP: "#2563EB",
-  INC: "#22C55E",
-  RLD: "#EAB308",
-  Others: "#94A3B8",
-  OTH: "#94A3B8",
-};
+import { PARTY_COLORS } from "@/lib/party-colors";
 
 const normalizeConstituencyName = (value: string) => value
   .toLowerCase()
