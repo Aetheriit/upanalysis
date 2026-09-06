@@ -96,7 +96,7 @@ async def main():
             if candidate:
                 await conn.execute("UPDATE candidates SET party_id=$1,votes_received=$2,vote_share_pct=$3,margin=$4,is_winner=$5,position=$6,deposit_lost=$7 WHERE id=$8", party_id, *values, candidate["id"])
             else:
-                await conn.execute("INSERT INTO candidates (id,election_id,constituency_id,party_id,name,votes_received,vote_share_pct,margin,is_winner,position,deposit_lost,created_at) VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())", election["id"], const["id"], party_id, name, *values)
+                await conn.execute("INSERT INTO candidates (id,election_id,constituency_id,party_id,name,votes_received,vote_share_pct,margin,is_winner,position,deposit_lost,created_at) VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())", election["id"], const["id"], party_id, name, *values)
         winner = rows[0] if rows else (None, None, 0)
         await conn.execute("UPDATE constituencies SET winner_name=$1,winner_party=$2,winning_margin=$3 WHERE id=$4", winner[0], winner[1], rows[0][2] - rows[1][2] if len(rows) > 1 else 0, const["id"])
         print(f"AC {ac} ({const['name']}): imported {len(rows)} candidates")
