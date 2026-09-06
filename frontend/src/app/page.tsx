@@ -179,17 +179,17 @@ export default function ExecutiveDashboard() {
               const diff = t22 - t17;
               const isUp = diff >= 0;
               return (
-                <div className="flex items-center justify-between w-full px-2 mt-1">
+                <div className="flex items-center justify-between w-full mt-1">
                   <div className="flex flex-col items-center">
-                    <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2017?.turnout_pct || "0"}%</div>
+                    <div className="text-base font-bold text-[var(--text-primary)] leading-tight tracking-tight">{kpis2017?.turnout_pct || "0"}%</div>
                     <div className="text-[10px] text-[var(--text-tertiary)]">2017</div>
                   </div>
-                  <div className={`flex flex-col items-center justify-center px-1 text-xs font-bold ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    <span>{isUp ? '↑' : '↓'}</span>
-                    <span>{Math.abs(diff).toFixed(2)}%</span>
+                  <div className={`flex flex-col items-center justify-center px-0.5 text-[10px] font-bold ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <span className="leading-none">{isUp ? '↑' : '↓'}</span>
+                    <span className="leading-tight tracking-tighter">{Math.abs(diff).toFixed(2)}%</span>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2022?.turnout_pct || "0"}%</div>
+                    <div className="text-base font-bold text-[var(--text-primary)] leading-tight tracking-tight">{kpis2022?.turnout_pct || "0"}%</div>
                     <div className="text-[10px] text-[var(--text-tertiary)]">2022</div>
                   </div>
                 </div>
