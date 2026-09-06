@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, ArrowRightLeft, Users, TrendingUp, Target, 
   Brain, Search, Map, BarChart3, Clock, AlertTriangle, ShieldAlert,
-  ChevronRight, Filter
+  ChevronRight, Filter, X
 } from "lucide-react";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { 
@@ -31,6 +31,15 @@ const COLORS = {
   OTH: "#94A3B8"
 };
 
+// UP Regions mapping (standard administrative regions)
+const UP_REGIONS: Record<string, string[]> = {
+  "Western UP": ["Saharanpur","Shamli","Muzaffarnagar","Bijnor","Moradabad","Rampur","Amroha","Meerut","Baghpat","Ghaziabad","Hapur","Gautam Buddha Nagar","Bulandshahr","Aligarh","Hathras","Mathura","Agra","Firozabad","Mainpuri","Etah","Kasganj","Farrukhabad","Kannauj","Etawah","Auraiya"],
+  "Central UP": ["Kanpur Dehat","Kanpur Nagar","Unnao","Lucknow","Rae Bareli","Hardoi","Sitapur","Lakhimpur Kheri","Barabanki","Fatehpur","Kaushambi","Prayagraj"],
+  "Bundelkhand": ["Jalaun","Jhansi","Lalitpur","Hamirpur","Mahoba","Banda","Chitrakoot"],
+  "Eastern UP": ["Pratapgarh","Ayodhya","Ambedkar Nagar","Amethi","Sultanpur","Gonda","Balrampur","Shravasti","Bahraich","Basti","Sant Kabir Nagar","Siddharth Nagar","Gorakhpur","Maharajganj","Kushinagar","Deoria","Mau","Azamgarh","Ballia","Varanasi","Chandauli","Ghazipur","Jaunpur","Mirzapur","Sonbhadra"],
+  "Awadh": ["Lucknow","Barabanki","Faizabad","Ayodhya","Ambedkar Nagar","Amethi","Sultanpur","Gonda","Balrampur","Shravasti","Bahraich"],
+};
+
 const defaultSeatChangesData = [
   { name: 'Won by same party', value: 306, color: '#10B981' },
   { name: 'Changed hands', value: 97, color: '#EF4444' },
@@ -46,18 +55,32 @@ export default function ExecutiveDashboard() {
   const [swingData, setSwingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Computed active KPIs based on view mode
+  // All constituencies data for client-side filtering
+  const [allConst17, setAllConst17] = useState<any[]>([]);
+  const [allConst22, setAllConst22] = useState<any[]>([]);
+  const [districtList, setDistrictList] = useState<string[]>([]);
+
+  // Filter state
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterParty, setFilterParty] = useState("");
+
+  const activeYear = viewMode === "2017 Only" ? "2017" : "2022";
+
+  // Compute active KPIs based on view mode
   const activeKpis = viewMode === "2022 Only" ? kpis2022 : kpis2017;
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [kpi17Res, kpi22Res, vote17Res, vote22Res, swingRes] = await Promise.all([
+        const [kpi17Res, kpi22Res, vote17Res, vote22Res, swingRes, const17Res, const22Res] = await Promise.all([
           fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2017")),
           fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2022")),
           fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2017")),
           fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2022")),
-          fetch(apiUrl("/api/v1/analytics/swing"))
+          fetch(apiUrl("/api/v1/analytics/swing")),
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017")),
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022")),
         ]);
         
         const kpi17Data = await kpi17Res.json();
@@ -65,11 +88,25 @@ export default function ExecutiveDashboard() {
         const vote17Data = await vote17Res.json();
         const vote22Data = await vote22Res.json();
         const swingD = await swingRes.json();
+        const c17Data = await const17Res.json();
+        const c22Data = await const22Res.json();
         
         setKpis2017(kpi17Data.kpis);
         setKpis2022(kpi22Data.kpis);
+
+        const c17 = c17Data.constituencies || [];
+        const c22 = c22Data.constituencies || [];
+        setAllConst17(c17);
+        setAllConst22(c22);
+
+        // Build sorted district list from real data
+        const districts = Array.from(new Set([
+          ...c17.map((c: any) => c.district),
+          ...c22.map((c: any) => c.district),
+        ])).filter(Boolean).sort() as string[];
+        setDistrictList(districts);
         
-        // Transform vote share data for Recharts — merge 2017 and 2022 by abbreviation
+        // Transform vote share data for Recharts
         if (vote17Data.vote_share && vote22Data.vote_share) {
           const s17: any = {};
           const s22: any = {};
@@ -98,6 +135,109 @@ export default function ExecutiveDashboard() {
     fetchData();
   }, []);
 
+  // --- Client-side filtered KPIs ---
+  const filteredKpis = useMemo(() => {
+    const hasFilter = filterDistrict || filterRegion || filterParty;
+    if (!hasFilter) return null; // null = use full API KPIs
+
+    const activeConst = viewMode === "2017 Only" ? allConst17 : allConst22;
+    
+    // Get districts that belong to selected region
+    const regionDistricts = filterRegion ? (UP_REGIONS[filterRegion] || []) : [];
+
+    const filtered = activeConst.filter((c: any) => {
+      if (filterDistrict && c.district !== filterDistrict) return false;
+      if (filterRegion && !regionDistricts.includes(c.district)) return false;
+      if (filterParty && c.winner_party !== filterParty) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) return { total_constituencies: 0, total_votes: 0, turnout_pct: 0, winning_margin_avg: 0 };
+
+    const totalVotes = filtered.reduce((s: number, c: any) => s + (c.votes_polled || 0), 0);
+    const totalElectors = filtered.reduce((s: number, c: any) => s + (c.total_electors || 0), 0);
+    const totalMargin = filtered.reduce((s: number, c: any) => s + (c.winning_margin || 0), 0);
+    const turnout = totalElectors > 0 ? (totalVotes / totalElectors * 100) : 0;
+    const avgMargin = filtered.length > 0 ? Math.round(totalMargin / filtered.length) : 0;
+
+    // Closest contest among filtered
+    const closestContest = [...filtered].sort((a: any, b: any) => (a.winning_margin || 999999) - (b.winning_margin || 999999))[0];
+
+    // Compute party-wise seat counts for filtered
+    const partyCounts: Record<string, number> = {};
+    filtered.forEach((c: any) => {
+      const p = c.winner_party || "OTH";
+      partyCounts[p] = (partyCounts[p] || 0) + 1;
+    });
+
+    return {
+      total_constituencies: filtered.length,
+      total_votes: totalVotes,
+      turnout_pct: parseFloat(turnout.toFixed(2)),
+      winning_margin_avg: avgMargin,
+      closest_contest_name: closestContest?.name || "",
+      closest_contest_code: closestContest?.code || "",
+      closest_contest_margin: closestContest?.winning_margin || 0,
+      nota_pct: activeKpis?.nota_pct || 0,
+      total_booths: null, // not available per-district in this data
+      _partyCounts: partyCounts,
+      _filtered: filtered,
+    };
+  }, [filterDistrict, filterRegion, filterParty, viewMode, allConst17, allConst22, activeKpis]);
+
+  // Displayed KPIs: filtered if any filter active, else raw API KPIs
+  const displayedKpis = filteredKpis || activeKpis;
+
+  // Filtered seat tally
+  const displayedSeats17 = useMemo(() => {
+    const hasFilter = filterDistrict || filterRegion || filterParty;
+    if (!hasFilter) return seats17;
+    const regionDistricts = filterRegion ? (UP_REGIONS[filterRegion] || []) : [];
+    const filtered = allConst17.filter((c: any) => {
+      if (filterDistrict && c.district !== filterDistrict) return false;
+      if (filterRegion && !regionDistricts.includes(c.district)) return false;
+      if (filterParty && c.winner_party !== filterParty) return false;
+      return true;
+    });
+    const counts: Record<string, number> = {};
+    filtered.forEach((c: any) => { const p = c.winner_party || "OTH"; counts[p] = (counts[p] || 0) + 1; });
+    // Group non-major parties as OTH
+    const result: any = { BJP: 0, SP: 0, BSP: 0, INC: 0, RLD: 0, OTH: 0 };
+    Object.entries(counts).forEach(([p, n]) => {
+      if (result.hasOwnProperty(p)) result[p] = n;
+      else result.OTH += n;
+    });
+    return result;
+  }, [filterDistrict, filterRegion, filterParty, allConst17, seats17]);
+
+  const displayedSeats22 = useMemo(() => {
+    const hasFilter = filterDistrict || filterRegion || filterParty;
+    if (!hasFilter) return seats22;
+    const regionDistricts = filterRegion ? (UP_REGIONS[filterRegion] || []) : [];
+    const filtered = allConst22.filter((c: any) => {
+      if (filterDistrict && c.district !== filterDistrict) return false;
+      if (filterRegion && !regionDistricts.includes(c.district)) return false;
+      if (filterParty && c.winner_party !== filterParty) return false;
+      return true;
+    });
+    const counts: Record<string, number> = {};
+    filtered.forEach((c: any) => { const p = c.winner_party || "OTH"; counts[p] = (counts[p] || 0) + 1; });
+    const result: any = { BJP: 0, SP: 0, BSP: 0, INC: 0, RLD: 0, OTH: 0 };
+    Object.entries(counts).forEach(([p, n]) => {
+      if (result.hasOwnProperty(p)) result[p] = n;
+      else result.OTH += n;
+    });
+    return result;
+  }, [filterDistrict, filterRegion, filterParty, allConst22, seats22]);
+
+  const hasActiveFilter = !!(filterDistrict || filterRegion || filterParty);
+
+  const clearFilters = () => {
+    setFilterDistrict("");
+    setFilterRegion("");
+    setFilterParty("");
+  };
+
   if (loading) {
     return <div className="p-8 pb-20 max-w-[1920px] mx-auto space-y-6 animate-pulse">
       <div className="h-10 bg-[var(--bg-surface)] rounded w-1/3 mb-6"></div>
@@ -120,7 +260,9 @@ export default function ExecutiveDashboard() {
               {viewMode === "Comparison (17 vs 22)" ? "Comparative Analysis 2017 ↔ 2022" : `${viewMode.split(' ')[0]} Election Analysis`}
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)]" />
-            <span className="text-[var(--text-secondary)] text-sm">Deep intelligence from {activeKpis?.total_constituencies || 403} Assembly Constituencies across 75 Districts</span>
+            <span className="text-[var(--text-secondary)] text-sm">
+              Deep intelligence from {displayedKpis?.total_constituencies || 403} Assembly Constituencies across 75 Districts
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -131,17 +273,64 @@ export default function ExecutiveDashboard() {
       </div>
 
       {/* Filter Ribbon */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <select className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px]">
-          <option>All Districts</option>
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide flex-wrap">
+        {/* District Filter */}
+        <select
+          value={filterDistrict}
+          onChange={(e) => { setFilterDistrict(e.target.value); setFilterRegion(""); }}
+          className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] cursor-pointer"
+        >
+          <option value="">All Districts</option>
+          {districtList.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px]">
-          <option>All Regions</option>
+
+        {/* Region Filter */}
+        <select
+          value={filterRegion}
+          onChange={(e) => { setFilterRegion(e.target.value); setFilterDistrict(""); }}
+          className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] cursor-pointer"
+        >
+          <option value="">All Regions</option>
+          {Object.keys(UP_REGIONS).map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <select className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px]">
-          <option>All Parties</option>
+
+        {/* Party Filter */}
+        <select
+          value={filterParty}
+          onChange={(e) => setFilterParty(e.target.value)}
+          className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] min-w-[160px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] cursor-pointer"
+        >
+          <option value="">All Parties</option>
+          <option value="BJP">BJP</option>
+          <option value="SP">SP</option>
+          <option value="BSP">BSP</option>
+          <option value="INC">INC (Congress)</option>
+          <option value="RLD">RLD</option>
+          <option value="SBSP">SBSP</option>
+          <option value="AD(S)">AD(S)</option>
+          <option value="JD(L)">JD(L)</option>
         </select>
         
+        {/* Active filter badge + clear */}
+        {hasActiveFilter && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 rounded-lg text-sm font-medium hover:bg-[var(--accent-primary)]/20 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear Filters
+          </button>
+        )}
+
+        {hasActiveFilter && (
+          <span className="text-xs text-[var(--text-secondary)] bg-[var(--bg-surface)] px-3 py-2 rounded-lg border border-[var(--border-subtle)]">
+            Showing <span className="font-bold text-[var(--accent-primary)]">{displayedKpis?.total_constituencies || 0}</span> constituencies
+            {filterDistrict && <> in <span className="font-semibold">{filterDistrict}</span></>}
+            {filterRegion && <> in <span className="font-semibold">{filterRegion}</span></>}
+            {filterParty && <> won by <span className="font-semibold">{filterParty}</span></>}
+          </span>
+        )}
+
         <div className="flex-1" />
         
         <button className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center gap-2 whitespace-nowrap">
@@ -156,7 +345,7 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Building2 className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Total Constituencies</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">{kpis2017?.total_constituencies || "403"}</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{displayedKpis?.total_constituencies || "403"}</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center relative overflow-hidden">
@@ -209,8 +398,8 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Target className="w-4 h-4 text-orange-500" /> <span className="text-xs font-medium uppercase">Closest Contest</span>
             </div>
-            <span className="text-2xl font-bold text-[var(--text-primary)]">{activeKpis?.closest_contest_code || "314"}</span>
-            <span className="text-xs text-[var(--text-secondary)]">{activeKpis?.closest_contest_name || "Meerapur"} (Margin: {activeKpis?.closest_contest_margin?.toLocaleString() || "1,046"})</span>
+            <span className="text-2xl font-bold text-[var(--text-primary)]">{displayedKpis?.closest_contest_code || activeKpis?.closest_contest_code || "314"}</span>
+            <span className="text-xs text-[var(--text-secondary)]">{displayedKpis?.closest_contest_name || activeKpis?.closest_contest_name || "Meerapur"} (Margin: {(displayedKpis?.closest_contest_margin || activeKpis?.closest_contest_margin)?.toLocaleString() || "1,046"})</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
@@ -249,7 +438,7 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Building2 className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Total Constituencies</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">{activeKpis?.total_constituencies || "403"}</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{displayedKpis?.total_constituencies || "403"}</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center relative overflow-hidden">
@@ -257,7 +446,7 @@ export default function ExecutiveDashboard() {
               <BarChart3 className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Total Booths</span>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold text-[var(--text-primary)]">{activeKpis?.total_booths?.toLocaleString() || "154,012"}</span>
+              <span className="text-3xl font-bold text-[var(--text-primary)]">{displayedKpis?.total_booths?.toLocaleString() || activeKpis?.total_booths?.toLocaleString() || "154,012"}</span>
             </div>
           </PremiumCard>
 
@@ -265,29 +454,29 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Users className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Avg Turnout</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">{activeKpis?.turnout_pct || "61.4"}%</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{displayedKpis?.turnout_pct || "61.4"}%</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <TrendingUp className="w-4 h-4 text-emerald-500" /> <span className="text-xs font-medium uppercase">Avg Margin</span>
             </div>
-            <span className="text-2xl font-bold text-[var(--text-primary)]">{activeKpis?.winning_margin_avg?.toLocaleString() || "24,891"}</span>
+            <span className="text-2xl font-bold text-[var(--text-primary)]">{(displayedKpis?.winning_margin_avg || activeKpis?.winning_margin_avg)?.toLocaleString() || "24,891"}</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Target className="w-4 h-4 text-orange-500" /> <span className="text-xs font-medium uppercase">Closest Contest</span>
             </div>
-            <span className="text-2xl font-bold text-[var(--text-primary)]">{activeKpis?.closest_contest_code || "314"}</span>
-            <span className="text-xs text-[var(--text-secondary)]">{activeKpis?.closest_contest_name || "Meerapur"} (Margin: {activeKpis?.closest_contest_margin?.toLocaleString() || "1,046"})</span>
+            <span className="text-2xl font-bold text-[var(--text-primary)]">{displayedKpis?.closest_contest_code || activeKpis?.closest_contest_code || "314"}</span>
+            <span className="text-xs text-[var(--text-secondary)]">{displayedKpis?.closest_contest_name || activeKpis?.closest_contest_name || "Meerapur"} (Margin: {(displayedKpis?.closest_contest_margin || activeKpis?.closest_contest_margin)?.toLocaleString() || "1,046"})</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <PieChart className="w-4 h-4" /> <span className="text-xs font-medium uppercase">NOTA %</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">{activeKpis?.nota_pct || "2.86"}%</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{displayedKpis?.nota_pct || activeKpis?.nota_pct || "2.86"}%</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center bg-gradient-to-br from-[var(--bg-surface)] to-[var(--accent-primary)]/5">
@@ -327,8 +516,8 @@ export default function ExecutiveDashboard() {
                 { label: "RLD", key: "RLD", color: "#EAB308" },
                 { label: "OTH", key: "OTH", color: "#94A3B8" }
               ].map(party => {
-                const s17 = seats17[party.key] || 0;
-                const s22 = seats22[party.key] || 0;
+                const s17 = displayedSeats17[party.key] || 0;
+                const s22 = displayedSeats22[party.key] || 0;
                 const activeSeat = viewMode === "2017 Only" ? s17 : s22;
                 const diff = s22 - s17;
                 return (
@@ -406,7 +595,7 @@ export default function ExecutiveDashboard() {
               {[
                 `Total Polled Votes: ${activeKpis?.total_votes?.toLocaleString() || 0}`,
                 `Overall Turnout: ${activeKpis?.turnout_pct || 0}%`,
-                `Total Constituencies Analyzed: ${activeKpis?.total_constituencies || 403}`,
+                `Total Constituencies Analyzed: ${displayedKpis?.total_constituencies || activeKpis?.total_constituencies || 403}`,
                 "Machine Learning predictions active"
               ].map((highlight, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
