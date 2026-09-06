@@ -185,6 +185,65 @@ export default function ExecutiveDashboard() {
     };
   }, [filterDistrict, filterRegion, filterParty, viewMode, allConst17, allConst22, activeKpis]);
 
+  // --- Seat Changes Computation ---
+  const seatChanges = useMemo(() => {
+    if (!allConst17.length || !allConst22.length) return { same: 306, changed: 97, total: 403, largestSwing: null, chartData: defaultSeatChangesData };
+
+    const regionDistricts = filterRegion ? (UP_REGIONS[filterRegion] || []) : [];
+    
+    const filtered22 = allConst22.filter((c: any) => {
+      if (filterDistrict && c.district !== filterDistrict) return false;
+      if (filterRegion && !regionDistricts.includes(c.district)) return false;
+      if (filterParty && c.winner_party !== filterParty) return false;
+      return true;
+    });
+
+    let same = 0;
+    let changed = 0;
+    let maxSwing = 0;
+    let maxSwingConst: any = null;
+
+    filtered22.forEach((c22: any) => {
+      const c17 = allConst17.find(c => c.name === c22.name || c.code === c22.code);
+      if (c17) {
+        if (c17.winner_party === c22.winner_party) {
+          same++;
+        } else {
+          changed++;
+        }
+        
+        // Compute swing as difference in winning_margin_pct
+        const pct17 = c17.votes_polled ? (c17.winning_margin / c17.votes_polled) * 100 : 0;
+        const pct22 = c22.votes_polled ? (c22.winning_margin / c22.votes_polled) * 100 : 0;
+        const swing = Math.abs(pct22 - pct17);
+        
+        if (swing > maxSwing) {
+          maxSwing = swing;
+          maxSwingConst = {
+            name: c22.name,
+            fromParty: c17.winner_party || 'Unknown',
+            toParty: c22.winner_party || 'Unknown',
+            swingVal: swing
+          };
+        }
+      }
+    });
+
+    const total = same + changed;
+    const chartData = [
+      { name: 'Won by same party', value: same, color: '#10B981' },
+      { name: 'Changed hands', value: changed, color: '#EF4444' },
+    ];
+
+    return {
+      same,
+      changed,
+      total,
+      largestSwing: maxSwingConst,
+      chartData
+    };
+  }, [filterDistrict, filterRegion, filterParty, allConst17, allConst22]);
+
   // Displayed KPIs: filtered if any filter active, else raw API KPIs
   const displayedKpis = filteredKpis || activeKpis;
 
@@ -353,8 +412,10 @@ export default function ExecutiveDashboard() {
               <ArrowRightLeft className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Seats Changed</span>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold text-[var(--text-primary)]">97</span>
-              <span className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mb-1">↑ 24.07%</span>
+              <span className="text-3xl font-bold text-[var(--text-primary)]">{seatChanges.changed}</span>
+              <span className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mb-1">
+                {seatChanges.total ? ((seatChanges.changed / seatChanges.total) * 100).toFixed(1) : 0}%
+              </span>
             </div>
           </PremiumCard>
 
@@ -390,8 +451,8 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <TrendingUp className="w-4 h-4 text-rose-500" /> <span className="text-xs font-medium uppercase">Largest Swing</span>
             </div>
-            <span className="text-2xl font-bold text-[var(--text-primary)]">28.6%</span>
-            <span className="text-xs text-[var(--text-secondary)]">Phulpur (SP to BJP)</span>
+            <span className="text-2xl font-bold text-[var(--text-primary)]">{seatChanges.largestSwing?.swingVal.toFixed(1) || "0.0"}%</span>
+            <span className="text-xs text-[var(--text-secondary)]">{seatChanges.largestSwing ? `${seatChanges.largestSwing.name} (${seatChanges.largestSwing.fromParty} to ${seatChanges.largestSwing.toParty})` : "N/A"}</span>
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
@@ -614,14 +675,14 @@ export default function ExecutiveDashboard() {
           {viewMode === "Comparison (17 vs 22)" ? (
             <PremiumCard className="p-6">
                <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-1">Seat Changes Overview</h2>
-               <p className="text-xs text-[var(--text-secondary)] mb-6">2017 vs 2022 (Mock Comparison)</p>
+               <p className="text-xs text-[var(--text-secondary)] mb-6">2017 vs 2022 (Real Data)</p>
                
                <div className="flex items-center gap-4">
                  <div className="w-32 h-32 relative">
                    <ResponsiveContainer width="100%" height="100%">
                       <PieChart key={viewMode}>
                         <Pie
-                          data={defaultSeatChangesData}
+                          data={seatChanges.chartData}
                           cx="50%"
                           cy="50%"
                           innerRadius={45}
@@ -629,14 +690,14 @@ export default function ExecutiveDashboard() {
                           stroke="none"
                           dataKey="value"
                         >
-                          {defaultSeatChangesData.map((entry, index) => (
+                          {seatChanges.chartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                       </PieChart>
                    </ResponsiveContainer>
                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-xl font-bold text-[var(--text-primary)]">403</span>
+                      <span className="text-xl font-bold text-[var(--text-primary)]">{seatChanges.total}</span>
                       <span className="text-[10px] text-[var(--text-secondary)]">Total Seats</span>
                    </div>
                  </div>
@@ -645,16 +706,16 @@ export default function ExecutiveDashboard() {
                    <div>
                      <div className="flex items-center justify-between text-sm font-medium mb-1">
                        <div className="flex items-center gap-2"><span className="w-2 h-2 bg-[#10B981]" /> Won by same party</div>
-                       <span>306</span>
+                       <span>{seatChanges.same}</span>
                      </div>
-                     <div className="text-xs text-[var(--text-tertiary)] ml-4">(75.9%)</div>
+                     <div className="text-xs text-[var(--text-tertiary)] ml-4">({seatChanges.total ? ((seatChanges.same / seatChanges.total) * 100).toFixed(1) : 0}%)</div>
                    </div>
                    <div>
                      <div className="flex items-center justify-between text-sm font-medium mb-1">
                        <div className="flex items-center gap-2"><span className="w-2 h-2 bg-[#EF4444]" /> Changed hands</div>
-                       <span>97</span>
+                       <span>{seatChanges.changed}</span>
                      </div>
-                     <div className="text-xs text-[var(--text-tertiary)] ml-4">(24.1%)</div>
+                     <div className="text-xs text-[var(--text-tertiary)] ml-4">({seatChanges.total ? ((seatChanges.changed / seatChanges.total) * 100).toFixed(1) : 0}%)</div>
                    </div>
                  </div>
                </div>
