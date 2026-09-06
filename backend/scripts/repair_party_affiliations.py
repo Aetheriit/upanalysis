@@ -130,6 +130,12 @@ async def main():
                     exact = [m for m in matches if m["votes_received"] == source_votes]
                     if exact:
                         matches = exact
+                # Raw booth imports occasionally contain a truncated or
+                # malformed candidate name. Published vote totals are unique
+                # within a constituency in those cases, so use them as the
+                # safe fallback instead of leaving the party as IND.
+                if not matches and source_votes is not None:
+                    matches = [m for m in candidates if m["votes_received"] == source_votes]
                 if not matches or abbreviation == "NOTA":
                     unmatched += 1
                     continue
