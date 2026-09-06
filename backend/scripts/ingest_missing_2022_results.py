@@ -17,7 +17,7 @@ SLUGS = {
     119: "meerganj", 176: "mohanlalganj", 177: "bachhrawan", 179: "harchandpur",
     187: "isauli", 242: "husainganj", 295: "mehnaun", 299: "tarabganj",
     321: "pipraich", 371: "zafrabad", 381: "sakaldiha", 386: "shivpur",
-    389: "varanasi-south", 390: "varanasi-cantt",
+    389: "varanasi-south", 390: "varanasi-cantonment",
 }
 
 
