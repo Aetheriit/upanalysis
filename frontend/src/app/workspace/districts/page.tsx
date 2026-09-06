@@ -7,6 +7,8 @@ import { Search, Download, ArrowUpDown, MoreHorizontal, Users, TrendingUp, MapPi
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { SearchSync } from "@/components/shared/search-sync";
+import { Suspense } from "react";
 
 export default function DistrictsPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -18,10 +20,7 @@ export default function DistrictsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
-  useEffect(() => {
-    const initialSearch = new URLSearchParams(window.location.search).get("search");
-    if (initialSearch) setSearchTerm(initialSearch);
-  }, []);
+  // SearchSync is used instead
 
   useEffect(() => {
     setCurrentPage(1);
@@ -128,6 +127,9 @@ export default function DistrictsPage() {
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
+      <Suspense fallback={null}>
+        <SearchSync onSearch={setSearchTerm} />
+      </Suspense>
       <PageHeader
         title="Districts"
         description="District-level aggregations, demographics, and comparative turnout analysis across 75 districts."

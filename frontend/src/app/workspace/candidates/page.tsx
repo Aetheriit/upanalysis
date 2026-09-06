@@ -7,6 +7,8 @@ import { Search, Download, Users, Trophy, IndianRupee, Calendar, MapPin, Loader2
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 import { getPartyColor } from "@/lib/party-colors";
+import { SearchSync } from "@/components/shared/search-sync";
+import { Suspense } from "react";
 
 const partyColor = getPartyColor;
 
@@ -23,10 +25,8 @@ export default function CandidatesPage() {
   const [selectedResult, setSelectedResult] = useState("All Results");
   const [selectedConstituency, setSelectedConstituency] = useState("All Constituencies");
 
-  useEffect(() => {
-    const initialSearch = new URLSearchParams(window.location.search).get("search");
-    if (initialSearch) setSearchQuery(initialSearch);
-  }, []);
+  // Using SearchSync to sync search param
+
 
   useEffect(() => {
     // Fetch constituencies for the dropdown
@@ -101,6 +101,9 @@ export default function CandidatesPage() {
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
+      <Suspense fallback={null}>
+        <SearchSync onSearch={setSearchQuery} />
+      </Suspense>
       <PageHeader
         title="Candidates"
         description="Candidate profiles, historical performance, and election results."

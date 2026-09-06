@@ -6,6 +6,8 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { Search, Filter, Download, MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { SearchSync } from "@/components/shared/search-sync";
+import { Suspense } from "react";
 
 export default function ConstituenciesPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -16,10 +18,7 @@ export default function ConstituenciesPage() {
   const itemsPerPage = 50;
 
   // Reset to first page when search changes
-  useEffect(() => {
-    const initialSearch = new URLSearchParams(window.location.search).get("search");
-    if (initialSearch) setSearchTerm(initialSearch);
-  }, []);
+  // Using SearchSync instead
 
   useEffect(() => {
     setCurrentPage(1);
@@ -93,6 +92,9 @@ export default function ConstituenciesPage() {
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
+      <Suspense fallback={null}>
+        <SearchSync onSearch={setSearchTerm} />
+      </Suspense>
       <PageHeader 
         title="Constituencies"
         description="Manage and analyze 403 assembly constituencies."

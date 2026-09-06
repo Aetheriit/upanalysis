@@ -92,7 +92,7 @@ export function TopNavigation() {
             if (query.trim().length >= 2) setShowDropdown(true);
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" && query.trim()) {
               const first = results?.candidates?.[0] || results?.constituencies?.[0] || results?.districts?.[0];
               if (first) {
                 const destination = first.type === "candidate"
@@ -101,6 +101,9 @@ export function TopNavigation() {
                     ? `/workspace/constituencies?search=${encodeURIComponent(first.name)}`
                     : `/workspace/districts?search=${encodeURIComponent(first.name)}`;
                 window.location.href = destination;
+              } else {
+                // Fallback: search candidates by default if results haven't loaded yet
+                window.location.href = `/workspace/candidates?search=${encodeURIComponent(query.trim())}`;
               }
             }
           }}
