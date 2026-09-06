@@ -189,15 +189,6 @@ export function TopNavigation() {
         
         <div className="hidden md:block h-6 w-px bg-[var(--border-subtle)] mx-1" />
 
-        {/* Status */}
-        <div className="hidden md:flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] mr-4">
-          <span>Last Updated: Today, 10:24 AM</span>
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 text-green-600 rounded-full border border-green-500/20">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            Live
-          </span>
-        </div>
-
         {/* Action Icons */}
         <div className="flex items-center gap-2">
           <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-full relative transition-colors">
