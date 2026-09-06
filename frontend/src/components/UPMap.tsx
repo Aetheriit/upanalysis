@@ -14,6 +14,13 @@ const PARTY_COLORS: Record<string, string> = {
   OTH: "#94A3B8",
 };
 
+const normalizeConstituencyName = (value: string) => value
+  .toLowerCase()
+  .replace(/\[[^\]]*\]/g, "")
+  .replace(/\s*\((?:sc|st)\)\s*/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
 export default function UPMap() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -80,7 +87,7 @@ export default function UPMap() {
         const geoLayer = L.geoJSON(geojsonData, {
           style: (feature: any) => {
             const rawName = feature?.properties?.AC_NAME || "";
-            const constName = rawName.toLowerCase().replace('(sc)', '').replace('(st)', '').trim();
+            const constName = normalizeConstituencyName(rawName);
             const d = constituencyData[constName];
             const fillColor = d && d.winner ? (PARTY_COLORS[d.winner] || PARTY_COLORS.Others) : "#D1D5DB";
             
@@ -94,7 +101,7 @@ export default function UPMap() {
           },
           onEachFeature: (feature: any, layer: any) => {
             const rawName = feature?.properties?.AC_NAME || "";
-            const constName = rawName.toLowerCase().replace('(sc)', '').replace('(st)', '').trim();
+            const constName = normalizeConstituencyName(rawName);
             const d = constituencyData[constName];
 
             const tooltipHtml = `<div style="font-family: system-ui; padding: 4px 0;">
@@ -181,4 +188,3 @@ export default function UPMap() {
     </div>
   );
 }
-

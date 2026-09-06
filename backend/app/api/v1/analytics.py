@@ -1,6 +1,7 @@
 """Analytics endpoints � vote share, swing, booth analysis, etc."""
 
 import random
+import re
 
 from fastapi import APIRouter, Query, Depends
 
@@ -663,7 +664,9 @@ async def get_constituency_map_winners(
         if not c.name: continue
         
         # normalize string
-        name = c.name.lower().replace('(sc)', '').replace('(st)', '').strip()
+        name = re.sub(r'\[[^\]]*\]', '', c.name.lower())
+        name = re.sub(r'\s*\((?:sc|st)\)\s*', ' ', name)
+        name = re.sub(r'\s+', ' ', name).strip()
         
         # Constituency.winner_party can be stale after candidate ingestion.
         # Prefer the party attached to the winning candidate, then fall back
