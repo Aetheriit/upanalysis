@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.future import select
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 
 from app.core.config import settings
 from app.core.database import Base, database_url
@@ -24,6 +24,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = Path("/2022 data") if Path("/2022 data").exists() else PROJECT_ROOT / "2022 data"
 EXCEL_DIR = DATA_DIR / "excel_outputs"
 CONSTITUENCIES_JSON = Path("/2017 data/constituencies.json") if Path("/2017 data").exists() else PROJECT_ROOT / "2017 data" / "constituencies.json"
+
+def get_scalar(row, key, default=0):
+    val = row.get(key, default)
+    if isinstance(val, pd.Series):
+        return val.iloc[0]
+    return val
 
 async def ingest():
     print("Connecting to database...")
@@ -68,41 +74,99 @@ async def ingest():
             if not excel_path.exists():
                 print(f"Skipping AC {ac_num}, file not found.")
                 continue
+            
+            # Create Constituency
+            result = await session.execute(select(Constituency).filter_by(election_id=election.id, code=str(ac_num)))
+            const = result.scalars().first()
+            if not const:
+                const = Constituency(
+                    election_id=election.id,
+                    name=ac_name,
+                    code=str(ac_num),
+                    state="Uttar Pradesh",
+                    constituency_type="assembly"
+                )
+                session.add(const)
+                await session.flush()
 
+            # Check if AC already has booth data for 2022
+            existing_booths = await session.execute(
+                select(func.count()).select_from(Booth).where(
+                    Booth.constituency_id == const.id
+                )
+            )
+            count = existing_booths.scalar()
+            if count > 0:
+                print(f"Deleting {count} existing booths for AC {ac_num} to overwrite with accurate data...")
+                
+                result = await session.execute(
+                    select(Booth.id).where(
+                        Booth.constituency_id == const.id
+                    )
+                )
+                booth_ids = [row[0] for row in result.all()]
+                
+                if booth_ids:
+                    await session.execute(
+                        delete(VoteRecord).where(VoteRecord.booth_id.in_(booth_ids))
+                    )
+                    await session.execute(
+                        delete(Booth).where(
+                            Booth.constituency_id == const.id
+                        )
+                    )
+                    await session.commit()
+            
             print(f"Processing AC {ac_num}: {ac_name}")
             df = pd.read_excel(excel_path)
-            cols = list(df.columns)
             
-            # If the current columns don't look like headers (no BOOTH keyword), search for it in the rows
-            if not any('BOOTH' in str(c).upper() for c in cols):
-                header_idx = -1
-                for i in range(min(5, len(df))):
-                    row_vals = [str(x).upper() for x in df.iloc[i].values]
-                    if any('BOOTH' in v for v in row_vals):
-                        header_idx = i + 1
+            # Find the header row
+            header_idx = -1
+            
+            # First check if columns already have it
+            cols_str = " ".join([str(x).upper() for x in df.columns])
+            if 'TOTAL VOTE' in cols_str or 'NOTA' in cols_str or 'POLLING STATION' in cols_str:
+                header_idx = -1 # indicates it's the columns
+            else:
+                for i, row in df.iterrows():
+                    row_str = " ".join([str(x).upper() for x in row.values])
+                    if 'TOTAL VOTE' in row_str or 'NOTA' in row_str or 'POLLING STATION' in row_str:
+                        header_idx = i
                         break
-                
-                if header_idx > 0:
-                    df = pd.read_excel(excel_path, header=header_idx)
-                    cols = list(df.columns)
+            
+            if header_idx == -1:
+                cols = [str(c).upper().strip() for c in df.columns]
+                data_start_idx = 0
+            else:
+                cols = [str(c).upper().strip() for c in df.iloc[header_idx].values]
+                data_start_idx = header_idx + 1
+            
+            df = df.iloc[data_start_idx:].reset_index(drop=True)
+            df.columns = cols
 
-            # Unify column names
-            if 'Booth No.' not in cols and 'BOOTH ID' in cols:
-                df.rename(columns={'BOOTH ID': 'Booth No.', 'POLLING STATION NAME': 'Polling Station Name'}, inplace=True)
-                cols = list(df.columns)
+            # Rename columns if needed
+            new_cols = []
+            for c in cols:
+                if c == 'BOOTH ID': new_cols.append('BOOTH NO.')
+                else: new_cols.append(c)
+            df.columns = new_cols
+            cols = new_cols
                 
             start_cand_idx = 2
+            if 'POLLING STATION NAME' in cols:
+                start_cand_idx = cols.index('POLLING STATION NAME') + 1
             if 'TENDERED VOTERS' in cols:
                 start_cand_idx = cols.index('TENDERED VOTERS') + 1
 
-            try:
-                end_cand_idx = cols.index('TOTAL VOTES')
-            except ValueError:
-                try:
-                    end_cand_idx = cols.index('TOTAL VOTES POLLED')
-                except ValueError:
-                    print(f"Cannot find TOTAL VOTES in AC {ac_num}")
-                    continue
+            end_cand_idx = None
+            for i, c in enumerate(cols):
+                if c.startswith('TOTAL VOTE'):
+                    end_cand_idx = i
+                    break
+            
+            if end_cand_idx is None:
+                print(f"Cannot find TOTAL VOTES in AC {ac_num}, columns: {cols}")
+                continue
             
             candidate_names = cols[start_cand_idx:end_cand_idx]
             # Remove NOTA from candidate list if it's there
@@ -148,7 +212,7 @@ async def ingest():
 
             booth_count = 0
             for idx, row in df.iterrows():
-                booth_id_val = row.get('Booth No.')
+                booth_id_val = row.get('BOOTH NO.')
                 if pd.isna(booth_id_val) or "Total" in str(booth_id_val):
                     continue 
                 
@@ -182,7 +246,7 @@ async def ingest():
                 cand_votes = []
                 for c_name in candidate_names:
                     if c_name == 'NOTA': continue
-                    v = row.get(c_name, 0)
+                    v = get_scalar(row, c_name, 0)
                     if pd.isna(v): v = 0
                     try: v = int(v)
                     except: v = 0
@@ -210,7 +274,7 @@ async def ingest():
                     if c_name == 'NOTA' and c_name not in cols:
                         votes = nota_votes
                     else:
-                        votes = row.get(c_name, 0)
+                        votes = get_scalar(row, c_name, 0)
                         
                     if pd.isna(votes):
                         votes = 0

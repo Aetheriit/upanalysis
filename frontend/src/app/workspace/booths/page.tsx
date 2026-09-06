@@ -170,7 +170,7 @@ export default function BoothsPage() {
         <PremiumCard padding="sm" className="text-center">
           <Building2 className="w-5 h-5 text-[var(--accent-primary)] mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">{totalBooths.toLocaleString()}</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Booths in AC</div>
+          <div className="text-xs text-[var(--text-secondary)]">Booths in {selectedConstituency || "Constituency"}</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />

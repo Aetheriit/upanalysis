@@ -28,6 +28,14 @@ def slugify(value):
     return value
 
 
+def code_key(value):
+    text = str(value).strip()
+    try:
+        return str(int(float(text)))
+    except ValueError:
+        return text
+
+
 def clean_name(value):
     value = str(value or "").upper().replace("✓ WINNER", "")
     value = re.sub(r"\([^)]*\)", "", value)
@@ -60,7 +68,7 @@ def load_position_parties(path, indexes):
                 continue
             if row[indexes[0]].strip().lower() in ("#", "constituency #"):
                 continue
-            result[row[indexes[0]].strip()] = (party_abbreviation(row[indexes[1]]), party_abbreviation(row[indexes[2]]))
+            result[code_key(row[indexes[0]])] = (party_abbreviation(row[indexes[1]]), party_abbreviation(row[indexes[2]]))
     return result
 
 
@@ -144,7 +152,7 @@ async def main():
             unmatched = 0
             # Winner and runner-up parties are available even when a raw
             # candidate name is malformed. Apply them by result position.
-            position_parties = position_sources[year].get(str(const["code"]))
+            position_parties = position_sources[year].get(code_key(const["code"]))
             if position_parties:
                 for position, abbreviation in ((1, position_parties[0]), (2, position_parties[1])):
                     party_id = await get_or_create_party(conn, parties, abbreviation)
