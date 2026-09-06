@@ -18,6 +18,7 @@ import asyncpg
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
+DATA_ROOT = Path("/app") if Path("/app/up_2017_results.csv").exists() else ROOT
 BASE_URL = "https://election-analytics.ajaikumark.com/state/uttar-pradesh/{year}/{slug}/"
 
 
@@ -111,8 +112,8 @@ async def main():
     conn = await asyncpg.connect(database_url.replace("postgresql+asyncpg://", "postgresql://", 1))
     parties = {r["abbreviation"].upper(): r["id"] for r in await conn.fetch("SELECT id, abbreviation FROM parties")}
     position_sources = {
-        2017: load_position_parties(ROOT / "up_2017_results.csv", (1, 5, 10)),
-        2022: load_position_parties(ROOT / "wiki_2022.csv", (1, 6, 11)),
+        2017: load_position_parties(DATA_ROOT / "up_2017_results.csv", (1, 5, 10)),
+        2022: load_position_parties(DATA_ROOT / "wiki_2022.csv", (1, 6, 11)),
     }
     total_changed = 0
     total_unmatched = 0
