@@ -47,7 +47,7 @@ export default function CandidatesPage() {
         if (selectedConstituency !== "All Constituencies") {
           url += `&constituency_id=${selectedConstituency}`;
         }
-        if (selectedParty !== "All Parties") {
+        if (selectedParty !== "All Parties" && selectedParty !== "Other") {
           url += `&party=${selectedParty}`;
         }
         
@@ -81,10 +81,17 @@ export default function CandidatesPage() {
   // Keep the selector populated even when a paginated/slow API response is partial.
   // The API still performs the authoritative party filtering.
   const knownParties = ["BJP", "SP", "BSP", "INC", "AAP", "RLD", "AIMIM", "AD(S)", "SBSP", "JD(U)", "NISHAD", "IND"];
-  const uniqueParties = ["All Parties", ...Array.from(new Set([
-    ...knownParties,
-    ...candidates.map(c => c.party).filter(Boolean),
-  ])).sort()];
+  
+  // Create a clean list of dropdown options
+  const uniqueParties = ["All Parties", ...knownParties, "Other"];
+
+  // Filter candidates locally for the 'Other' selection if needed
+  const displayCandidates = filteredCandidates.filter(c => {
+    if (selectedParty === "Other") {
+      return !knownParties.includes(c.party);
+    }
+    return true;
+  });
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -99,14 +106,14 @@ export default function CandidatesPage() {
         <PremiumCard padding="sm" className="text-center">
           <Users className="w-5 h-5 text-[var(--accent-primary)] mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">
-            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : candidates.length}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : displayCandidates.length}
           </div>
           <div className="text-xs text-[var(--text-secondary)]">Listed Candidates</div>
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <Trophy className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">
-            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : candidates.filter(c => c.is_winner).length}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : displayCandidates.filter(c => c.is_winner).length}
           </div>
           <div className="text-xs text-[var(--text-secondary)]">Winners</div>
         </PremiumCard>
@@ -118,7 +125,7 @@ export default function CandidatesPage() {
         <PremiumCard padding="sm" className="text-center">
           <IndianRupee className="w-5 h-5 text-rose-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-[var(--text-primary)]">
-            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : candidates.filter(c => c.deposit_lost).length}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : displayCandidates.filter(c => c.deposit_lost).length}
           </div>
           <div className="text-xs text-[var(--text-secondary)]">Deposits Lost</div>
         </PremiumCard>
@@ -176,7 +183,7 @@ export default function CandidatesPage() {
             <div className="flex items-center justify-center h-full py-20">
               <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
             </div>
-          ) : filteredCandidates.length === 0 ? (
+          ) : displayCandidates.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-[var(--text-secondary)]">
               <Users className="w-12 h-12 mb-4 opacity-20" />
               <p>No candidates found matching your filters.</p>
@@ -191,7 +198,7 @@ export default function CandidatesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
-                {filteredCandidates.map(c => (
+                {displayCandidates.map(c => (
                   <tr key={c.id} className="hover:bg-[var(--bg-app)]/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-[var(--text-primary)]">{c.name}</div>
