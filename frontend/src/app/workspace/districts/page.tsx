@@ -9,6 +9,8 @@ import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 import { SearchSync } from "@/components/shared/search-sync";
 import { Suspense } from "react";
+import { getPartyColor } from "@/lib/party-colors";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function DistrictsPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -18,6 +20,7 @@ export default function DistrictsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const itemsPerPage = 50;
 
   // SearchSync is used instead
@@ -48,7 +51,8 @@ export default function DistrictsPage() {
               votes17: 0, pop17: 0,
               votes22: 0, pop22: 0,
               bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
-              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0
+              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
+              constituenciesList: []
             };
           }
           const d = districtMap[c.district];
@@ -59,6 +63,15 @@ export default function DistrictsPage() {
           if (c.winner_party === "SP") d.sp17 += 1;
           if (c.winner_party === "BSP") d.bsp17 += 1;
           if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc17 += 1;
+          
+          d.constituenciesList.push({
+            code: c.code,
+            name: c.name,
+            winner17: c.winner,
+            party17: c.winner_party,
+            winner22: null,
+            party22: null
+          });
         });
 
         // Process 2022
@@ -71,7 +84,8 @@ export default function DistrictsPage() {
               votes17: 0, pop17: 0,
               votes22: 0, pop22: 0,
               bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
-              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0
+              bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
+              constituenciesList: []
              };
           }
           const d = districtMap[c.district];
@@ -81,6 +95,21 @@ export default function DistrictsPage() {
           if (c.winner_party === "SP") d.sp22 += 1;
           if (c.winner_party === "BSP") d.bsp22 += 1;
           if (c.winner_party === "INC" || c.winner_party === "Congress") d.inc22 += 1;
+
+          const existing = d.constituenciesList.find((x: any) => x.code === c.code || x.name === c.name);
+          if (existing) {
+            existing.winner22 = c.winner;
+            existing.party22 = c.winner_party;
+          } else {
+            d.constituenciesList.push({
+              code: c.code,
+              name: c.name,
+              winner17: null,
+              party17: null,
+              winner22: c.winner,
+              party22: c.winner_party
+            });
+          }
         });
 
         const finalDistricts = Object.values(districtMap).map((d: any) => {
@@ -104,7 +133,8 @@ export default function DistrictsPage() {
             pop17: d.pop17,
             pop22: pop22ToUse,
             "2017": parseFloat(t17.toFixed(1)),
-            "2022": parseFloat(t22.toFixed(1))
+            "2022": parseFloat(t22.toFixed(1)),
+            constituenciesList: d.constituenciesList.sort((a: any, b: any) => a.name.localeCompare(b.name))
           };
         }).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
@@ -242,22 +272,72 @@ export default function DistrictsPage() {
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
               {filteredDistricts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(d => (
-                <tr key={d.name} className="hover:bg-[var(--bg-app)]/30 transition-colors group">
-                  <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{d.name}</td>
-                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)] text-center">{d.constituencies}</td>
-                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{(is2017 ? d.pop17 : d.pop22).toLocaleString()}</td>
+                <React.Fragment key={d.name}>
+                  <tr 
+                    className="hover:bg-[var(--bg-app)]/30 transition-colors cursor-pointer group"
+                    onClick={() => setExpandedDistrict(expandedDistrict === d.name ? null : d.name)}
+                  >
+                    <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                      {expandedDistrict === d.name ? <ChevronUp className="w-4 h-4 text-[var(--text-tertiary)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-tertiary)]" />}
+                      {d.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-[var(--text-secondary)] text-center">{d.constituencies}</td>
+                    <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{(is2017 ? d.pop17 : d.pop22).toLocaleString()}</td>
+                    
+                    {(isComparison || is2017) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2017}%</td>}
+                    {(isComparison || is2022) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}%</td>}
+                    
+                    {isComparison && <td className="px-6 py-4 text-sm font-medium text-emerald-500">{Number(d.swing.replace('%','')) > 0 ? '+' : ''}{d.swing}</td>}
+                    
+                    <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#F97316]/10 text-[#F97316]">{is2017 ? d.bjp17 : d.bjp22}</span></td>
+                    <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#EF4444]/10 text-[#EF4444]">{is2017 ? d.sp17 : d.sp22}</span></td>
+                    <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#3B82F6]/10 text-[#3B82F6]">{is2017 ? d.bsp17 : d.bsp22}</span></td>
+                    <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#10B981]/10 text-[#10B981]">{is2017 ? d.inc17 : d.inc22}</span></td>
+                    <td className="px-6 py-4 text-right"><button className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-app)] transition-colors opacity-0 group-hover:opacity-100"><MoreHorizontal className="w-5 h-5" /></button></td>
+                  </tr>
                   
-                  {(isComparison || is2017) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2017}%</td>}
-                  {(isComparison || is2022) && <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{d.turnout2022}%</td>}
-                  
-                  {isComparison && <td className="px-6 py-4 text-sm font-medium text-emerald-500">{Number(d.swing.replace('%','')) > 0 ? '+' : ''}{d.swing}</td>}
-                  
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#F97316]/10 text-[#F97316]">{is2017 ? d.bjp17 : d.bjp22}</span></td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#EF4444]/10 text-[#EF4444]">{is2017 ? d.sp17 : d.sp22}</span></td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#3B82F6]/10 text-[#3B82F6]">{is2017 ? d.bsp17 : d.bsp22}</span></td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold bg-[#10B981]/10 text-[#10B981]">{is2017 ? d.inc17 : d.inc22}</span></td>
-                  <td className="px-6 py-4 text-right"><button className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-app)] transition-colors opacity-0 group-hover:opacity-100"><MoreHorizontal className="w-5 h-5" /></button></td>
-                </tr>
+                  {/* Expanded Sub-table */}
+                  {expandedDistrict === d.name && (
+                    <tr className="bg-[var(--bg-surface)]">
+                      <td colSpan={isComparison ? 12 : 9} className="p-0 border-b-2 border-[var(--accent-primary)]/20">
+                        <div className="p-6">
+                          <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">Constituencies in {d.name}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {d.constituenciesList.map((c: any, idx: number) => (
+                              <div key={idx} className="bg-[var(--bg-app)] border border-[var(--border-subtle)] p-4 rounded-lg flex flex-col gap-2">
+                                <div className="font-semibold text-sm text-[var(--text-primary)]">{c.name}</div>
+                                
+                                {(isComparison || is2017) && c.winner17 && (
+                                  <div className="flex flex-col gap-1 text-xs">
+                                    <span className="text-[var(--text-tertiary)] font-medium">2017 Winner</span>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[var(--text-secondary)]">{c.winner17}</span>
+                                      <span className="font-bold whitespace-nowrap" style={{ color: getPartyColor(c.party17) }}>{c.party17}</span>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {isComparison && c.winner17 && c.winner22 && (
+                                  <div className="w-full h-px bg-[var(--border-subtle)] my-1"></div>
+                                )}
+
+                                {(isComparison || is2022) && c.winner22 && (
+                                  <div className="flex flex-col gap-1 text-xs">
+                                    <span className="text-[var(--text-tertiary)] font-medium">2022 Winner</span>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[var(--text-secondary)]">{c.winner22}</span>
+                                      <span className="font-bold whitespace-nowrap" style={{ color: getPartyColor(c.party22) }}>{c.party22}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
