@@ -6,6 +6,7 @@ candidate totals and marks them as a source-recovery import in its output.
 """
 import asyncio
 import os
+import urllib.request
 from io import StringIO
 
 import asyncpg
@@ -32,7 +33,9 @@ def party_abbreviation(value):
 
 def read_result_rows(ac):
     url = f"https://results.eci.gov.in/ResultAcGenMar2022/ConstituencywiseS24{ac}.htm?ac={ac}"
-    tables = pd.read_html(StringIO(__import__("urllib.request").request.urlopen(url, timeout=30).read().decode("utf-8", "ignore")))
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 ElectionIntelligenceDataAudit/1.0"})
+    html = urllib.request.urlopen(request, timeout=30).read().decode("utf-8", "ignore")
+    tables = pd.read_html(StringIO(html))
     for table in tables:
         columns = [str(c).lower() for c in table.columns]
         if any("candidate" in c for c in columns) and any("total" in c for c in columns):
