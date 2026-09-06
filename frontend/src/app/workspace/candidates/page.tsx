@@ -24,6 +24,11 @@ export default function CandidatesPage() {
   const [selectedConstituency, setSelectedConstituency] = useState("All Constituencies");
 
   useEffect(() => {
+    const initialSearch = new URLSearchParams(window.location.search).get("search");
+    if (initialSearch) setSearchQuery(initialSearch);
+  }, []);
+
+  useEffect(() => {
     // Fetch constituencies for the dropdown
     const fetchConstituencies = async () => {
       try {
@@ -68,7 +73,7 @@ export default function CandidatesPage() {
   }, [activeYear, selectedConstituency, selectedParty]);
 
   const filteredCandidates = candidates.filter(c => {
-    if (searchQuery && !String(c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) && !String(c.constituency || "").toLowerCase().includes(searchQuery.toLowerCase())) {
+    if (searchQuery && ![c.name, c.constituency, c.district, c.party].some(value => String(value || "").toLowerCase().includes(searchQuery.toLowerCase()))) {
       return false;
     }
     if (selectedResult !== "All Results") {

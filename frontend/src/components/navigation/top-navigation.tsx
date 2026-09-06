@@ -18,6 +18,7 @@ export function TopNavigation() {
   const { viewMode, setViewMode } = useElectionContext();
   
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -28,6 +29,23 @@ export function TopNavigation() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Make the advertised shortcut work on both macOS and Windows/Linux.
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+        setShowDropdown(true);
+      }
+      if (event.key === "Escape") {
+        setShowDropdown(false);
+        inputRef.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
   }, []);
 
   // Debounced search
@@ -63,6 +81,7 @@ export function TopNavigation() {
       <div className="relative w-[480px]" ref={dropdownRef}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
         <input 
+          ref={inputRef}
           type="text" 
           value={query}
           onChange={(e) => {
@@ -71,6 +90,19 @@ export function TopNavigation() {
           }}
           onFocus={() => {
             if (query.trim().length >= 2) setShowDropdown(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              const first = results?.candidates?.[0] || results?.constituencies?.[0] || results?.districts?.[0];
+              if (first) {
+                const destination = first.type === "candidate"
+                  ? `/workspace/candidates?search=${encodeURIComponent(first.name)}`
+                  : first.type === "constituency"
+                    ? `/workspace/constituencies?search=${encodeURIComponent(first.name)}`
+                    : `/workspace/districts?search=${encodeURIComponent(first.name)}`;
+                window.location.href = destination;
+              }
+            }
           }}
           placeholder="Search constituencies, districts, candidates..." 
           className="w-full pl-9 pr-12 py-2.5 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] text-[var(--text-primary)] transition-shadow"
@@ -93,7 +125,7 @@ export function TopNavigation() {
               <div className="p-2">
                 <div className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider px-3 py-2">Districts</div>
                 {results.districts.map((d: any, i: number) => (
-                  <Link href={`/workspace/districts?name=${d.name}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
+                  <Link href={`/workspace/districts?search=${encodeURIComponent(d.name)}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
                     <LayoutGrid className="w-4 h-4 text-[var(--text-secondary)]" />
                     <span className="text-sm text-[var(--text-primary)] font-medium">{d.name}</span>
                   </Link>
@@ -105,7 +137,7 @@ export function TopNavigation() {
               <div className="p-2 border-t border-[var(--border-subtle)]">
                 <div className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider px-3 py-2">Constituencies</div>
                 {results.constituencies.map((c: any, i: number) => (
-                  <Link href={`/workspace/constituencies?id=${c.id}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center justify-between px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
+                  <Link href={`/workspace/constituencies?search=${encodeURIComponent(c.name)}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center justify-between px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
                     <div className="flex items-center gap-3">
                       <MapPin className="w-4 h-4 text-[var(--accent-primary)]" />
                       <div>
@@ -122,7 +154,7 @@ export function TopNavigation() {
               <div className="p-2 border-t border-[var(--border-subtle)]">
                 <div className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider px-3 py-2">Candidates</div>
                 {results.candidates.map((c: any, i: number) => (
-                  <Link href={`/workspace/candidates?id=${c.id}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
+                  <Link href={`/workspace/candidates?search=${encodeURIComponent(c.name)}`} key={i} onClick={() => setShowDropdown(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--bg-app)] rounded-lg cursor-pointer">
                     <User className="w-4 h-4 text-[#F97316]" />
                     <span className="text-sm text-[var(--text-primary)] font-medium">{c.name}</span>
                   </Link>

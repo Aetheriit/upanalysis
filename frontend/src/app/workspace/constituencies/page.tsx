@@ -17,6 +17,11 @@ export default function ConstituenciesPage() {
 
   // Reset to first page when search changes
   useEffect(() => {
+    const initialSearch = new URLSearchParams(window.location.search).get("search");
+    if (initialSearch) setSearchTerm(initialSearch);
+  }, []);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 

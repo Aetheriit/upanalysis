@@ -19,6 +19,11 @@ export default function DistrictsPage() {
   const itemsPerPage = 50;
 
   useEffect(() => {
+    const initialSearch = new URLSearchParams(window.location.search).get("search");
+    if (initialSearch) setSearchTerm(initialSearch);
+  }, []);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
