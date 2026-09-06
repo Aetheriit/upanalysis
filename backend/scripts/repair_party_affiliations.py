@@ -6,6 +6,7 @@ shown beside each candidate. This job changes party_id only; votes and results
 are left untouched.
 """
 import asyncio
+import csv
 import os
 import re
 import unicodedata
@@ -48,6 +49,18 @@ def party_abbreviation(value):
         if marker in text:
             return abbreviation
     return text[:50] or "IND"
+
+
+def load_position_parties(path, indexes):
+    result = {}
+    with open(path, newline="", encoding="utf-8-sig") as handle:
+        for row in csv.reader(handle):
+            if len(row) <= max(indexes) or not row[indexes[0]].strip():
+                continue
+            if row[indexes[0]].strip().lower() in ("#", "constituency #"):
+                continue
+            result[row[indexes[0]].strip()] = (party_abbreviation(row[indexes[1]]), party_abbreviation(row[indexes[2]]))
+    return result
 
 
 def read_page(year, slug):
@@ -97,6 +110,10 @@ async def main():
     database_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/election_intel")
     conn = await asyncpg.connect(database_url.replace("postgresql+asyncpg://", "postgresql://", 1))
     parties = {r["abbreviation"].upper(): r["id"] for r in await conn.fetch("SELECT id, abbreviation FROM parties")}
+    position_sources = {
+        2017: load_position_parties(ROOT / "up_2017_results.csv", (1, 5, 10)),
+        2022: load_position_parties(ROOT / "wiki_2022.csv", (1, 6, 11)),
+    }
     total_changed = 0
     total_unmatched = 0
 
@@ -124,6 +141,18 @@ async def main():
                 by_name.setdefault(clean_name(candidate["name"]), []).append(candidate)
             changed = 0
             unmatched = 0
+            # Winner and runner-up parties are available even when a raw
+            # candidate name is malformed. Apply them by result position.
+            position_parties = position_sources[year].get(str(const["code"]))
+            if position_parties:
+                for position, abbreviation in ((1, position_parties[0]), (2, position_parties[1])):
+                    party_id = await get_or_create_party(conn, parties, abbreviation)
+                    if party_id:
+                        result = await conn.execute(
+                            "UPDATE candidates SET party_id=$1 WHERE constituency_id=$2 AND election_id=(SELECT id FROM elections WHERE year=$3 LIMIT 1) AND position=$4",
+                            party_id, const["id"], year, position,
+                        )
+                        changed += int(result.rsplit(" ", 1)[-1])
             for source_name, abbreviation, source_votes in source_rows:
                 matches = by_name.get(source_name, [])
                 if source_votes is not None and len(matches) > 1:
