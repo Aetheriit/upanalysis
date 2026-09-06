@@ -78,7 +78,13 @@ export default function CandidatesPage() {
     return true;
   });
 
-  const uniqueParties = ["All Parties", ...Array.from(new Set(candidates.map(c => c.party))).sort()];
+  // Keep the selector populated even when a paginated/slow API response is partial.
+  // The API still performs the authoritative party filtering.
+  const knownParties = ["BJP", "SP", "BSP", "INC", "AAP", "RLD", "AIMIM", "AD(S)", "SBSP", "JD(U)", "NISHAD", "IND"];
+  const uniqueParties = ["All Parties", ...Array.from(new Set([
+    ...knownParties,
+    ...candidates.map(c => c.party).filter(Boolean),
+  ])).sort()];
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
