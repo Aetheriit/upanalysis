@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.future import select
 
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from typing import Optional
 
@@ -641,18 +641,34 @@ async def get_constituency_map_winners(
     """Get constituency-level winning party for the map."""
     year_to_fetch = election_year if election_year is not None else 2022
     
-    query = select(Constituency).join(Election).filter(Election.year == year_to_fetch)
+    query = (
+        select(Constituency, Party.abbreviation.label("winner_party_from_candidate"))
+        .join(Election)
+        .outerjoin(
+            Candidate,
+            and_(
+                Candidate.constituency_id == Constituency.id,
+                Candidate.election_id == Constituency.election_id,
+                Candidate.is_winner.is_(True),
+            ),
+        )
+        .outerjoin(Party, Party.id == Candidate.party_id)
+        .filter(Election.year == year_to_fetch)
+    )
     result = await db.execute(query)
-    constituencies = result.scalars().all()
+    constituency_rows = result.all()
     
     const_data = {}
-    for c in constituencies:
+    for c, candidate_party in constituency_rows:
         if not c.name: continue
         
         # normalize string
         name = c.name.lower().replace('(sc)', '').replace('(st)', '').strip()
         
-        p_raw = c.winner_party.upper().strip() if c.winner_party else 'OTH'
+        # Constituency.winner_party can be stale after candidate ingestion.
+        # Prefer the party attached to the winning candidate, then fall back
+        # to the denormalized constituency field for legacy rows.
+        p_raw = (candidate_party or c.winner_party or 'OTH').upper().strip()
         
         if p_raw in ['BJP', 'BHARATIYA JANATA PARTY'] or 'BHARATIYA JANATA PARTY' in p_raw: p = 'BJP'
         elif p_raw in ['SP', 'SAMAJWADI PARTY'] or 'SAMAJWADI' in p_raw: p = 'SP'
