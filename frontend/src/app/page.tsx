@@ -173,17 +173,28 @@ export default function ExecutiveDashboard() {
             <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-2">
               <Users className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Avg Turnout</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div>
-                <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2017?.turnout_pct || "0"}%</div>
-                <div className="text-[10px] text-[var(--text-tertiary)]">2017</div>
-              </div>
-              <div className="text-xs font-medium text-emerald-500">↑ 1.58%</div>
-              <div>
-                <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2022?.turnout_pct || "61.4"}%</div>
-                <div className="text-[10px] text-[var(--text-tertiary)]">2022</div>
-              </div>
-            </div>
+            {(() => {
+              const t17 = parseFloat(kpis2017?.turnout_pct || "0");
+              const t22 = parseFloat(kpis2022?.turnout_pct || "0");
+              const diff = t22 - t17;
+              const isUp = diff >= 0;
+              return (
+                <div className="flex items-center justify-between w-full px-2 mt-1">
+                  <div className="flex flex-col items-center">
+                    <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2017?.turnout_pct || "0"}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">2017</div>
+                  </div>
+                  <div className={`flex flex-col items-center justify-center px-1 text-xs font-bold ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <span>{isUp ? '↑' : '↓'}</span>
+                    <span>{Math.abs(diff).toFixed(2)}%</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="text-xl font-bold text-[var(--text-primary)]">{kpis2022?.turnout_pct || "0"}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">2022</div>
+                  </div>
+                </div>
+              );
+            })()}
           </PremiumCard>
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center">
