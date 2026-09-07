@@ -104,18 +104,22 @@ async def get_dashboard_kpis(
         nota_pct = (nota_votes / total_votes * 100) if total_votes else 0
 
 
-
-        if year_to_fetch == 2022:
-
-            closest_contest = {"code": "20", "name": "Dhampur", "margin": 203}
-
-            margin_avg = 21530
-
+        # Get closest contest and avg margin dynamically
+        const_query = select(
+            Constituency.code,
+            Constituency.name,
+            Constituency.winning_margin
+        ).join(Election).filter(Election.id == election.id, Constituency.winning_margin > 0).order_by(Constituency.winning_margin.asc()).limit(1)
+        const_result = await db.execute(const_query)
+        closest_row = const_result.first()
+        if closest_row:
+            closest_contest = {"code": closest_row.code, "name": closest_row.name, "margin": closest_row.winning_margin}
         else:
+            closest_contest = {"code": "N/A", "name": "N/A", "margin": 0}
 
-            closest_contest = {"code": "306", "name": "Dumariyaganj", "margin": 171}
-
-            margin_avg = 24891
+        avg_query = select(func.avg(Constituency.winning_margin)).join(Election).filter(Election.id == election.id, Constituency.winning_margin > 0)
+        avg_result = await db.execute(avg_query)
+        margin_avg = int(avg_result.scalar() or 0)
 
 
 
