@@ -64,6 +64,7 @@ export default function ExecutiveDashboard() {
   const [filterDistrict, setFilterDistrict] = useState("");
   const [filterRegion, setFilterRegion] = useState("");
   const [filterParty, setFilterParty] = useState("");
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
   const activeYear = viewMode === "2017 Only" ? "2017" : "2022";
 
@@ -559,7 +560,10 @@ export default function ExecutiveDashboard() {
           <PremiumCard className="flex flex-col p-6 min-h-[500px]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif font-bold text-[var(--text-primary)]">Uttar Pradesh – {viewMode === "Comparison (17 vs 22)" ? "2022" : viewMode.split(' ')[0]} Constituency Map</h2>
-              <button className="text-sm font-medium text-[var(--accent-primary)] hover:underline flex items-center gap-1">
+              <button 
+                onClick={() => setIsMapFullscreen(true)}
+                className="text-sm font-medium text-[var(--accent-primary)] hover:underline flex items-center gap-1"
+              >
                 View Fullscreen <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -767,6 +771,28 @@ export default function ExecutiveDashboard() {
         </div>
 
       </div>
+
+      {/* Fullscreen Map Modal */}
+      {isMapFullscreen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-app)]">
+          <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <h2 className="text-xl font-serif font-bold text-[var(--text-primary)]">
+              Uttar Pradesh – {viewMode === "Comparison (17 vs 22)" ? "2022" : viewMode.split(' ')[0]} Constituency Map
+            </h2>
+            <button 
+              onClick={() => setIsMapFullscreen(false)}
+              className="p-2 rounded-full hover:bg-[var(--border-subtle)] transition-colors"
+            >
+              <X className="w-6 h-6 text-[var(--text-primary)]" />
+            </button>
+          </div>
+          <div className="flex-1 p-4">
+            <div className="w-full h-full rounded-xl overflow-hidden border border-[var(--border-subtle)] relative">
+              <UPMap />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
