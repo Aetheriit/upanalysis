@@ -97,8 +97,15 @@ async def get_dashboard_kpis(
 
         total_votes, total_electors, male_voters, female_voters, nota_votes = votes_result.first()
 
+        # FIX: The 2017 booths and vote records were duplicated during database ingestion, halve them to reflect accurate reality
+        if year_to_fetch == 2017:
+            total_booths = (total_booths // 2) if total_booths else 0
+            total_votes = (total_votes // 2) if total_votes else 0
+            total_electors = (total_electors // 2) if total_electors else 0
+            male_voters = (male_voters // 2) if male_voters else 0
+            female_voters = (female_voters // 2) if female_voters else 0
+            nota_votes = (nota_votes // 2) if nota_votes else 0
         
-
         turnout_pct = (total_votes / total_electors * 100) if total_electors else 0
 
         nota_pct = (nota_votes / total_votes * 100) if total_votes else 0
