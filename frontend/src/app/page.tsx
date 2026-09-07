@@ -568,7 +568,7 @@ export default function ExecutiveDashboard() {
               </button>
             </div>
             <div className="flex-1 rounded-xl overflow-hidden" style={{ minHeight: "380px" }}>
-               <UPMap />
+               {!isMapFullscreen && <UPMap />}
             </div>
 
             {/* Seat Tally Row */}
@@ -774,7 +774,7 @@ export default function ExecutiveDashboard() {
 
       {/* Fullscreen Map Modal */}
       {isMapFullscreen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-app)]">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-[var(--bg-app)]">
           <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
             <h2 className="text-xl font-serif font-bold text-[var(--text-primary)]">
               Uttar Pradesh – {viewMode === "Comparison (17 vs 22)" ? "2022" : viewMode.split(' ')[0]} Constituency Map
@@ -786,8 +786,8 @@ export default function ExecutiveDashboard() {
               <X className="w-6 h-6 text-[var(--text-primary)]" />
             </button>
           </div>
-          <div className="flex-1 p-4">
-            <div className="w-full h-full rounded-xl overflow-hidden border border-[var(--border-subtle)] relative">
+          <div className="flex-1 relative p-4">
+            <div className="absolute inset-4 rounded-xl overflow-hidden border border-[var(--border-subtle)]">
               <UPMap />
             </div>
           </div>
