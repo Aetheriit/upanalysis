@@ -14,6 +14,7 @@ import {
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
 const UPMap = dynamic(() => import("@/components/UPMap"), { ssr: false, loading: () => (
   <div className="flex-1 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)] flex items-center justify-center">
@@ -326,9 +327,9 @@ export default function ExecutiveDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <Link href="/ai/analyst" className="px-4 py-2 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
             <Brain className="w-4 h-4" /> AI Analyst
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -671,9 +672,9 @@ export default function ExecutiveDashboard() {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-6 py-2.5 bg-[var(--accent-primary)]/5 hover:bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded-xl text-sm font-medium transition-colors border border-[var(--accent-primary)]/20">
+            <Link href="/ai/analyst" className="block text-center w-full mt-6 py-2.5 bg-[var(--accent-primary)]/5 hover:bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded-xl text-sm font-medium transition-colors border border-[var(--accent-primary)]/20">
               View Full AI Brief →
-            </button>
+            </Link>
           </PremiumCard>
 
           {viewMode === "Comparison (17 vs 22)" ? (
