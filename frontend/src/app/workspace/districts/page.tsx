@@ -50,15 +50,26 @@ export default function DistrictsPage() {
               constituencies: 0,
               votes17: 0, pop17: 0,
               votes22: 0, pop22: 0,
+              turnoutSum17: 0, turnoutCount17: 0,
+              turnoutSum22: 0, turnoutCount22: 0,
               bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
               bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
               constituenciesList: []
             };
           }
           const d = districtMap[c.district];
+          const votes17 = Number(c.votes_polled) || 0;
+          const electors17 = Number(c.total_electors) || 0;
+          const turnout17 = Number(c.turnout_pct) || 0;
           d.constituencies += 1;
-          d.votes17 += c.votes_polled || 0;
-          d.pop17 += c.total_electors || 0;
+          // Reconstruct a missing summary field from the valid constituency
+          // turnout instead of allowing one bad aggregate to zero a district.
+          d.votes17 += votes17 > 0 ? votes17 : (electors17 > 0 && turnout17 > 0 ? electors17 * turnout17 / 100 : 0);
+          d.pop17 += electors17 > 0 ? electors17 : (votes17 > 0 && turnout17 > 0 ? votes17 / (turnout17 / 100) : 0);
+          if (Number.isFinite(turnout17) && turnout17 > 0) {
+            d.turnoutSum17 += turnout17;
+            d.turnoutCount17 += 1;
+          }
           if (c.winner_party === "BJP") d.bjp17 += 1;
           if (c.winner_party === "SP") d.sp17 += 1;
           if (c.winner_party === "BSP") d.bsp17 += 1;
@@ -83,14 +94,23 @@ export default function DistrictsPage() {
               constituencies: 0,
               votes17: 0, pop17: 0,
               votes22: 0, pop22: 0,
+              turnoutSum17: 0, turnoutCount17: 0,
+              turnoutSum22: 0, turnoutCount22: 0,
               bjp17: 0, sp17: 0, bsp17: 0, inc17: 0,
               bjp22: 0, sp22: 0, bsp22: 0, inc22: 0,
               constituenciesList: []
              };
           }
           const d = districtMap[c.district];
-          d.votes22 += c.votes_polled || 0;
-          d.pop22 += c.total_electors || 0;
+          const votes22 = Number(c.votes_polled) || 0;
+          const electors22 = Number(c.total_electors) || 0;
+          const turnout22 = Number(c.turnout_pct) || 0;
+          d.votes22 += votes22 > 0 ? votes22 : (electors22 > 0 && turnout22 > 0 ? electors22 * turnout22 / 100 : 0);
+          d.pop22 += electors22 > 0 ? electors22 : (votes22 > 0 && turnout22 > 0 ? votes22 / (turnout22 / 100) : 0);
+          if (Number.isFinite(turnout22) && turnout22 > 0) {
+            d.turnoutSum22 += turnout22;
+            d.turnoutCount22 += 1;
+          }
           if (c.winner_party === "BJP") d.bjp22 += 1;
           if (c.winner_party === "SP") d.sp22 += 1;
           if (c.winner_party === "BSP") d.bsp22 += 1;
@@ -113,9 +133,13 @@ export default function DistrictsPage() {
         });
 
         const finalDistricts = Object.values(districtMap).map((d: any) => {
-          const t17 = d.pop17 > 0 ? (d.votes17 / d.pop17) * 100 : 0;
+          const t17 = d.pop17 > 0 && d.votes17 > 0
+            ? (d.votes17 / d.pop17) * 100
+            : (d.turnoutCount17 > 0 ? d.turnoutSum17 / d.turnoutCount17 : 0);
           const pop22ToUse = d.pop22 > 0 ? d.pop22 : d.pop17;
-          const t22 = pop22ToUse > 0 ? (d.votes22 / pop22ToUse) * 100 : 0;
+          const t22 = d.pop22 > 0 && d.votes22 > 0
+            ? (d.votes22 / d.pop22) * 100
+            : (d.turnoutCount22 > 0 ? d.turnoutSum22 / d.turnoutCount22 : 0);
           return {
             name: d.name,
             constituencies: d.constituencies,
