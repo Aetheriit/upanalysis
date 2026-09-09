@@ -41,12 +41,20 @@ export default function DistrictsPage() {
         const data22 = await res22.json();
 
         const districtMap: any = {};
+        // District names changed between elections. Use the 2022 constituency
+        // code-to-district mapping as the canonical label for both years so
+        // historical districts are merged instead of rendering empty bars.
+        const districtByCode22: Record<string, string> = {};
+        data22.constituencies.forEach((c: any) => {
+          districtByCode22[String(c.code)] = c.district;
+        });
 
         // Process 2017
         data17.constituencies.forEach((c: any) => {
-          if (!districtMap[c.district]) {
-            districtMap[c.district] = {
-              name: c.district,
+          const canonicalDistrict = districtByCode22[String(c.code)] || c.district;
+          if (!districtMap[canonicalDistrict]) {
+            districtMap[canonicalDistrict] = {
+              name: canonicalDistrict,
               constituencies: 0,
               votes17: 0, pop17: 0,
               votes22: 0, pop22: 0,
@@ -57,7 +65,7 @@ export default function DistrictsPage() {
               constituenciesList: []
             };
           }
-          const d = districtMap[c.district];
+          const d = districtMap[canonicalDistrict];
           const votes17 = Number(c.votes_polled) || 0;
           const electors17 = Number(c.total_electors) || 0;
           const turnout17 = Number(c.turnout_pct) || 0;
