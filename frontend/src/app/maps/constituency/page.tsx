@@ -1,97 +1,64 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
-import { Map, ZoomIn, Layers, Info } from "lucide-react";
+import UPMap from "@/components/UPMap";
+import { apiUrl } from "@/lib/api";
+import { getPartyColor } from "@/lib/party-colors";
+import { Info, Layers, RefreshCw, Search, ZoomIn } from "lucide-react";
 
-const legendItems = [
-  { party: "BJP", color: "#F97316", seats: 255 },
-  { party: "SP", color: "#EF4444", seats: 111 },
-  { party: "BSP", color: "#2563EB", seats: 1 },
-  { party: "INC", color: "#22C55E", seats: 2 },
-  { party: "RLD", color: "#EAB308", seats: 8 },
-  { party: "Others", color: "#94A3B8", seats: 26 },
+type MapLayerKey = "districts" | "highways" | "urban" | "rivers" | "railways";
+type SelectedConstituency = { name: string; district?: string; winner?: string; winnerName?: string; margin?: number; code?: number };
+const layerOptions: { key: MapLayerKey; label: string }[] = [
+  { key: "districts", label: "District Boundaries" }, { key: "highways", label: "Highway Network" },
+  { key: "urban", label: "Urban Areas" }, { key: "rivers", label: "River Systems" }, { key: "railways", label: "Railway Lines" },
 ];
+const normalize = (value: string) => value.toLowerCase().replace(/\[[^\]]*\]/g, "").replace(/\s*\((?:sc|st)\)\s*/g, " ").replace(/\s+/g, " ").trim();
 
 export default function ConstituencyMapPage() {
-  return (
-    <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
-      <PageHeader
-        title="Constituency Map"
-        description="Geospatial visualization of election results across 403 assembly constituencies."
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Maps & GIS" }, { label: "Constituency Map" }]}
-      />
+  const [year, setYear] = useState<"2017" | "2022">("2022");
+  const [region, setRegion] = useState("All Regions");
+  const [selected, setSelected] = useState<SelectedConstituency | null>(null);
+  const [search, setSearch] = useState("");
+  const [layers, setLayers] = useState<Record<MapLayerKey, boolean>>({ districts: true, highways: false, urban: false, rivers: false, railways: false });
+  const [mapData, setMapData] = useState<Record<string, any>>({});
+  const [refreshing, setRefreshing] = useState(false);
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-9">
-          <PremiumCard className="p-0 overflow-hidden h-[700px] flex flex-col">
-            {/* Map Toolbar */}
-            <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <select className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]">
-                  <option>2022 Results</option><option>2017 Results</option><option>Swing Map</option><option>Turnout Map</option>
-                </select>
-                <select className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]">
-                  <option>All Regions</option><option>Western UP</option><option>Purvanchal</option><option>Awadh</option><option>Bundelkhand</option><option>Rohilkhand</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"><ZoomIn className="w-4 h-4" /></button>
-                <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"><Layers className="w-4 h-4" /></button>
-              </div>
-            </div>
-            {/* Map Area */}
-            <div className="flex-1 bg-[var(--bg-app)] relative flex items-center justify-center">
-              <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: "url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Uttar_Pradesh_locator_map.svg/1200px-Uttar_Pradesh_locator_map.svg.png')", backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }} />
-              <div className="text-center z-10">
-                <Map className="w-16 h-16 text-[var(--accent-primary)]/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Interactive GIS Map</h3>
-                <p className="text-sm text-[var(--text-secondary)] max-w-sm mx-auto mt-2">
-                  The full GIS layer will render constituency boundaries with party-colored fills. Click any constituency to drill down into booth-level data.
-                </p>
-              </div>
-            </div>
-          </PremiumCard>
-        </div>
+  const loadMapData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const response = await fetch(apiUrl(`/api/v1/analytics/constituencies-map?election_year=${year}`), { cache: "no-store" });
+      const payload = await response.json();
+      setMapData(payload.constituencies || {});
+    } finally { setRefreshing(false); }
+  }, [year]);
+  useEffect(() => { loadMapData(); }, [loadMapData]);
+  const partyCounts = useMemo(() => Object.values(mapData).reduce((counts: Record<string, number>, item: any) => { const party = item.winner || "Others"; counts[party] = (counts[party] || 0) + 1; return counts; }, {}), [mapData]);
+  const handleSelect = useCallback((value: SelectedConstituency) => setSelected(value), []);
 
-        {/* Sidebar Legend & Info */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          <PremiumCard className="p-6">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4">Legend — 2022 Winners</h3>
-            <div className="space-y-3">
-              {legendItems.map(l => (
-                <div key={l.party} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 rounded" style={{ backgroundColor: l.color }} />
-                    <span className="text-sm font-medium text-[var(--text-primary)]">{l.party}</span>
-                  </div>
-                  <span className="text-sm font-bold text-[var(--text-primary)]">{l.seats}</span>
-                </div>
-              ))}
-            </div>
-          </PremiumCard>
+  useEffect(() => {
+    if (!search.trim()) return;
+    const match = Object.entries(mapData).find(([key, value]: [string, any]) => key.includes(normalize(search)) || String(value.original_name || "").toLowerCase().includes(search.toLowerCase()));
+    if (match) setSelected({ name: match[1].original_name || match[0], winner: match[1].winner, winnerName: match[1].winner_name, margin: match[1].margin });
+  }, [search, mapData]);
 
-          <PremiumCard className="p-6">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4 flex items-center gap-2"><Info className="w-4 h-4" /> Selected Constituency</h3>
-            <div className="text-center py-8">
-              <p className="text-sm text-[var(--text-secondary)]">Click on a constituency on the map to see details here.</p>
-            </div>
-          </PremiumCard>
-
-          <PremiumCard className="p-6">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4">Map Layers</h3>
-            <div className="space-y-3">
-              {["District Boundaries", "Highway Network", "Urban Areas", "River Systems", "Railway Lines"].map(layer => (
-                <label key={layer} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 rounded border-[var(--border-subtle)] accent-[var(--accent-primary)]" defaultChecked={layer === "District Boundaries"} />
-                  <span className="text-sm text-[var(--text-secondary)]">{layer}</span>
-                </label>
-              ))}
-            </div>
-          </PremiumCard>
-        </div>
+  return <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
+    <PageHeader title="Constituency Map" description="Geospatial visualization of election results across 403 assembly constituencies." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Maps & GIS" }, { label: "Constituency Map" }]} />
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-9"><PremiumCard className="p-0 overflow-hidden h-[700px] flex flex-col">
+        <div className="p-4 border-b border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3"><select aria-label="Election year" value={year} onChange={(e) => { setYear(e.target.value as "2017" | "2022"); setSelected(null); }} className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]"><option value="2022">2022 Results</option><option value="2017">2017 Results</option></select>
+            <select aria-label="Region" value={region} onChange={(e) => setRegion(e.target.value)} className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]"><option>All Regions</option><option>Western UP</option><option>Rohilkhand</option><option>Awadh</option><option>Bundelkhand</option><option>Purvanchal</option></select>
+            <div className="hidden md:flex items-center gap-2 border border-[var(--border-subtle)] rounded-lg px-3 py-2"><Search className="w-4 h-4 text-[var(--text-tertiary)]" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find constituency" className="w-40 bg-transparent outline-none text-sm text-[var(--text-primary)]" /></div>
+          </div><div className="flex items-center gap-2"><button title="Refresh map data" onClick={loadMapData} className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"><RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /></button><button title="Zoom to Uttar Pradesh" onClick={() => window.dispatchEvent(new CustomEvent("up-map-fit"))} className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-lg transition-colors"><ZoomIn className="w-4 h-4" /></button><Layers className="w-4 h-4 text-[var(--text-secondary)]" /></div>
+        </div><div className="flex-1 bg-[var(--bg-app)] min-h-0"><UPMap electionYear={year} region={region} selectedName={selected?.name} activeLayers={layers} onSelect={handleSelect} /></div>
+      </PremiumCard></div>
+      <div className="lg:col-span-3 flex flex-col gap-6">
+        <PremiumCard className="p-6"><h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4">Legend — {year} Winners</h3><div className="space-y-3">{["BJP", "SP", "BSP", "INC", "RLD", "Others"].map((party) => <div key={party} className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="w-4 h-4 rounded" style={{ backgroundColor: getPartyColor(party) }} /><span className="text-sm font-medium text-[var(--text-primary)]">{party}</span></div><span className="text-sm font-bold text-[var(--text-primary)]">{partyCounts[party] || 0}</span></div>)}</div></PremiumCard>
+        <PremiumCard className="p-6"><h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4 flex items-center gap-2"><Info className="w-4 h-4" /> Selected Constituency</h3>{selected ? <div className="space-y-3"><div><p className="text-lg font-semibold text-[var(--text-primary)]">{selected.name}</p><p className="text-sm text-[var(--text-secondary)]">{selected.district || "Uttar Pradesh"}{selected.code ? ` · AC ${selected.code}` : ""}</p></div><div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: getPartyColor(selected.winner) }} /><span className="text-sm text-[var(--text-primary)]">{selected.winnerName || "Winner unavailable"}</span><span className="text-xs font-semibold text-[var(--text-secondary)]">{selected.winner || "OTH"}</span></div>{selected.margin !== undefined && <p className="text-sm text-[var(--text-secondary)]">Winning margin: <span className="font-semibold text-[var(--text-primary)]">{Number(selected.margin).toLocaleString()}</span></p>}</div> : <div className="text-center py-8"><p className="text-sm text-[var(--text-secondary)]">Click a constituency on the map to see its winner, party, district, and margin.</p></div>}</PremiumCard>
+        <PremiumCard className="p-6"><h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4">Map Layers</h3><div className="space-y-3">{layerOptions.map(({ key, label }) => <label key={key} className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={layers[key]} onChange={(e) => setLayers((current) => ({ ...current, [key]: e.target.checked }))} className="w-4 h-4 rounded border-[var(--border-subtle)] accent-[var(--accent-primary)]" /><span className="text-sm text-[var(--text-secondary)]">{label}</span></label>)}</div></PremiumCard>
       </div>
     </div>
-  );
+  </div>;
 }
