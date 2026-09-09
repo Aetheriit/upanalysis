@@ -9,7 +9,7 @@ import { apiUrl } from "@/lib/api";
 import { useSettings } from "@/context/SettingsContext";
 
 export function TopNavigation() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any>(null);
@@ -17,7 +17,7 @@ export function TopNavigation() {
   const [showDropdown, setShowDropdown] = useState(false);
   
   const { viewMode, setViewMode } = useElectionContext();
-  const { settings } = useSettings();
+  const { settings, saveSettings } = useSettings();
   const initials = settings.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((name) => name[0]).join("").toUpperCase() || "EI";
   
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -201,11 +201,15 @@ export function TopNavigation() {
           <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-full transition-colors">
             <MessageSquare className="w-5 h-5" />
           </button>
-          <button 
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          <button
+            onClick={() => {
+              const nextTheme = resolvedTheme === "dark" ? "Light" : "Dark";
+              setTheme(nextTheme.toLowerCase());
+              saveSettings({ ...settings, theme: nextTheme });
+            }}
             className="p-2 text-[var(--text-secondary)] hover:bg-[var(--border-subtle)] rounded-full transition-colors"
           >
-            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {resolvedTheme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
 
