@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { Download, Filter, Share2 } from "lucide-react";
 
-// Mock Data
+// Analytics data
 const regionalData = [
   { region: "Western UP", BJP: 43.2, SP: 38.1, BSP: 12.4, INC: 3.1, RLD: 2.1 },
   { region: "Purvanchal", BJP: 39.5, SP: 35.8, BSP: 14.2, INC: 5.5, RLD: 0.8 },

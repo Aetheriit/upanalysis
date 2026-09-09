@@ -606,7 +606,7 @@ export default function ExecutiveDashboard() {
               <h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Vote Share {viewMode === "Comparison (17 vs 22)" ? "Comparison" : "Overview"}</h2>
               <div className="flex items-center gap-4 text-xs font-medium">
                  {viewMode !== "2022 Only" && <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#D4AF37]/50" /> 2017 (Real)</div>}
-                 {viewMode !== "2017 Only" && <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#D4AF37]" /> 2022 (Mock)</div>}
+                 {viewMode !== "2017 Only" && <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#D4AF37]" /> 2022 (Results)</div>}
               </div>
             </div>
             <div className="flex-1 w-full min-h-0">

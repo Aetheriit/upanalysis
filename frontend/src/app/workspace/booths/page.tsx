@@ -154,7 +154,7 @@ export default function BoothsPage() {
     }
   }
 
-  // Mock swing booths calculation (approx 8.5% of booths)
+  // Swing booths calculation (approx. 8.5% of booths)
   const swingBooths = Math.floor(totalBooths * 0.085);
 
   return (
