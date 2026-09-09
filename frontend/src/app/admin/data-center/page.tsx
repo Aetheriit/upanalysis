@@ -13,6 +13,7 @@ const acceptedTypes = [".csv", ".xls", ".xlsx", ".json"];
 
 const localResources = [
   { name: "2017 election results master CSV", path: "backend/up_2017_results.csv", detail: "403 constituencies with winner/runner-up, party, votes and margins.", icon: FileSpreadsheet },
+  { name: "2017 verified constituency audit ranges", path: "Supplied ranges: 1–100, 101–200, 201–300, 301–403", detail: "403-row verification input used to correct 2017 turnout, margin, district, winner party and winner name fields.", icon: CheckCircle },
   { name: "2022 election results cross-check CSV", path: "wiki_2022.csv", detail: "Constituency-level 2022 winner and party reference used during validation.", icon: FileSpreadsheet },
   { name: "2017 constituency and booth archive", path: "2017 data/upvidhansabha2017/", detail: "Source archive, constituency metadata, text extracts and processing notes.", icon: FileText },
   { name: "2017 booth workbooks", path: "2017 data/excel_outputs/*.xlsx", detail: "Booth-level XLS/XLSX workbooks processed into turnout and booth analytics.", icon: FileSpreadsheet },
@@ -21,6 +22,7 @@ const localResources = [
 ];
 
 const externalSources = [
+  { name: "UttarPradeshElection.com — UP results, 2017", url: "https://uttarpradeshelection.com/results?year=2017", detail: "Primary web cross-check for all 403 constituency winners, parties, vote margins and turnout values supplied for the 2017 correction.", kind: "2017 verification" },
   { name: "Election Commission of India — Statistical Reports", url: "https://www.eci.gov.in/statistical-reports", detail: "Primary source for official state election statistical reports, including Uttar Pradesh 2017 and 2022.", kind: "Official" },
   { name: "Election Commission of India — Results Portal", url: "https://results.eci.gov.in/", detail: "Constituency-wise candidate, party, vote and result verification portal.", kind: "Official" },
   { name: "CEO Uttar Pradesh — Form 20 archive", url: "http://ceouttarpradesh.nic.in/Form20.aspx", detail: "Legacy Uttar Pradesh Chief Electoral Officer source referenced for Form 20 and booth-level result material.", kind: "Official / legacy" },
