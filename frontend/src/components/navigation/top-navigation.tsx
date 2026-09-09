@@ -6,6 +6,7 @@ import { Search, Bell, MessageSquare, Sun, Moon, MapPin, User, LayoutGrid } from
 import Link from "next/link";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { useSettings } from "@/context/SettingsContext";
 
 export function TopNavigation() {
   const { theme, setTheme } = useTheme();
@@ -16,6 +17,8 @@ export function TopNavigation() {
   const [showDropdown, setShowDropdown] = useState(false);
   
   const { viewMode, setViewMode } = useElectionContext();
+  const { settings } = useSettings();
+  const initials = settings.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((name) => name[0]).join("").toUpperCase() || "EI";
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -211,11 +214,11 @@ export function TopNavigation() {
         {/* Profile */}
         <button className="flex items-center gap-3 p-1.5 pr-3 hover:bg-[var(--border-subtle)] rounded-full transition-colors">
           <div className="w-8 h-8 rounded-full bg-[#E5C365]/20 text-[#C5A028] flex items-center justify-center font-bold text-sm">
-            SK
+            {initials}
           </div>
           <div className="text-left hidden lg:block">
-            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">Shivam Kumar</p>
-            <p className="text-xs text-[var(--text-tertiary)]">Analyst</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{settings.displayName}</p>
+            <p className="text-xs text-[var(--text-tertiary)]">{settings.role}</p>
           </div>
         </button>
       </div>
