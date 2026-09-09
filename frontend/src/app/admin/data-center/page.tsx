@@ -6,20 +6,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { apiUrl } from "@/lib/api";
 
-type DatasetStatus = "Synced" | "Pending Update" | "Imported" | "Syncing";
-type Dataset = { name: string; records: string; size: string; lastUpdated: string; status: DatasetStatus; source?: string };
+type DatasetStatus = "Live" | "Reference" | "Imported" | "Syncing";
+type Dataset = { name: string; records: string; size: string; lastUpdated: string; status: DatasetStatus; source?: string; sourceType?: "Live API" | "Uploaded" | "Reference" };
 
-const DATASET_STORAGE_KEY = "ei_data_center_datasets";
 const acceptedTypes = [".csv", ".xls", ".xlsx", ".json"];
-const initialDatasets: Dataset[] = [
-  { name: "UP Assembly 2022 — Full Results", records: "403", size: "2.4 MB", lastUpdated: "Aug 15, 2026", status: "Synced" },
-  { name: "UP Assembly 2017 — Full Results", records: "403", size: "2.1 MB", lastUpdated: "Aug 15, 2026", status: "Synced" },
-  { name: "Booth-Level Data 2022", records: "1,63,335", size: "128 MB", lastUpdated: "Aug 12, 2026", status: "Synced" },
-  { name: "Booth-Level Data 2017", records: "1,55,890", size: "112 MB", lastUpdated: "Aug 12, 2026", status: "Synced" },
-  { name: "Candidate Profiles — All Years", records: "22,450", size: "45 MB", lastUpdated: "Aug 10, 2026", status: "Synced" },
-  { name: "Demographic Census Data", records: "75", size: "8.2 MB", lastUpdated: "Aug 8, 2026", status: "Pending Update" },
-  { name: "GIS Shapefiles — UP Constituencies", records: "403", size: "56 MB", lastUpdated: "Jul 28, 2026", status: "Synced" },
-];
 
 const localResources = [
   { name: "2017 election results master CSV", path: "backend/up_2017_results.csv", detail: "403 constituencies with winner/runner-up, party, votes and margins.", icon: FileSpreadsheet },
@@ -53,43 +43,46 @@ function formatDate(date = new Date()) {
 }
 
 function statusClass(status: DatasetStatus) {
-  if (status === "Synced") return "bg-emerald-500/10 text-emerald-500";
+  if (status === "Live" || status === "Imported") return "bg-emerald-500/10 text-emerald-500";
   if (status === "Syncing") return "bg-blue-500/10 text-blue-500";
-  return "bg-amber-500/10 text-amber-500";
+  return "bg-slate-500/10 text-slate-500";
 }
 
 export default function DataCenterPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [datasets, setDatasets] = useState<Dataset[]>(initialDatasets);
-  const [syncing, setSyncing] = useState<string | null>(null);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => {
+  const loadRegistry = async () => {
+    setLoading(true);
+    const live: Dataset[] = [];
+    const constituencyYears = await Promise.all([2017, 2022].map(async (year) => {
+      try {
+        const response = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`), { cache: "no-store" });
+        const payload = await response.json();
+        const isMock = payload.constituencies?.some((item: { name?: string }) => item.name?.startsWith("Mock "));
+        return !isMock && response.ok && payload.total ? { year, total: payload.total } : null;
+      } catch { return null; }
+    }));
+    constituencyYears.filter(Boolean).forEach((item) => live.push({ name: `UP Assembly ${item!.year} — Constituency Results API`, records: String(item!.total), size: "Live API", lastUpdated: "Live from backend", status: "Live", sourceType: "Live API" }));
     try {
-      const stored = localStorage.getItem(DATASET_STORAGE_KEY);
-      if (stored) setDatasets(JSON.parse(stored));
-    } catch {
-      setNotice({ type: "error", text: "Saved dataset metadata could not be loaded; showing the project defaults." });
-    }
-    fetch(apiUrl("/api/v1/upload/files"))
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Upload registry unavailable")))
-      .then((payload) => {
-        const uploaded: Dataset[] = (payload.files || []).map((file: { filename: string; size: number; created: string }) => ({
-          name: file.filename,
-          records: "Uploaded",
-          size: formatSize(file.size),
-          lastUpdated: formatDate(new Date(file.created)),
-          status: "Imported",
-          source: "Uploaded",
-        }));
-        if (uploaded.length) setDatasets((current) => [...uploaded.filter((file) => !current.some((item) => item.name === file.name)), ...current]);
-      })
-      .catch(() => undefined);
-  }, []);
+      const response = await fetch(apiUrl("/api/v1/analytics/candidates?election_year=2017&limit=1"), { cache: "no-store" });
+      const payload = await response.json();
+      if (response.ok && payload.total) live.push({ name: "UP Assembly 2017 — Candidate Results API", records: String(payload.total), size: "Live API", lastUpdated: "Live from backend", status: "Live", sourceType: "Live API" });
+    } catch { /* Keep the registry honest when the API is unavailable. */ }
+    try {
+      const response = await fetch(apiUrl("/api/v1/upload/files"), { cache: "no-store" });
+      const payload = await response.json();
+      const uploaded: Dataset[] = (response.ok ? payload.files || [] : []).map((file: { filename: string; size: number; created: string }) => ({ name: file.filename, records: "Uploaded", size: formatSize(file.size), lastUpdated: formatDate(new Date(file.created)), status: "Imported", source: "Uploaded", sourceType: "Uploaded" }));
+      live.push(...uploaded);
+    } catch { /* Upload registry is optional while the backend is offline. */ }
+    live.push({ name: "2022 election validation export", records: "Repository file", size: "CSV", lastUpdated: "Versioned in repository", status: "Reference", source: "wiki_2022.csv", sourceType: "Reference" });
+    setDatasets(live);
+    setLoading(false);
+  };
 
-  useEffect(() => {
-    localStorage.setItem(DATASET_STORAGE_KEY, JSON.stringify(datasets));
-  }, [datasets]);
+  useEffect(() => { loadRegistry(); }, []);
 
   useEffect(() => {
     if (!notice) return;
@@ -99,25 +92,10 @@ export default function DataCenterPage() {
 
   const summary = useMemo(() => ({
     active: datasets.length,
-    synced: datasets.filter((dataset) => dataset.status === "Synced").length,
-    pending: datasets.filter((dataset) => dataset.status === "Pending Update").length,
+    synced: datasets.filter((dataset) => dataset.status === "Live" || dataset.status === "Imported").length,
+    pending: datasets.filter((dataset) => dataset.status === "Reference").length,
     storage: datasets.reduce((total, dataset) => total + (Number.parseFloat(dataset.size.replace(/[^0-9.]/g, "")) || 0), 0),
   }), [datasets]);
-
-  const updateDatasets = (names: string[]) => {
-    setDatasets((current) => current.map((dataset) => names.includes(dataset.name) ? { ...dataset, status: "Synced", lastUpdated: formatDate() } : dataset));
-  };
-
-  const sync = (name?: string) => {
-    const names = name ? [name] : datasets.map((dataset) => dataset.name);
-    setSyncing(name || "all");
-    setDatasets((current) => current.map((dataset) => names.includes(dataset.name) ? { ...dataset, status: "Syncing" } : dataset));
-    window.setTimeout(() => {
-      updateDatasets(names);
-      setSyncing(null);
-      setNotice({ type: "success", text: name ? `${name} is synced.` : "All datasets are synced." });
-    }, 700);
-  };
 
   const downloadManifest = (dataset: Dataset) => {
     const blob = new Blob([JSON.stringify({ ...dataset, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" });
@@ -146,7 +124,7 @@ export default function DataCenterPage() {
       const response = await fetch(apiUrl("/api/v1/upload/"), { method: "POST", body: formData });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.detail || "Upload failed");
-      const imported: Dataset = { name: file.name, records: payload.detected_schema?.rows ? String(payload.detected_schema.rows) : "Uploaded", size: formatSize(payload.file_size || file.size), lastUpdated: formatDate(), status: "Imported", source: "Uploaded" };
+      const imported: Dataset = { name: file.name, records: payload.detected_schema?.rows ? String(payload.detected_schema.rows) : "Uploaded", size: formatSize(payload.file_size || file.size), lastUpdated: formatDate(), status: "Imported", source: "Uploaded", sourceType: "Uploaded" };
       setDatasets((current) => [imported, ...current.filter((dataset) => dataset.name !== file.name)]);
       setNotice({ type: "success", text: `${file.name} was uploaded and schema-detected.` });
     } catch (error) {
@@ -162,11 +140,11 @@ export default function DataCenterPage() {
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
       <PremiumCard padding="sm" className="text-center"><Database className="mx-auto mb-2 h-5 w-5 text-[var(--accent-primary)]" /><div className="text-2xl font-bold text-[var(--text-primary)]">{summary.active}</div><div className="text-xs text-[var(--text-secondary)]">Active Datasets</div></PremiumCard>
       <PremiumCard padding="sm" className="text-center"><HardDrive className="mx-auto mb-2 h-5 w-5 text-blue-500" /><div className="text-2xl font-bold text-[var(--text-primary)]">{summary.storage.toFixed(1)} MB</div><div className="text-xs text-[var(--text-secondary)]">Registered Storage</div></PremiumCard>
-      <PremiumCard padding="sm" className="text-center"><CheckCircle className="mx-auto mb-2 h-5 w-5 text-emerald-500" /><div className="text-2xl font-bold text-emerald-500">{summary.synced}</div><div className="text-xs text-[var(--text-secondary)]">Synced</div></PremiumCard>
-      <PremiumCard padding="sm" className="text-center"><AlertTriangle className="mx-auto mb-2 h-5 w-5 text-amber-500" /><div className="text-2xl font-bold text-amber-500">{summary.pending}</div><div className="text-xs text-[var(--text-secondary)]">Pending Update</div></PremiumCard>
+      <PremiumCard padding="sm" className="text-center"><CheckCircle className="mx-auto mb-2 h-5 w-5 text-emerald-500" /><div className="text-2xl font-bold text-emerald-500">{summary.synced}</div><div className="text-xs text-[var(--text-secondary)]">Live / Imported</div></PremiumCard>
+      <PremiumCard padding="sm" className="text-center"><AlertTriangle className="mx-auto mb-2 h-5 w-5 text-amber-500" /><div className="text-2xl font-bold text-amber-500">{summary.pending}</div><div className="text-xs text-[var(--text-secondary)]">References</div></PremiumCard>
     </div>
 
-    <PremiumCard className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4"><div><h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">All Datasets</h2><p className="mt-1 text-xs text-[var(--text-secondary)]">Registry state is saved in this browser; sync actions update the registry timestamp.</p></div><button onClick={() => sync()} disabled={syncing !== null} className="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-app)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] disabled:cursor-wait disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${syncing === "all" ? "animate-spin" : ""}`} />{syncing === "all" ? "Syncing..." : "Sync All"}</button></div><div className="overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-app)]/50">{["Dataset", "Records", "Size", "Last Updated", "Status", "Actions"].map((header) => <th key={header} className="whitespace-nowrap px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">{header}</th>)}</tr></thead><tbody className="divide-y divide-[var(--border-subtle)]">{datasets.map((dataset) => <tr key={dataset.name} className="transition-colors hover:bg-[var(--bg-app)]/30"><td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{dataset.name}{dataset.source && <span className="ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-500">{dataset.source}</span>}</td><td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{dataset.records}</td><td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{dataset.size}</td><td className="flex items-center gap-1 px-6 py-4 text-sm text-[var(--text-tertiary)]"><Clock className="h-3 w-3" />{dataset.lastUpdated}</td><td className="px-6 py-4"><span className={`rounded-full px-2 py-1 text-xs font-medium ${statusClass(dataset.status)}`}>{dataset.status}</span></td><td className="px-6 py-4"><div className="flex items-center gap-2"><button aria-label={`Download ${dataset.name} manifest`} onClick={() => downloadManifest(dataset)} className="rounded-md p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-app)] hover:text-[var(--text-primary)]"><Download className="h-4 w-4" /></button><button aria-label={`Sync ${dataset.name}`} onClick={() => sync(dataset.name)} disabled={syncing !== null} className="rounded-md p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-app)] hover:text-[var(--text-primary)] disabled:cursor-wait disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${syncing === dataset.name ? "animate-spin" : ""}`} /></button></div></td></tr>)}</tbody></table></div></PremiumCard>
+    <PremiumCard className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4"><div><h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Live Data Registry</h2><p className="mt-1 text-xs text-[var(--text-secondary)]">Only backend API responses, uploaded files, and versioned repository references are listed.</p></div><button onClick={() => loadRegistry()} disabled={loading} className="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-app)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] disabled:cursor-wait disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />{loading ? "Loading..." : "Refresh Registry"}</button></div><div className="overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-app)]/50">{["Dataset", "Records", "Size", "Last Updated", "Status", "Actions"].map((header) => <th key={header} className="whitespace-nowrap px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">{header}</th>)}</tr></thead><tbody className="divide-y divide-[var(--border-subtle)]">{loading ? <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">Reading live sources...</td></tr> : datasets.length === 0 ? <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">No live or uploaded data sources are available.</td></tr> : datasets.map((dataset) => <tr key={dataset.name} className="transition-colors hover:bg-[var(--bg-app)]/30"><td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{dataset.name}{dataset.source && <span className="ml-2 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-500">{dataset.source}</span>}</td><td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{dataset.records}</td><td className="px-6 py-4 text-sm text-[var(--text-secondary)]">{dataset.size}</td><td className="flex items-center gap-1 px-6 py-4 text-sm text-[var(--text-tertiary)]"><Clock className="h-3 w-3" />{dataset.lastUpdated}</td><td className="px-6 py-4"><span className={`rounded-full px-2 py-1 text-xs font-medium ${statusClass(dataset.status)}`}>{dataset.status}</span></td><td className="px-6 py-4"><div className="flex items-center gap-2"><button aria-label={`Download ${dataset.name} manifest`} onClick={() => downloadManifest(dataset)} className="rounded-md p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-app)] hover:text-[var(--text-primary)]"><Download className="h-4 w-4" /></button><button aria-label={`Refresh ${dataset.name}`} onClick={() => loadRegistry()} disabled={loading} className="rounded-md p-1.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--bg-app)] hover:text-[var(--text-primary)] disabled:cursor-wait disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></button></div></td></tr>)}</tbody></table></div></PremiumCard>
 
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><PremiumCard className="p-6"><div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 text-lg font-serif font-bold text-[var(--text-primary)]"><FileSpreadsheet className="h-5 w-5 text-[var(--accent-primary)]" />Local Data Resources</h2><p className="mt-1 text-sm text-[var(--text-secondary)]">Files and folders used by the project pipeline.</p></div><span className="rounded-full bg-[var(--accent-primary)]/10 px-2.5 py-1 text-xs font-medium text-[var(--accent-primary)]">6 groups</span></div><div className="space-y-3">{localResources.map((resource) => <div key={resource.path} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/60 p-4"><div className="flex items-start gap-3"><resource.icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-primary)]" /><div className="min-w-0"><p className="text-sm font-semibold text-[var(--text-primary)]">{resource.name}</p><p className="mt-1 break-all font-mono text-xs text-[var(--text-tertiary)]">{resource.path}</p><p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{resource.detail}</p></div></div></div>)}</div></PremiumCard><PremiumCard className="p-6"><div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 text-lg font-serif font-bold text-[var(--text-primary)]"><Globe2 className="h-5 w-5 text-[var(--accent-primary)]" />External Sources & References</h2><p className="mt-1 text-sm text-[var(--text-secondary)]">Source links used for collection, validation, context and mapping.</p></div><span className="rounded-full bg-[var(--accent-primary)]/10 px-2.5 py-1 text-xs font-medium text-[var(--accent-primary)]">{externalSources.length} links</span></div><div className="space-y-3">{externalSources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="group block rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)]/60 p-4 transition-colors hover:border-[var(--accent-primary)]/50 hover:bg-[var(--accent-primary)]/5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-primary)]">{source.name}</p><ExternalLink className="h-3.5 w-3.5 text-[var(--text-tertiary)]" /></div><p className="mt-1 break-all font-mono text-xs text-[var(--text-tertiary)]">{source.url}</p><p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">{source.detail}</p></div><span className="shrink-0 rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-tertiary)]">{source.kind}</span></div></a>)}</div></PremiumCard></div>
     <PremiumCard className="p-6"><div className="flex items-start gap-3"><FileText className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-primary)]" /><div><h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Data lineage & verification note</h2><p className="mt-2 max-w-4xl text-sm leading-6 text-[var(--text-secondary)]">Election results are treated as official only when supported by Election Commission of India material. Secondary sources are retained for cross-checking names, constituency labels and missing pages. Booth and demographic resources support analytics and context rather than determining the official winner.</p></div></div></PremiumCard>
