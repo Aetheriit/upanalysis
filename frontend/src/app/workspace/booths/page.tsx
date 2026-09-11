@@ -30,7 +30,7 @@ export default function BoothsPage() {
       try {
         const year = viewMode === "2017 Only" ? 2017 : 2022;
         // Even for comparison, use the active year's constituency list
-        const res = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`));
+        const res = await fetch(apiUrl(`/api/v1/analytics/constituencies?election_year=${year}`), { cache: "no-store" });
         const json = await res.json();
         
         if (json.constituencies && json.constituencies.length > 0) {
@@ -57,8 +57,8 @@ export default function BoothsPage() {
       try {
         if (isComparison) {
           const [res17, res22] = await Promise.all([
-            fetch(apiUrl(`/api/v1/analytics/booths?election_year=2017&constituency=${encodeURIComponent(selectedConstituency)}`)),
-            fetch(apiUrl(`/api/v1/analytics/booths?election_year=2022&constituency=${encodeURIComponent(selectedConstituency)}`))
+            fetch(apiUrl(`/api/v1/analytics/booths?election_year=2017&constituency=${encodeURIComponent(selectedConstituency)}`), { cache: "no-store" }),
+            fetch(apiUrl(`/api/v1/analytics/booths?election_year=2022&constituency=${encodeURIComponent(selectedConstituency)}`), { cache: "no-store" })
           ]);
           const data17 = await res17.json();
           const data22 = await res22.json();
@@ -82,7 +82,7 @@ export default function BoothsPage() {
           setData(merged);
         } else {
           const year = viewMode === "2017 Only" ? 2017 : 2022;
-          const res = await fetch(apiUrl(`/api/v1/analytics/booths?election_year=${year}&constituency=${encodeURIComponent(selectedConstituency)}`));
+          const res = await fetch(apiUrl(`/api/v1/analytics/booths?election_year=${year}&constituency=${encodeURIComponent(selectedConstituency)}`), { cache: "no-store" });
           const json = await res.json();
           const booths = json.booths || [];
           const formatted = booths.map((b: any) => ({

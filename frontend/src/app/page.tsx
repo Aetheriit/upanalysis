@@ -76,13 +76,13 @@ export default function ExecutiveDashboard() {
     async function fetchData() {
       try {
         const [kpi17Res, kpi22Res, vote17Res, vote22Res, swingRes, const17Res, const22Res] = await Promise.all([
-          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2017")),
-          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2022")),
-          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2017")),
-          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2022")),
-          fetch(apiUrl("/api/v1/analytics/swing")),
-          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017")),
-          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022")),
+          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2017"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/dashboard?election_year=2022"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2017"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2022"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/swing"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022"), { cache: "no-store" }),
         ]);
         
         const kpi17Data = await kpi17Res.json();

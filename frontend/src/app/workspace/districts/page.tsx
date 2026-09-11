@@ -28,14 +28,44 @@ export default function DistrictsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { PageHeader } from "@/components/layout/page-header";
+import { PremiumCard } from "@/components/ds/premium-card";
+import { Search, Download, ArrowUpDown, MoreHorizontal, Users, TrendingUp, MapPin } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
+import { SearchSync } from "@/components/shared/search-sync";
+import { Suspense } from "react";
+import { getPartyColor } from "@/lib/party-colors";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+export default function DistrictsPage() {
+  const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
+  const activeYear = is2017 ? "2017" : "2022";
+  
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
+  const itemsPerPage = 50;
+
+  // SearchSync is used instead
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
         const [res17, res22] = await Promise.all([
-          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017")),
-          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022"))
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2017"), { cache: "no-store" }),
+          fetch(apiUrl("/api/v1/analytics/constituencies?election_year=2022"), { cache: "no-store" })
         ]);
         const data17 = await res17.json();
         const data22 = await res22.json();
@@ -148,110 +178,6 @@ export default function DistrictsPage() {
           const t22 = d.pop22 > 0 && d.votes22 > 0
             ? (d.votes22 / d.pop22) * 100
             : (d.turnoutCount22 > 0 ? d.turnoutSum22 / d.turnoutCount22 : 0);
-          return {
-            name: d.name,
-            constituencies: d.constituencies,
-            turnout2017: t17.toFixed(1),
-            turnout2022: t22.toFixed(1),
-            bjp17: d.bjp17,
-            sp17: d.sp17,
-            bsp17: d.bsp17,
-            inc17: d.inc17,
-            bjp22: d.bjp22,
-            sp22: d.sp22,
-            bsp22: d.bsp22,
-            inc22: d.inc22,
-            swing: (t22 - t17).toFixed(1) + "%",
-            pop17: d.pop17,
-            pop22: pop22ToUse,
-            "2017": parseFloat(t17.toFixed(1)),
-            "2022": parseFloat(t22.toFixed(1)),
-            constituenciesList: d.constituenciesList.sort((a: any, b: any) => a.name.localeCompare(b.name))
-          };
-        }).sort((a: any, b: any) => a.name.localeCompare(b.name));
-
-        setDistricts(finalDistricts);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  const filteredDistricts = districts.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Show all districts for chart
-  const turnoutComparison = districts;
-
-  return (
-    <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
-      <Suspense fallback={null}>
-        <SearchSync onSearch={setSearchTerm} />
-      </Suspense>
-      <PageHeader
-        title="Districts"
-        description="District-level aggregations, demographics, and comparative turnout analysis across 75 districts."
-        breadcrumbs={[
-          { label: "Home", href: "/" },
-          { label: "Workspace" },
-          { label: "Districts" }
-        ]}
-        action={
-          <button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export
-          </button>
-        }
-      />
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <PremiumCard padding="sm" className="text-center">
-          <MapPin className="w-5 h-5 text-[var(--accent-primary)] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">{districts.length || 75}</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Districts</div>
-        </PremiumCard>
-        <PremiumCard padding="sm" className="text-center">
-          <Users className="w-5 h-5 text-blue-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">15.02 Cr</div>
-          <div className="text-xs text-[var(--text-secondary)]">Total Voters ({activeYear})</div>
-        </PremiumCard>
-        <PremiumCard padding="sm" className="text-center">
-          <TrendingUp className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">{is2017 ? '61.04%' : '61.65%'}</div>
-          <div className="text-xs text-[var(--text-secondary)]">Avg Turnout {activeYear}</div>
-        </PremiumCard>
-        <PremiumCard padding="sm" className="text-center">
-          <TrendingUp className="w-5 h-5 text-rose-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-emerald-500">+1.58%</div>
-          <div className="text-xs text-[var(--text-secondary)]">Turnout Change</div>
-        </PremiumCard>
-      </div>
-
-      {/* Chart */}
-      <PremiumCard className="p-6 h-[400px] flex flex-col">
-        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">
-          {isComparison ? "District Turnout Comparison (2017 vs 2022)" : `District Turnout (${activeYear})`}
-        </h2>
-        <div className="flex-1 w-full min-h-0 overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-[var(--border-subtle)] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-          <div style={{ minWidth: '4000px', height: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={turnoutComparison} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                <XAxis dataKey="name" interval={0} stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} angle={-45} textAnchor="end" />
-                <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={[40, 80]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} cursor={{fill: 'var(--bg-app)'}} />
-                {(isComparison || is2017) && (
-                  <Bar dataKey="2017" fill="#D4AF37" fillOpacity={isComparison ? 0.5 : 1} radius={[4, 4, 0, 0]} />
-                )}
-                {(isComparison || is2022) && (
-                  <Bar dataKey="2022" fill="#D4AF37" fillOpacity={1} radius={[4, 4, 0, 0]} />
-                )}
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </PremiumCard>
