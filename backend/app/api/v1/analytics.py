@@ -27,7 +27,7 @@ from app.models.candidate import Candidate
 
 from app.models.party import Party
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 
 
@@ -390,6 +390,8 @@ async def get_booth_analysis(
 
             query = query.limit(50)
 
+        query = query.options(selectinload(Booth.vote_records).selectinload(VoteRecord.candidate).selectinload(Candidate.party))
+
         result = await db.execute(query)
 
         booths_db = result.scalars().all()
@@ -401,6 +403,48 @@ async def get_booth_analysis(
         booths = []
 
         for b in booths_db:
+
+            bjp_votes = 0
+
+            sp_votes = 0
+
+            
+
+            winner_votes = 0
+
+            runner_up_votes = 0
+
+            for vr in b.vote_records:
+
+                party_abbr = vr.candidate.party.abbreviation if vr.candidate and vr.candidate.party else "IND"
+
+                if party_abbr == "BJP":
+
+                    bjp_votes += vr.votes
+
+                elif party_abbr == "SP":
+
+                    sp_votes += vr.votes
+
+                
+
+                if vr.votes > winner_votes:
+
+                    runner_up_votes = winner_votes
+
+                    winner_votes = vr.votes
+
+                elif vr.votes > runner_up_votes:
+
+                    runner_up_votes = vr.votes
+
+                    
+
+            actual_margin = winner_votes - runner_up_votes
+
+            final_margin = b.winning_margin if getattr(b, 'winning_margin', 0) > 0 else actual_margin
+
+
 
             booths.append({
 
@@ -418,7 +462,11 @@ async def get_booth_analysis(
 
                 "runner_up_party": b.runner_up_party or "Unknown",
 
-                "winning_margin": b.winning_margin or 0,
+                "winning_margin": final_margin,
+
+                "bjp_votes": bjp_votes,
+
+                "sp_votes": sp_votes,
 
                 "nota_votes": b.nota_votes,
 

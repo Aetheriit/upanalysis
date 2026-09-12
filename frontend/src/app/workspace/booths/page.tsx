@@ -90,8 +90,8 @@ export default function BoothsPage() {
             name: b.booth_name,
             voters: b.total_electors,
             turnout: b.turnout_pct,
-            bjpVotes: Math.floor((b.votes_polled || 0) * 0.4),
-            spVotes: Math.floor((b.votes_polled || 0) * 0.35),
+            bjpVotes: b.bjp_votes !== undefined ? b.bjp_votes : Math.floor((b.votes_polled || 0) * 0.4),
+            spVotes: b.sp_votes !== undefined ? b.sp_votes : Math.floor((b.votes_polled || 0) * 0.35),
             margin: b.winning_margin
           }));
           setData(formatted);
