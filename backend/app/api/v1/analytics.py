@@ -391,10 +391,10 @@ async def get_booth_analysis(
             query = query.limit(50)
 
         query = query.options(selectinload(Booth.vote_records).selectinload(VoteRecord.candidate).selectinload(Candidate.party))
-
+        query = query.order_by(func.lpad(Booth.booth_number, 10, '0'))
         result = await db.execute(query)
 
-        booths_db = result.scalars().all()
+        booths_db = result.scalars().unique().all()
 
     
 
@@ -404,41 +404,34 @@ async def get_booth_analysis(
 
         for b in booths_db:
 
-            bjp_votes = 0
-
-            sp_votes = 0
-
-            
-
+            party_votes = {}
             winner_votes = 0
-
             runner_up_votes = 0
 
             for vr in b.vote_records:
-
                 party_abbr = vr.candidate.party.abbreviation if vr.candidate and vr.candidate.party else "IND"
-
-                if party_abbr == "BJP":
-
-                    bjp_votes += vr.votes
-
-                elif party_abbr == "SP":
-
-                    sp_votes += vr.votes
-
+                party_votes[party_abbr] = party_votes.get(party_abbr, 0) + vr.votes
                 
-
                 if vr.votes > winner_votes:
-
                     runner_up_votes = winner_votes
-
                     winner_votes = vr.votes
-
                 elif vr.votes > runner_up_votes:
-
                     runner_up_votes = vr.votes
-
                     
+            if year_to_fetch == 2017:
+                sp_allies = ["SP", "INC"]
+                bjp_allies = ["BJP", "AD(S)", "SBSP"]
+            else:
+                sp_allies = ["SP", "RLD", "SBSP", "AD(K)"]
+                bjp_allies = ["BJP", "AD(S)", "NISHAD"]
+
+            bjp_top_party = max((p for p in bjp_allies if p in party_votes), key=lambda p: party_votes[p], default="BJP")
+            bjp_val = party_votes.get(bjp_top_party, 0)
+            bjp_display = bjp_val if bjp_top_party == "BJP" else f"{bjp_val} ({bjp_top_party})"
+
+            sp_top_party = max((p for p in sp_allies if p in party_votes), key=lambda p: party_votes[p], default="SP")
+            sp_val = party_votes.get(sp_top_party, 0)
+            sp_display = sp_val if sp_top_party == "SP" else f"{sp_val} ({sp_top_party})"
 
             actual_margin = winner_votes - runner_up_votes
 
@@ -464,9 +457,8 @@ async def get_booth_analysis(
 
                 "winning_margin": final_margin,
 
-                "bjp_votes": bjp_votes,
-
-                "sp_votes": sp_votes,
+                "bjp_votes": bjp_display,
+                "sp_votes": sp_display,
 
                 "nota_votes": b.nota_votes,
 
