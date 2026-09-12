@@ -1,6 +1,14 @@
 {$DOMAIN_NAME:localhost} {
-    # Route API requests to the FastAPI backend
-    handle_path /* {
+    # Route API and docs requests to the FastAPI backend
+    @api {
+        path /api/* /docs /openapi.json
+    }
+    handle @api {
         reverse_proxy backend:8000
+    }
+    
+    # Route everything else to Next.js frontend
+    handle {
+        reverse_proxy frontend:3000
     }
 }
