@@ -22,7 +22,8 @@ type UPMapProps = {
   partyFilter?: string;
   queryType?: string;
   showPartyWinners?: boolean;
-  onSelect?: (value: { name: string; district?: string; winner?: string; winnerName?: string; margin?: number; code?: number }) => void;
+  preloadedData?: Record<string, any>;
+  onSelect?: (value: { name: string; district?: string; winner?: string; winnerName?: string; margin?: number; code?: number; turnout?: number; totalElectors?: number; spoiler?: boolean; runnerUp?: string; swing?: number }) => void;
 };
 
 const DEFAULT_LAYERS: Record<MapLayerKey, boolean> = {
@@ -47,7 +48,7 @@ const matchesRegion = (district: string, region: string) => {
   return (REGION_DISTRICTS[region] || []).some((item) => normalized.includes(item.toLowerCase()));
 };
 
-export default function UPMap({ electionYear, region = "All Regions", selectedName, activeLayers = DEFAULT_LAYERS, partyFilter = "All Parties", queryType = "Constituencies by party", showPartyWinners = true, onSelect }: UPMapProps) {
+export default function UPMap({ electionYear, region = "All Regions", selectedName, activeLayers = DEFAULT_LAYERS, partyFilter = "All Parties", queryType = "Constituencies by party", showPartyWinners = true, preloadedData, onSelect }: UPMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const geoLayerRef = useRef<any>(null);
@@ -56,13 +57,20 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const activeYear = electionYear || (viewMode === "2017 Only" ? "2017" : "2022");
+  const isCompare = viewMode === "Comparison";
   const selectedLayerRef = useRef<any>(null);
 
   useEffect(() => {
+    if (preloadedData && Object.keys(preloadedData).length > 0) {
+      setConstituencyData(preloadedData);
+      setIsLoading(false);
+      return;
+    }
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(apiUrl(`/api/v1/analytics/constituencies-map?election_year=${activeYear}`));
+        const compareQuery = isCompare ? `&compare_year=2017` : "";
+        const res = await fetch(apiUrl(`/api/v1/analytics/constituencies-map?election_year=${activeYear}${compareQuery}`));
         const data = await res.json();
         if (data.constituencies) {
           setConstituencyData(data.constituencies);
@@ -74,7 +82,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
       }
     };
     fetchData();
-  }, [activeYear]);
+  }, [activeYear, isCompare, preloadedData]);
 
   useEffect(() => {
     // Dynamic import for SSR safety
@@ -113,10 +121,10 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
         overlayLayers[key] = layer;
         if (activeLayers[key]) layer.addTo(map);
       };
-      addTileOverlay("highways", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 0.32);
-      addTileOverlay("urban", "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png", 0.7);
-      addTileOverlay("rivers", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 0.18);
-      addTileOverlay("railways", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 0.22);
+      addTileOverlay("highways", "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", 0.9);
+      addTileOverlay("urban", "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", 0.4);
+      addTileOverlay("rivers", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", 0.35);
+      addTileOverlay("railways", "https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png", 0.7);
       (map as any).__featureOverlays = overlayLayers;
 
       // Load the actual 403-constituency GeoJSON from the repository.
@@ -134,14 +142,29 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
             const partyMatches = partyFilter === "All Parties" || d?.winner === partyFilter;
             const fillColor = showPartyWinners && d && d.winner ? (PARTY_COLORS[d.winner] || PARTY_COLORS.Others) : "#D1D5DB";
             const margin = Number(d?.margin || 0);
-            const queryColor = queryType === "Margin heatmap" ? (margin > 80000 ? "#166534" : margin > 40000 ? "#65a30d" : margin > 15000 ? "#f59e0b" : "#dc2626") : fillColor;
+            
+            let queryColor = fillColor;
+            if (queryType === "Margin heatmap" || queryType === "margin") {
+                queryColor = margin > 80000 ? "#166534" : margin > 40000 ? "#65a30d" : margin > 15000 ? "#f59e0b" : "#dc2626";
+            } else if (queryType === "spoiler") {
+                queryColor = d?.is_spoiled ? "#ef4444" : "#e5e7eb";
+            } else if (queryType === "swing") {
+                const swing = d?.swing || 0;
+                if (swing > 8) queryColor = "#166534";
+                else if (swing > 3) queryColor = "#22c55e";
+                else if (swing > 0) queryColor = "#86efac";
+                else if (swing > -3) queryColor = "#fca5a5";
+                else if (swing > -8) queryColor = "#ef4444";
+                else queryColor = "#991b1b";
+            }
+            
             const isSelected = normalizeConstituencyName(selectedName || "") === constName;
             
             return {
               fillColor: partyMatches ? queryColor : "#D1D5DB",
               weight: visibleInRegion && isSelected ? 3 : 0.5,
               opacity: 1,
-              color: isSelected ? "#111827" : "#ffffff",
+              color: isSelected ? "#111827" : (queryType === "spoiler" ? "#9ca3af" : "#ffffff"),
               fillOpacity: visibleInRegion && partyMatches ? (isSelected ? 0.92 : 0.75) : 0.04,
             };
           },
@@ -160,7 +183,10 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                 </div>
                 <div style="font-size: 11px; color: #666; margin-top: 2px;">
                   Margin: ${d.margin ? d.margin.toLocaleString() : "Unknown"}
-                </div>` : '<div style="margin-top: 4px; font-size: 11px; color: #666;">Data not available</div>'}
+                </div>
+                ${queryType === 'spoiler' && d.is_spoiled ? `<div style="font-size: 11px; color: #dc2626; margin-top: 4px; font-weight: 600;">⚠️ Spoiler: 3rd party (${d.third}) > margin</div>` : ''}
+                ${queryType === 'swing' && d.swing !== undefined ? `<div style="font-size: 11px; color: ${d.swing > 0 ? '#16a34a' : '#dc2626'}; margin-top: 4px; font-weight: 600;">Swing: ${d.swing > 0 ? '+' : ''}${d.swing}%</div>` : ''}
+                ` : '<div style="margin-top: 4px; font-size: 11px; color: #666;">Data not available</div>'}
               </div>`;
 
             layer.bindTooltip(tooltipHtml,
@@ -183,6 +209,11 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                   winnerName: d?.winner_name,
                   margin: d?.margin,
                   code: feature?.properties?.AC_NO,
+                  turnout: d?.turnout_pct,
+                  totalElectors: d?.total_electors,
+                  spoiler: d?.is_spoiled,
+                  runnerUp: d?.runner_up,
+                  swing: d?.swing
                 });
               },
               mouseover: (e: any) => {
