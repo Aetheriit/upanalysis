@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Handshake, Loader2, Users, AlertTriangle } from "lucide-react";
+import { Download, Handshake, Loader2, Users, AlertTriangle, AlertCircle } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
@@ -23,7 +23,7 @@ function downloadCsv(data: AllianceResponse, alliance: Alliance) {
 
 export default function AlliancePage() {
   const [year, setYear] = useState(2022);
-  const [data, setData] = useState<AllianceResponse | null>(null);
+  const [data, setData] = useState<any>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,31 +39,13 @@ export default function AlliancePage() {
   }, [year]);
 
   const alliance = data?.alliances[selectedIndex];
-  const chartData = useMemo(() => alliance && data ? data.regions.map(region => ({ region: region.region, standalone: Number(region[`${alliance.short_name}_standalone`] || 0), pooled: Number(region[`${alliance.short_name}_pooled`] || 0) })) : [], [data, alliance]);
-
-  return <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
-    async function fetchData() {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(apiUrl(`/api/v1/analytics/alliance?election_year=${electionYear}`));
-        if (!res.ok) throw new Error("Failed to fetch alliance data");
-        const json = await res.json();
-        setData(json);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [electionYear]);
+  const chartData = useMemo(() => alliance && data ? data.regions.map((region: any) => ({ region: region.region, standalone: Number(region[`${alliance.short_name}_standalone`] || 0), pooled: Number(region[`${alliance.short_name}_pooled`] || 0) })) : [], [data, alliance]);
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
         title="Alliance Impact Analysis"
-        description={`Simulate and analyze pre-poll alliance effects on seat tallies and vote shares for ${electionYear}.`}
+        description={`Simulate and analyze pre-poll alliance effects on seat tallies and vote shares for ${year}.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Alliance Impact" }]}
         action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
@@ -103,7 +85,7 @@ export default function AlliancePage() {
           </div>
 
           <PremiumCard className="p-6 h-[420px] flex flex-col">
-            <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">Vote Share: Standalone vs Alliance ({electionYear})</h2>
+            <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">Vote Share: Standalone vs Alliance ({year})</h2>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.regionalImpact} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -123,7 +105,7 @@ export default function AlliancePage() {
 
           <PremiumCard className="p-0 overflow-hidden">
             <div className="p-4 border-b border-[var(--border-subtle)]">
-              <h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Alliance Partner Performance ({electionYear})</h2>
+              <h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Alliance Partner Performance ({year})</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -135,9 +117,9 @@ export default function AlliancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-subtle)]">
-                  {data.partners.map((a: any) => (
+                  {data.partners?.map((a: any) => (
                     <tr key={a.ally} className="hover:bg-[var(--bg-app)]/30 transition-colors">
-                      <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: `${partyColor[a.mainParty]}20`, color: partyColor[a.mainParty] }}>{a.mainParty}</span></td>
+                      <td className="px-6 py-4"><span className="px-2 py-1 rounded text-xs font-bold" style={{ backgroundColor: `${colorFor(a.mainParty)}20`, color: colorFor(a.mainParty) }}>{a.mainParty}</span></td>
                       <td className="px-6 py-4 text-sm font-semibold text-[var(--text-primary)]">{a.ally}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)] text-center">{a.seatsContested}</td>
                       <td className="px-6 py-4 text-sm font-mono font-bold text-[var(--text-primary)] text-center">{a.seatsWon}</td>

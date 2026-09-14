@@ -6,7 +6,7 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { Brain, Target, AlertTriangle, TrendingUp, ShieldCheck, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
 import { getPartyColor } from "@/lib/party-colors";
-import { apiUrl } from "@/lib/utils";
+import { apiUrl } from "@/lib/api";
 
 const modelMetrics = [
   { name: "Overall Accuracy", value: "89.2%", icon: Target, color: "text-emerald-500" },
