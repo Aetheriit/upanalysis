@@ -57,7 +57,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const activeYear = electionYear || (viewMode === "2017 Only" ? "2017" : "2022");
-  const isCompare = viewMode === "Comparison";
+  const isCompare = viewMode === "Comparison (17 vs 22)";
   const selectedLayerRef = useRef<any>(null);
 
   useEffect(() => {

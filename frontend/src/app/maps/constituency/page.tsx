@@ -20,7 +20,7 @@ const normalize = (value: string) => value.toLowerCase().replace(/\[[^\]]*\]/g, 
 export default function ConstituencyMapPage() {
   const { viewMode } = useElectionContext();
   const year = viewMode === "2017 Only" ? "2017" : "2022";
-  const isCompare = viewMode === "Comparison";
+  const isCompare = viewMode === "Comparison (17 vs 22)";
   
   const [region, setRegion] = useState("All Regions");
   const [mapMode, setMapMode] = useState<"winner" | "margin" | "spoiler" | "swing">("winner");
