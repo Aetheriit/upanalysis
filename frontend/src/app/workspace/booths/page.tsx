@@ -8,6 +8,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 
+function formatPartyVotes(votes: Record<string, number> | undefined) {
+  return Object.entries(votes || {})
+    .filter(([, value]) => Number(value) > 0)
+    .sort(([, a], [, b]) => Number(b) - Number(a))
+    .map(([party, value]) => `${party}: ${Number(value).toLocaleString()}`)
+    .join(" · ") || "No vote-record breakdown";
+}
+
 export default function BoothsPage() {
   const { viewMode, isComparison, is2017 } = useElectionContext();
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,6 +85,10 @@ export default function BoothsPage() {
               voters22: b22.total_electors,
               turnout22: b22.turnout_pct,
               margin22: b22.winning_margin,
+              winnerParty17: b17.winner_party,
+              winnerParty22: b22.winner_party,
+              partyVotes17: b17.party_votes || {},
+              partyVotes22: b22.party_votes || {},
             };
           });
           setData(merged);
@@ -90,8 +102,7 @@ export default function BoothsPage() {
             name: b.booth_name,
             voters: b.total_electors,
             turnout: b.turnout_pct,
-            bjpVotes: b.bjp_votes !== undefined ? b.bjp_votes : Math.floor((b.votes_polled || 0) * 0.4),
-            spVotes: b.sp_votes !== undefined ? b.sp_votes : Math.floor((b.votes_polled || 0) * 0.35),
+            partyVotes: b.party_votes || {},
             margin: b.winning_margin
           }));
           setData(formatted);
@@ -154,8 +165,27 @@ export default function BoothsPage() {
     }
   }
 
-  // Swing booths calculation (approx. 8.5% of booths)
-  const swingBooths = Math.floor(totalBooths * 0.085);
+  // A booth is counted only when the recorded booth winner changes between
+  // the two election datasets. Single-year views do not claim a swing count.
+  const swingBooths = isComparison
+    ? data.filter(b => b.winnerParty17 && b.winnerParty22 && b.winnerParty17 !== b.winnerParty22).length
+    : null;
+
+  const exportRows = filteredData.map(b => ({
+    booth_number: b.id,
+    booth_name: b.name,
+    voters: isComparison ? `${b.voters17 || ""}/${b.voters22 || ""}` : b.voters,
+    turnout: isComparison ? `${b.turnout17 || ""}/${b.turnout22 || ""}` : b.turnout,
+    party_votes: isComparison ? `${formatPartyVotes(b.partyVotes17)} | ${formatPartyVotes(b.partyVotes22)}` : formatPartyVotes(b.partyVotes),
+    margin: isComparison ? `${b.margin17 || ""}/${b.margin22 || ""}` : b.margin,
+  }));
+  const exportBooths = () => {
+    const columns = ["booth_number", "booth_name", "voters", "turnout", "party_votes", "margin"];
+    const csv = [columns, ...exportRows.map(row => columns.map(column => String(row[column as keyof typeof row] ?? "")))]
+      .map(row => row.map(value => `"${value.replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a"); link.href = url; link.download = `booths-${selectedConstituency || "all"}-${activeYear}.csv`; link.click(); URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -163,7 +193,7 @@ export default function BoothsPage() {
         title="Polling Booths"
         description="Micro-level booth data, voter behavior patterns, and granular result analysis by constituency."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Booths" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button onClick={exportBooths} disabled={filteredData.length === 0} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export CSV</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -184,8 +214,8 @@ export default function BoothsPage() {
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <TrendingUp className="w-5 h-5 text-rose-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">{swingBooths.toLocaleString()}</div>
-          <div className="text-xs text-[var(--text-secondary)]">Swing Booths</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">{swingBooths === null ? "—" : swingBooths.toLocaleString()}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Winner changes</div>
         </PremiumCard>
       </div>
 
@@ -253,13 +283,13 @@ export default function BoothsPage() {
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Turnout '22</th>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Margin '17</th>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Margin '22</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Recorded Party Votes</th>
                 </>
               ) : (
                 <>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Total Voters</th>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Turnout</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">BJP Votes</th>
-                  <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">SP Votes</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Recorded Party Votes</th>
                   <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">Margin</th>
                 </>
               )}
@@ -293,13 +323,13 @@ export default function BoothsPage() {
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{b.turnout22 ? `${b.turnout22}%` : '-'}</td>
                       <td className="px-6 py-4"><span className={`text-sm font-bold ${b.margin17 > 0 ? 'text-emerald-500' : (b.margin17 < 0 ? 'text-rose-500' : '')}`}>{b.margin17 > 0 ? '+' : ''}{b.margin17}</span></td>
                       <td className="px-6 py-4"><span className={`text-sm font-bold ${b.margin22 > 0 ? 'text-emerald-500' : (b.margin22 < 0 ? 'text-rose-500' : '')}`}>{b.margin22 > 0 ? '+' : ''}{b.margin22}</span></td>
+                      <td className="px-6 py-4 text-xs text-[var(--text-primary)] max-w-[520px]"><div>{formatPartyVotes(b.partyVotes17)}</div><div className="mt-1 text-[var(--text-secondary)]">2022: {formatPartyVotes(b.partyVotes22)}</div></td>
                     </>
                   ) : (
                     <>
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)] text-center">{b.voters !== undefined ? b.voters : '-'}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{b.turnout ? `${b.turnout}%` : '-'}</td>
-                      <td className="px-6 py-4 text-sm font-mono text-[#F97316]">{b.bjpVotes !== undefined ? b.bjpVotes : '-'}</td>
-                      <td className="px-6 py-4 text-sm font-mono text-[#EF4444]">{b.spVotes !== undefined ? b.spVotes : '-'}</td>
+                      <td className="px-6 py-4 text-xs text-[var(--text-primary)] max-w-[520px]">{formatPartyVotes(b.partyVotes)}</td>
                       <td className="px-6 py-4"><span className={`text-sm font-bold ${b.margin > 0 ? 'text-emerald-500' : (b.margin < 0 ? 'text-rose-500' : '')}`}>{b.margin > 0 ? '+' : ''}{b.margin}</span></td>
                     </>
                   )}

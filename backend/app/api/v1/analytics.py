@@ -584,7 +584,7 @@ async def get_booth_analysis(
                 sp_allies = ["SP", "INC"]
                 bjp_allies = ["BJP", "AD(S)", "SBSP"]
             else:
-                sp_allies = ["SP", "RLD", "SBSP", "AD(K)"]
+                sp_allies = ["SP", "RLD", "SBSP", "AD(S)"]
                 bjp_allies = ["BJP", "AD(S)", "NISHAD"]
 
             bjp_top_party = max((p for p in bjp_allies if p in party_votes), key=lambda p: party_votes[p], default="BJP")
@@ -601,6 +601,10 @@ async def get_booth_analysis(
 
 
 
+            # Derive turnout from the booth's own electors and polled votes.
+            # Stored turnout fields have been inconsistent in some imports.
+            calculated_turnout = round((b.total_votes_polled / b.total_electors) * 100, 2) if b.total_electors and b.total_votes_polled is not None else None
+
             booths.append({
 
                 "booth_number": b.booth_number,
@@ -611,7 +615,7 @@ async def get_booth_analysis(
 
                 "votes_polled": b.total_votes_polled,
 
-                "turnout_pct": b.turnout_pct,
+                "turnout_pct": calculated_turnout,
 
                 "winner_party": b.winner_party or "Unknown",
 
@@ -619,8 +623,10 @@ async def get_booth_analysis(
 
                 "winning_margin": final_margin,
 
-                "bjp_votes": bjp_display,
-                "sp_votes": sp_display,
+                # Complete party breakdown from booth VoteRecord rows. The
+                # frontend must never infer party votes from a percentage.
+                "party_votes": party_votes,
+                "data_source": "database vote_records and booth totals",
 
                 "nota_votes": b.nota_votes,
 
