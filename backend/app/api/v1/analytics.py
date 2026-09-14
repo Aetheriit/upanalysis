@@ -1719,3 +1719,113 @@ async def get_alliance_analysis(
         "regionalImpact": formatted_regions,
         "partners": formatted_partners
     }
+
+@router.get("/forecast/predict")
+async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
+    """Run Monte Carlo simulation for next election based on 2022 baseline."""
+    
+    # 1. Fetch 2022 baseline
+    query = (
+        select(Constituency)
+        .join(Election)
+        .filter(Election.year == 2022)
+        .options(
+            selectinload(Constituency.candidates).selectinload(Candidate.party)
+        )
+    )
+    result = await db.execute(query)
+    constituencies = result.scalars().unique().all()
+    
+    if not constituencies:
+        return {"error": "No 2022 baseline data found"}
+        
+    iterations = 1000
+    
+    # Track distributions
+    simulation_results = []
+    
+    # Setup baseline data structure for speed
+    base_data = []
+    for c in constituencies:
+        valid_candidates = [cand for cand in c.candidates if cand.name not in ('NOTA', 'TOTAL VOTES POLLED', 'TOTAL VOTES')]
+        sorted_candidates = sorted(valid_candidates, key=lambda x: x.votes_received or 0, reverse=True)
+        if len(sorted_candidates) >= 2:
+            winner = sorted_candidates[0]
+            runner_up = sorted_candidates[1]
+            win_party = winner.party.abbreviation if winner.party else "Others"
+            ru_party = runner_up.party.abbreviation if runner_up.party else "Others"
+            
+            # Normalize to primary alliance groups for forecasting
+            def norm(p):
+                if p in ["BJP", "SP", "BSP", "INC", "RLD"]: return p
+                if "ADAL" in p or "NISHAD" in p: return "BJP" # Forecast as NDA
+                if "SBSP" in p or "MD" in p or "PSPL" in p: return "SP" # Forecast as SP+
+                return "Others"
+                
+            w = norm(win_party)
+            r = norm(ru_party)
+            margin = c.winning_margin or 0
+            
+            base_data.append({
+                "w": w,
+                "r": r,
+                "margin": margin
+            })
+            
+    # Run 1000 iterations
+    for _ in range(iterations):
+        iter_seats = {"BJP": 0, "SP": 0, "BSP": 0, "INC": 0, "RLD": 0, "Others": 0}
+        
+        # State-wide generic swing (normal distribution centered at 0, sd = 5000 votes)
+        state_swing_bjp = random.gauss(0, 5000)
+        state_swing_sp = random.gauss(0, 5000)
+        
+        for c in base_data:
+            # Local constituency swing
+            local_swing = random.gauss(0, 10000)
+            
+            w = c["w"]
+            r = c["r"]
+            margin = c["margin"]
+            
+            net_swing = local_swing
+            
+            if w == "BJP": net_swing += state_swing_bjp
+            elif w == "SP": net_swing += state_swing_sp
+            elif w == "BSP": net_swing += random.gauss(-2000, 5000) # Modeled BSP decay
+            
+            if r == "BJP": net_swing -= state_swing_bjp
+            elif r == "SP": net_swing -= state_swing_sp
+            elif r == "BSP": net_swing -= random.gauss(-2000, 5000)
+            
+            new_margin = margin + net_swing
+            
+            if new_margin > 0:
+                iter_seats[w] += 1
+            else:
+                iter_seats[r] += 1
+                
+        simulation_results.append(iter_seats)
+        
+    # Aggregate results (percentiles)
+    parties = ["BJP", "SP", "BSP", "INC", "RLD", "Others"]
+    forecast_data = []
+    
+    for p in parties:
+        results_for_party = sorted([sim[p] for sim in simulation_results])
+        low = results_for_party[int(iterations * 0.05)] # 5th percentile
+        high = results_for_party[int(iterations * 0.95)] # 95th percentile
+        predicted = sum(results_for_party) // iterations # Mean
+        
+        forecast_data.append({
+            "party": p,
+            "predicted": predicted,
+            "low": low,
+            "high": high
+        })
+        
+    return {
+        "forecast": forecast_data,
+        "iterations": iterations,
+        "base_year": 2022
+    }
