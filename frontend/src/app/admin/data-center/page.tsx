@@ -76,7 +76,7 @@ export default function DataCenterPage() {
     try {
       const response = await fetch(apiUrl("/api/v1/upload/files"), { cache: "no-store" });
       const payload = await response.json();
-      const uploaded: Dataset[] = (response.ok ? payload.files || [] : []).map((file: { filename: string; size: number; created: string }) => ({ name: file.filename, records: "Uploaded", size: formatSize(file.size), lastUpdated: formatDate(new Date(file.created)), status: "Imported", source: "Uploaded", sourceType: "Uploaded" }));
+      const uploaded: Dataset[] = (response.ok ? payload.files || [] : []).map((file: { filename: string; size: number; created: string; rows_count?: number }) => ({ name: file.filename, records: file.rows_count ? String(file.rows_count) : "Uploaded", size: formatSize(file.size), lastUpdated: formatDate(new Date(file.created)), status: "Imported", source: "Uploaded", sourceType: "Uploaded" }));
       live.push(...uploaded);
     } catch { /* Upload registry is optional while the backend is offline. */ }
     live.push({ name: "2022 election validation export", records: "Repository file", size: "CSV", lastUpdated: "Versioned in repository", status: "Reference", source: "wiki_2022.csv", sourceType: "Reference" });
@@ -126,7 +126,7 @@ export default function DataCenterPage() {
       const response = await fetch(apiUrl("/api/v1/upload/"), { method: "POST", body: formData });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.detail || "Upload failed");
-      const imported: Dataset = { name: file.name, records: payload.detected_schema?.rows ? String(payload.detected_schema.rows) : "Uploaded", size: formatSize(payload.file_size || file.size), lastUpdated: formatDate(), status: "Imported", source: "Uploaded", sourceType: "Uploaded" };
+      const imported: Dataset = { name: file.name, records: payload.rows_count ? String(payload.rows_count) : (payload.detected_schema?.rows ? String(payload.detected_schema.rows) : "Uploaded"), size: formatSize(payload.file_size || file.size), lastUpdated: formatDate(), status: "Imported", source: "Uploaded", sourceType: "Uploaded" };
       setDatasets((current) => [imported, ...current.filter((dataset) => dataset.name !== file.name)]);
       setNotice({ type: "success", text: `${file.name} was uploaded and schema-detected.` });
     } catch (error) {

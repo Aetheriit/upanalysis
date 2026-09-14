@@ -2,8 +2,14 @@
 import os
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from typing import Optional
+
+from app.core.database import get_db
+from app.models.project import Project
+from app.models.upload import UploadedFile
 
 router = APIRouter()
 
@@ -15,19 +21,24 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_file(
     file: UploadFile = File(...),
     project_id: Optional[str] = Form(None),
+    db: AsyncSession = Depends(get_db)
 ):
     """Upload an election data file (CSV, Excel, JSON)."""
     # Validate file type
-    allowed_types = {
-        "text/csv": "csv",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "excel",
-        "application/vnd.ms-excel": "excel",
-        "application/json": "json",
-    }
-    
     ext = file.filename.split(".")[-1].lower() if file.filename else ""
     if ext not in ("csv", "xlsx", "xls", "json"):
         raise HTTPException(400, f"Unsupported file type: {ext}. Use CSV, Excel, or JSON.")
+    
+    # Check for or create default project
+    if not project_id:
+        result = await db.execute(select(Project).limit(1))
+        project = result.scalars().first()
+        if not project:
+            project = Project(name="Master Project", description="Auto-generated default project")
+            db.add(project)
+            await db.commit()
+            await db.refresh(project)
+        project_id = str(project.id)
     
     # Save file
     file_id = str(uuid.uuid4())
@@ -41,16 +52,34 @@ async def upload_file(
     # Auto-detect schema
     schema = await detect_schema(filepath, ext)
     
+    # Save to database
+    uploaded_file = UploadedFile(
+        id=uuid.UUID(file_id),
+        project_id=uuid.UUID(project_id),
+        filename=saved_filename,
+        original_filename=file.filename,
+        file_type=ext,
+        file_size=len(content),
+        status="imported",
+        rows_count=schema.get("rows", 0),
+        columns_count=schema.get("total_columns", 0),
+        detected_schema=schema,
+        processed_at=datetime.utcnow()
+    )
+    db.add(uploaded_file)
+    await db.commit()
+    await db.refresh(uploaded_file)
+    
     return {
-        "id": file_id,
-        "filename": saved_filename,
-        "original_filename": file.filename,
-        "file_type": ext,
-        "file_size": len(content),
-        "status": "uploaded",
-        "detected_schema": schema,
+        "id": str(uploaded_file.id),
+        "filename": uploaded_file.original_filename,
+        "file_type": uploaded_file.file_type,
+        "file_size": uploaded_file.file_size,
+        "status": uploaded_file.status,
+        "detected_schema": uploaded_file.detected_schema,
+        "rows_count": uploaded_file.rows_count,
+        "created_at": uploaded_file.created_at.isoformat()
     }
-
 
 async def detect_schema(filepath: str, file_type: str) -> dict:
     """Auto-detect column types from uploaded file."""
@@ -134,15 +163,23 @@ async def detect_schema(filepath: str, file_type: str) -> dict:
 
 
 @router.get("/files")
-async def list_files():
-    """List all uploaded files."""
-    files = []
-    if os.path.exists(UPLOAD_DIR):
-        for f in os.listdir(UPLOAD_DIR):
-            filepath = os.path.join(UPLOAD_DIR, f)
-            files.append({
-                "filename": f,
-                "size": os.path.getsize(filepath),
-                "created": datetime.fromtimestamp(os.path.getctime(filepath)).isoformat(),
-            })
-    return {"files": files}
+async def list_files(db: AsyncSession = Depends(get_db)):
+    """List all uploaded files from the database."""
+    result = await db.execute(
+        select(UploadedFile).order_by(UploadedFile.created_at.desc())
+    )
+    files = result.scalars().all()
+    
+    return {
+        "files": [
+            {
+                "id": str(f.id),
+                "filename": f.original_filename,
+                "size": f.file_size,
+                "status": f.status,
+                "rows_count": f.rows_count,
+                "created": f.created_at.isoformat(),
+            }
+            for f in files
+        ]
+    }
