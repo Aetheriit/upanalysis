@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.future import select
 
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, case, cast, Integer
 
 from typing import Optional
 
@@ -148,15 +148,15 @@ async def get_dashboard_kpis(
 
             "female_voters": female_voters or 0,
 
-            "new_voters": 4213901,
+            "new_voters": 0,
 
-            "postal_votes": 312847,
+            "postal_votes": 0,
 
-            "average_swing": 5.3,
+            "average_swing": 0.0,
 
-            "total_candidates": 4136,
+            "total_candidates": 0,
 
-            "registered_parties": 312,
+            "registered_parties": 0,
 
             "active_districts": 75,
 
@@ -170,47 +170,25 @@ async def get_dashboard_kpis(
 
     else:
 
-        # Fallback to mock data if db is empty
-
         kpis = {
-
-            "total_constituencies": 403,
-
-            "total_booths": 97432,
-
-            "total_votes": 52847291,
-
-            "turnout_pct": 61.4,
-
-            "winning_margin_avg": 24891,
-
-            "nota_pct": 0.8,
-
-            "male_voters": 27483321,
-
-            "female_voters": 25318642,
-
-            "new_voters": 4213901,
-
-            "postal_votes": 312847,
-
-            "average_swing": 5.3,
-
-            "total_candidates": 4136,
-
-            "registered_parties": 312,
-
-            "active_districts": 36,
-
-            "closest_contest_code": "306",
-
-            "closest_contest_name": "Dumariyaganj",
-
-            "closest_contest_margin": 171,
-
+            "total_constituencies": 0,
+            "total_booths": 0,
+            "total_votes": 0,
+            "turnout_pct": 0.0,
+            "winning_margin_avg": 0,
+            "nota_pct": 0.0,
+            "male_voters": 0,
+            "female_voters": 0,
+            "new_voters": 0,
+            "postal_votes": 0,
+            "average_swing": 0.0,
+            "total_candidates": 0,
+            "registered_parties": 0,
+            "active_districts": 0,
+            "closest_contest_code": "N/A",
+            "closest_contest_name": "N/A",
+            "closest_contest_margin": 0,
         }
-
-
 
     return {"kpis": kpis}
 
@@ -237,117 +215,271 @@ async def get_vote_share(
     year_to_fetch = election_year if election_year is not None else 2017
 
     
+    # Get total votes for election
+    votes_query = select(func.sum(Constituency.total_votes_polled)).join(Election).filter(Election.year == year_to_fetch)
+    if constituency:
+        votes_query = votes_query.filter(Constituency.name == constituency)
+    votes_result = await db.execute(votes_query)
+    total_votes = votes_result.scalar() or 0
 
-    if year_to_fetch == 2022:
+    # Get party wise data
+    party_query = (
+        select(
+            Party.name,
+            Party.abbreviation,
+            func.sum(Candidate.votes_received).label('votes'),
+            func.sum(case((Candidate.is_winner == True, 1), else_=0)).label('seats')
+        )
+        .join(Candidate, Candidate.party_id == Party.id)
+        .join(Election, Candidate.election_id == Election.id)
+    )
+    
+    if constituency:
+        party_query = party_query.join(Constituency, Candidate.constituency_id == Constituency.id).filter(Constituency.name == constituency)
+    
+    party_query = party_query.filter(Election.year == year_to_fetch).group_by(Party.name, Party.abbreviation)
+    result = await db.execute(party_query)
+    rows = result.all()
+    
+    if not rows:
+        return {"vote_share": [], "total_votes": 0, "total_seats": 0}
+        
+    total_seats = sum(r.seats for r in rows)
+    if not total_votes:
+        total_votes = sum(r.votes for r in rows)
+        
+    # Aggregate into major parties
+    party_stats = {}
+    
+    for name, abbr, votes, seats in rows:
+        abbr = abbr or "OTH"
+        if "BJP" in abbr: p = "BJP"
+        elif abbr == "SP": p = "SP"
+        elif abbr == "BSP": p = "BSP"
+        elif "INC" in abbr or "CONGRESS" in abbr.upper(): p = "INC"
+        elif "RLD" in abbr: p = "RLD"
+        else: p = "Others"
+        
+        if p not in party_stats:
+            party_stats[p] = {"votes": 0, "seats": 0, "name": name, "abbr": p if p != "Others" else "OTH"}
+            
+        party_stats[p]["votes"] += (votes or 0)
+        party_stats[p]["seats"] += (seats or 0)
+        
+    parties = []
+    colors = {
+        "BJP": "#F97316",
+        "SP": "#EF4444",
+        "BSP": "#2563EB",
+        "INC": "#22C55E",
+        "RLD": "#EAB308",
+        "Others": "#94A3B8"
+    }
+    
+    for p, stats in party_stats.items():
+        parties.append({
+            "party": p if p != "Others" else "Others",
+            "abbreviation": stats["abbr"],
+            "votes": stats["votes"],
+            "vote_share": round((stats["votes"] / total_votes * 100), 1) if total_votes else 0,
+            "seats_won": stats["seats"],
+            "color": colors.get(p, "#94A3B8")
+        })
+        
+    # Sort by votes
+    parties.sort(key=lambda x: x["votes"], reverse=True)
+    
+    return {"vote_share": parties, "total_votes": total_votes, "total_seats": total_seats}
 
-        parties = [
 
-            {"party": "BJP", "abbreviation": "BJP", "votes": 38051721, "vote_share": 41.3, "seats_won": 255, "color": "#F97316"},
+UP_REGIONS_MAP = {
+    "Western UP": [
+        "Agra", "Aligarh", "Baghpat", "Bulandshahr", "Gautam Buddha Nagar", "Gautam Budh Nagar",
+        "Ghaziabad", "Hapur", "Hathras", "Mathura", "Meerut", "Muzaffarnagar", "Shamli",
+        "Prabuddha Nagar", "Panchsheel Nagar", "Mahamaya Nagar", "Bheem Nagar",
+        "Kasganj", "Mainpuri", "Etah", "Firozabad"
+    ],
+    "Rohilkhand": [
+        "Amroha", "Bareilly", "Bijnor", "Budaun", "Badaun", "Moradabad", "Pilibhit", "Rampur",
+        "Shahjahanpur", "Sambhal", "Jyotiba Phule Nagar"
+    ],
+    "Awadh": [
+        "Amethi", "Ambedkar Nagar", "Ayodhya", "Bahraich", "Balrampur", "Barabanki", 
+        "Chhatrapati Shahuji Maharaj Nagar", "Etawah", "Faizabad", "Farrukhabad", "Fatehpur",
+        "Gonda", "Hardoi", "Kannauj", "Kanpur Dehat", "Kanpur Nagar", "Lakhimpur Kheri", 
+        "Lucknow", "Pratapgarh", "Rae Bareli", "Raebareli", "Shrawasti", "Sitapur", "Unnao",
+        "Kanshiram Nagar", "Auraiya"
+    ],
+    "Bundelkhand": [
+        "Banda", "Chitrakoot", "Hamirpur", "Jalaun", "Jhansi", "Lalitpur", "Mahoba"
+    ],
+    "Purvanchal": [
+        "Allahabad", "Prayagraj", "Azamgarh", "Ballia", "Basti", "Bhadohi", "Chandauli",
+        "Deoria", "Ghazipur", "Gorakhpur", "Jaunpur", "Kaushambi", "Kushinagar", "Maharajganj",
+        "Mau", "Mirzapur", "Sant Kabir Nagar", "Siddharthnagar", "Sonbhadra", "Varanasi"
+    ]
+}
 
-            {"party": "SP", "abbreviation": "SP", "votes": 29543934, "vote_share": 32.1, "seats_won": 111, "color": "#EF4444"},
+def get_region_for_district(district_name: str) -> str:
+    if not district_name:
+        return "Other"
+    
+    # Clean up name if needed
+    name = district_name.strip()
+    
+    for region, districts in UP_REGIONS_MAP.items():
+        if name in districts:
+            return region
+    return "Other"
 
-            {"party": "BSP", "abbreviation": "BSP", "votes": 11873137, "vote_share": 12.9, "seats_won": 1, "color": "#2563EB"},
+@router.get("/regional-vote-share")
+async def get_regional_vote_share(
+    election_year: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get regional vote share distribution."""
+    year_to_fetch = election_year if election_year is not None else 2017
+    
+    # We need to query Candidate, Constituency, and Party
+    # Grouping by Constituency.district and Party.abbreviation
+    query = (
+        select(
+            Constituency.district,
+            Party.abbreviation,
+            func.sum(Candidate.votes_received).label('votes')
+        )
+        .join(Constituency, Candidate.constituency_id == Constituency.id)
+        .join(Party, Candidate.party_id == Party.id)
+        .join(Election, Candidate.election_id == Election.id)
+        .filter(Election.year == year_to_fetch)
+        .group_by(Constituency.district, Party.abbreviation)
+    )
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    if not rows:
+        return {"regions": []}
+    
+    # Process into regions
+    region_totals = {}
+    region_party_votes = {}
+    
+    # Specifically track the top parties to avoid cluttering UI with minor parties
+    target_parties = ["BJP", "SP", "BSP", "INC", "RLD"]
+    
+    for district, party_abbr, votes in rows:
+        region = get_region_for_district(district)
+        
+        # Initialize if not present
+        if region not in region_totals:
+            region_totals[region] = 0
+            region_party_votes[region] = {p: 0 for p in target_parties}
+            region_party_votes[region]["Other"] = 0
+            
+        region_totals[region] += votes
+        
+        if party_abbr in target_parties:
+            region_party_votes[region][party_abbr] += votes
+        else:
+            # For regional parties like ADAL or SBSP, if we want them as "Other"
+            # In the UI they only display BJP, SP, BSP, INC, RLD
+            region_party_votes[region]["Other"] += votes
+            
+    # Format for UI Recharts
+    # { region: "Western UP", BJP: 43.2, SP: 38.1, BSP: 12.4, INC: 3.1, RLD: 2.1 }
+    formatted_regions = []
+    
+    # Keep standard ordering
+    ordered_regions = ["Western UP", "Purvanchal", "Awadh", "Bundelkhand", "Rohilkhand", "Other"]
+    
+    for region in ordered_regions:
+        if region in region_totals and region_totals[region] > 0:
+            total = region_totals[region]
+            party_votes = region_party_votes[region]
+            
+            region_data = {"region": region}
+            for party in target_parties:
+                # Add percentage rounded to 1 decimal
+                pct = round((party_votes.get(party, 0) / total) * 100, 1)
+                region_data[party] = pct
+                
+            formatted_regions.append(region_data)
+            
+    return {"regions": formatted_regions}
 
-            {"party": "INC", "abbreviation": "INC", "votes": 2146972, "vote_share": 2.3, "seats_won": 2, "color": "#22C55E"},
-
-            {"party": "RLD", "abbreviation": "RLD", "votes": 2630168, "vote_share": 2.9, "seats_won": 8, "color": "#EAB308"},
-
-            {"party": "Others", "abbreviation": "OTH", "votes": 7924000, "vote_share": 8.5, "seats_won": 26, "color": "#94A3B8"},
-
-        ]
-
-        return {"vote_share": parties, "total_votes": 92170000, "total_seats": 403}
-
-    else:
-
-        parties = [
-
-            {"party": "BJP", "abbreviation": "BJP", "votes": 34400000, "vote_share": 39.7, "seats_won": 312, "color": "#F97316"},
-
-            {"party": "SP", "abbreviation": "SP", "votes": 18900000, "vote_share": 21.8, "seats_won": 47, "color": "#EF4444"},
-
-            {"party": "BSP", "abbreviation": "BSP", "votes": 19200000, "vote_share": 22.2, "seats_won": 19, "color": "#2563EB"},
-
-            {"party": "INC", "abbreviation": "INC", "votes": 5400000, "vote_share": 6.2, "seats_won": 7, "color": "#22C55E"},
-
-            {"party": "RLD", "abbreviation": "RLD", "votes": 1500000, "vote_share": 1.9, "seats_won": 1, "color": "#EAB308"},
-
-            {"party": "Others", "abbreviation": "OTH", "votes": 7100000, "vote_share": 8.2, "seats_won": 17, "color": "#94A3B8"},
-
-        ]
-
-        return {"vote_share": parties, "total_votes": 86500000, "total_seats": 403}
 
 
 
 
+async def _fetch_vote_share_for_year(db: AsyncSession, year: int):
+    party_query = (
+        select(
+            Party.abbreviation,
+            func.sum(Candidate.votes_received).label('votes'),
+            func.sum(case((Candidate.is_winner == True, 1), else_=0)).label('seats')
+        )
+        .join(Candidate, Candidate.party_id == Party.id)
+        .join(Election, Candidate.election_id == Election.id)
+        .filter(Election.year == year)
+        .group_by(Party.abbreviation)
+    )
+    result = await db.execute(party_query)
+    rows = result.all()
+    
+    total_votes = sum(r.votes for r in rows) if rows else 0
+    stats = {}
+    for abbr, votes, seats in rows:
+        abbr = abbr or "OTH"
+        if "BJP" in abbr: p = "BJP"
+        elif abbr == "SP": p = "SP"
+        elif abbr == "BSP": p = "BSP"
+        elif "INC" in abbr or "CONGRESS" in abbr.upper(): p = "INC"
+        elif "RLD" in abbr: p = "RLD"
+        else: p = "Others"
+        
+        if p not in stats:
+            stats[p] = {"votes": 0, "seats": 0}
+        stats[p]["votes"] += (votes or 0)
+        stats[p]["seats"] += (seats or 0)
+        
+    return stats, total_votes
 
 @router.get("/swing")
-
 async def get_swing_analysis(
-
     year1: int = 2017,
-
     year2: int = 2022,
-
     state: Optional[str] = None,
-
+    db: AsyncSession = Depends(get_db)
 ):
-
-    """Get swing analysis between two elections (Keep mock data for 2022 per user request)."""
-
+    """Get swing analysis between two elections."""
     parties = ["BJP", "SP", "BSP", "INC", "RLD", "Others"]
-
+    
+    stats_y1, total_votes_y1 = await _fetch_vote_share_for_year(db, year1)
+    stats_y2, total_votes_y2 = await _fetch_vote_share_for_year(db, year2)
+    
     swing_data = []
-
-    
-
-    # Using predefined 2017 data vs 2022 data
-
-    base_2017 = {"BJP": 39.7, "SP": 21.8, "BSP": 22.2, "INC": 6.2, "RLD": 1.9, "Others": 8.2}
-
-    base_2022 = {"BJP": 41.3, "SP": 32.1, "BSP": 12.9, "INC": 2.3, "RLD": 2.9, "Others": 8.5}
-
-    seats_2017 = {"BJP": 312, "SP": 47, "BSP": 19, "INC": 7, "RLD": 1, "Others": 17}
-
-    seats_2022 = {"BJP": 255, "SP": 111, "BSP": 1, "INC": 2, "RLD": 8, "Others": 26}
-
-    
-
     for party in parties:
-
-        y1_share = base_2017.get(party, 0.0)
-
-        y2_share = base_2022.get(party, 0.0)
-
+        y1_votes = stats_y1.get(party, {}).get("votes", 0)
+        y2_votes = stats_y2.get(party, {}).get("votes", 0)
+        
+        y1_share = round((y1_votes / total_votes_y1 * 100), 1) if total_votes_y1 else 0.0
+        y2_share = round((y2_votes / total_votes_y2 * 100), 1) if total_votes_y2 else 0.0
+        
         swing_data.append({
-
             "party": party,
-
             f"vote_share_{year1}": y1_share,
-
             f"vote_share_{year2}": y2_share,
-
             "swing": round(y2_share - y1_share, 1),
-
-            f"seats_{year1}": seats_2017.get(party, 0),
-
-            f"seats_{year2}": seats_2022.get(party, 0),
-
+            f"seats_{year1}": stats_y1.get(party, {}).get("seats", 0),
+            f"seats_{year2}": stats_y2.get(party, {}).get("seats", 0),
         })
-
-    
-
+        
     return {
-
         "swing": swing_data,
-
         "year1": year1,
-
         "year2": year2,
-
-        "turnout_swing": 1.58,
-
+        "turnout_swing": 0.0,
     }
 
 
@@ -470,43 +602,7 @@ async def get_booth_analysis(
 
         return {"booths": booths, "total": len(booths)}
 
-        
-
-    # Fallback to mock
-
-    booths = []
-
-    for i in range(1, 51):
-
-        turnout = round(random.uniform(40, 85), 1)
-
-        booths.append({
-
-            "booth_number": f"B{i:03d}",
-
-            "booth_name": f"Government School Ward {i}",
-
-            "total_electors": random.randint(800, 2500),
-
-            "votes_polled": random.randint(400, 2000),
-
-            "turnout_pct": turnout,
-
-            "winner_party": random.choice(["BJP", "SP", "BSP", "INC"]),
-
-            "runner_up_party": random.choice(["BJP", "SP", "BSP", "INC"]),
-
-            "winning_margin": random.randint(10, 500),
-
-            "nota_votes": random.randint(5, 100),
-
-            "rejected_votes": random.randint(0, 30),
-
-            "classification": random.choice(["strong", "moderate", "weak", "swing"]),
-
-        })
-
-    return {"booths": booths, "total": len(booths)}
+        return {"booths": [], "total": 0}
 
 
 
@@ -594,45 +690,7 @@ async def get_constituency_analysis(
 
 
 
-    # Fallback to mock (e.g. for 2022)
-
-    constituencies = []
-
-    # Generate mock 403 constituencies
-
-    districts_mock = ["Saharanpur", "Shamli", "Muzaffarnagar", "Bijnor", "Moradabad", "Rampur", "Amroha", "Meerut", "Baghpat", "Ghaziabad", "Hapur", "Gautam Buddha Nagar", "Bulandshahr", "Aligarh", "Hathras", "Mathura", "Agra", "Firozabad", "Mainpuri", "Etah", "Kasganj", "Farrukhabad", "Kannauj", "Etawah", "Auraiya", "Kanpur Dehat", "Kanpur Nagar", "Jalaun", "Jhansi", "Lalitpur", "Hamirpur", "Mahoba", "Banda", "Chitrakoot", "Fatehpur", "Pratapgarh", "Kaushambi", "Prayagraj", "Barabanki", "Ayodhya", "Ambedkar Nagar", "Amethi", "Sultanpur", "Gonda", "Balrampur", "Shravasti", "Bahraich", "Lakhimpur Kheri", "Sitapur", "Hardoi", "Unnao", "Lucknow", "Rae Bareli", "Kanpur Nagar", "Jalaun", "Jhansi", "Lalitpur", "Hamirpur", "Mahoba", "Banda", "Chitrakoot", "Fatehpur", "Pratapgarh", "Kaushambi", "Prayagraj", "Barabanki", "Ayodhya", "Ambedkar Nagar", "Amethi", "Sultanpur", "Gonda", "Balrampur", "Shravasti", "Bahraich", "Lakhimpur Kheri", "Sitapur", "Hardoi", "Unnao", "Lucknow", "Rae Bareli", "Varanasi", "Gorakhpur", "Mirzapur"]
-
-    for i in range(1, 404):
-
-        constituencies.append({
-
-            "id": f"UP-{i:03d}",
-
-            "name": f"Mock Constituency {i}",
-
-            "code": f"AC{i:03d}",
-
-            "district": random.choice(districts_mock),
-
-            "total_electors": random.randint(250000, 450000),
-
-            "votes_polled": random.randint(150000, 300000),
-
-            "turnout_pct": round(random.uniform(55, 78), 1),
-
-            "winner": random.choice(["Yogi Adityanath", "Akhilesh Yadav", "Mayawati", "Keshav Prasad", "Swami Prasad"]),
-
-            "winner_party": random.choice(["BJP", "SP", "BSP", "INC", "RLD"]),
-
-            "winning_margin": random.randint(2000, 100000),
-
-            "total_candidates": random.randint(5, 25),
-
-            "nota_pct": round(random.uniform(0.3, 2.0), 1),
-
-        })
-
-    return {"constituencies": constituencies, "total": len(constituencies)}
+    return {"constituencies": [], "total": 0}
 
 
 
@@ -958,3 +1016,89 @@ async def get_candidates(
     return {"candidates": candidates, "total": len(candidates)}
 
 
+
+@router.get("/margin")
+async def get_margin_analysis(
+    election_year: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get margin analysis data including close contests and distributions."""
+    year_to_fetch = election_year if election_year is not None else 2022
+    
+    query = (
+        select(Constituency)
+        .join(Election)
+        .filter(Election.year == year_to_fetch)
+        .options(
+            selectinload(Constituency.candidates).selectinload(Candidate.party)
+        )
+    )
+    result = await db.execute(query)
+    constituencies = result.scalars().unique().all()
+    
+    if not constituencies:
+        return {"error": "No data found for this election year"}
+        
+    margins = [c.winning_margin for c in constituencies if c.winning_margin is not None]
+    avg_margin = sum(margins) / len(margins) if margins else 0
+    
+    distribution = [
+        {"range": "0-1K", "count": 0, "label": "Razor Thin"},
+        {"range": "1K-5K", "count": 0, "label": "Close"},
+        {"range": "5K-10K", "count": 0, "label": "Competitive"},
+        {"range": "10K-25K", "count": 0, "label": "Comfortable"},
+        {"range": "25K-50K", "count": 0, "label": "Strong"},
+        {"range": "50K+", "count": 0, "label": "Dominant"},
+    ]
+    
+    close_contests_count = 0
+    contests_data = []
+    
+    for c in constituencies:
+        margin = c.winning_margin or 0
+        
+        # Distribution logic
+        if margin < 1000: distribution[0]["count"] += 1
+        elif margin < 5000: distribution[1]["count"] += 1
+        elif margin < 10000: distribution[2]["count"] += 1
+        elif margin < 25000: distribution[3]["count"] += 1
+        elif margin < 50000: distribution[4]["count"] += 1
+        else: distribution[5]["count"] += 1
+            
+        if margin < 5000:
+            close_contests_count += 1
+            
+        # Candidates sorting for Runner-up
+        # Filter out NOTA
+        valid_candidates = [cand for cand in c.candidates if cand.name not in ('NOTA', 'TOTAL VOTES POLLED', 'TOTAL VOTES')]
+        sorted_candidates = sorted(valid_candidates, key=lambda x: x.votes_received or 0, reverse=True)
+        
+        winner = sorted_candidates[0] if len(sorted_candidates) > 0 else None
+        runner_up = sorted_candidates[1] if len(sorted_candidates) > 1 else None
+        
+        winner_party = winner.party.abbreviation if winner and winner.party else (c.winner_party or "Unknown")
+        runner_up_party = runner_up.party.abbreviation if runner_up and runner_up.party else "Unknown"
+        
+        # Some edge cases mapping
+        if winner_party == "IPT": winner_party = "IND"
+        if runner_up_party == "IPT": runner_up_party = "IND"
+        
+        contests_data.append({
+            "constituency": c.name,
+            "winner": winner_party,
+            "runnerUp": runner_up_party,
+            "margin": margin,
+            "turnout": f"{round(c.turnout_pct, 1)}%" if c.turnout_pct else "0%"
+        })
+        
+    # Sort by margin ascending
+    contests_data.sort(key=lambda x: x["margin"])
+    
+    return {
+        "smallest_margin": contests_data[0] if contests_data else None,
+        "largest_margin": contests_data[-1] if contests_data else None,
+        "close_contests_count": close_contests_count,
+        "avg_margin": round(avg_margin),
+        "distribution": distribution,
+        "closest_contests": [c for c in contests_data if c["margin"] < 5000][:10]
+    }
