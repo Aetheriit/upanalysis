@@ -15,8 +15,8 @@ const seatTrend = [
 ];
 
 const voteShareTrend = [
-  { year: "2002", BJP: 20.1, SP: 25.0, BSP: 23.1, INC: 8.9 },
-  { year: "2007", BJP: 16.9, SP: 25.4, BSP: 30.4, INC: 8.6 },
+  { year: "2002", BJP: 20.1, SP: 25.4, BSP: 23.1, INC: 9.0 },
+  { year: "2007", BJP: 17.0, SP: 25.4, BSP: 30.4, INC: 8.6 },
   { year: "2012", BJP: 15.0, SP: 29.1, BSP: 25.9, INC: 11.6 },
   { year: "2017", BJP: 39.7, SP: 21.8, BSP: 22.2, INC: 6.2 },
   { year: "2022", BJP: 41.3, SP: 32.1, BSP: 12.9, INC: 2.3 },
