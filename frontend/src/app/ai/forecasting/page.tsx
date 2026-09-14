@@ -108,7 +108,7 @@ export default function ForecastingPage() {
               <div className="space-y-3">
                 {[
                   { label: "Baseline Year", value: data.base_year },
-                  { label: "Features", value: "Margin, Standalone vs Alliance Swing" },
+                  { label: "Features", value: "Historical Momentum (2017->2022)" },
                   { label: "Algorithm", value: "Monte Carlo Normal Distribution" },
                   { label: "Simulations", value: `${data.iterations.toLocaleString()} iterations` },
                   { label: "Execution Time", value: "Real-time" },

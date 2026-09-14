@@ -1722,31 +1722,33 @@ async def get_alliance_analysis(
 
 @router.get("/forecast/predict")
 async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
-    """Run Monte Carlo simulation for next election based on 2022 baseline."""
+    """Run Monte Carlo simulation for next election based on 2017-2022 momentum."""
     
-    # 1. Fetch 2022 baseline
+    # 1. Fetch 2017 and 2022 baseline
     query = (
-        select(Constituency)
+        select(Constituency, Election.year)
         .join(Election)
-        .filter(Election.year == 2022)
+        .filter(Election.year.in_([2017, 2022]))
         .options(
             selectinload(Constituency.candidates).selectinload(Candidate.party)
         )
     )
     result = await db.execute(query)
-    constituencies = result.scalars().unique().all()
+    rows = result.all()
     
-    if not constituencies:
-        return {"error": "No 2022 baseline data found"}
+    if not rows:
+        return {"error": "Baseline data not found"}
         
     iterations = 1000
-    
-    # Track distributions
     simulation_results = []
     
-    # Setup baseline data structure for speed
-    base_data = []
-    for c in constituencies:
+    # Organize data by constituency name
+    const_data = {}
+    for c, year in rows:
+        name = c.name.strip().upper()
+        if name not in const_data:
+            const_data[name] = {}
+            
         valid_candidates = [cand for cand in c.candidates if cand.name not in ('NOTA', 'TOTAL VOTES POLLED', 'TOTAL VOTES')]
         sorted_candidates = sorted(valid_candidates, key=lambda x: x.votes_received or 0, reverse=True)
         if len(sorted_candidates) >= 2:
@@ -1766,10 +1768,44 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
             r = norm(ru_party)
             margin = c.winning_margin or 0
             
-            base_data.append({
+            const_data[name][year] = {
                 "w": w,
                 "r": r,
                 "margin": margin
+            }
+            
+    # Setup baseline data structure combining 2017 and 2022 for momentum
+    base_data = []
+    for name, years in const_data.items():
+        if 2022 in years:
+            c22 = years[2022]
+            w = c22["w"]
+            r = c22["r"]
+            margin = c22["margin"]
+            
+            momentum = 0
+            # Calculate momentum if 2017 exists
+            if 2017 in years:
+                c17 = years[2017]
+                # How did the margin shift for the 2022 winner compared to 2017?
+                # If 2022 winner was also 2017 winner:
+                if c17["w"] == w:
+                    momentum = margin - c17["margin"]
+                # If 2022 winner was 2017 runner-up:
+                elif c17["r"] == w:
+                    momentum = margin + c17["margin"] # Overcame the previous margin and added their own
+                else:
+                    # Generic positive momentum if they weren't top 2 in 2017 but won in 2022
+                    momentum = margin
+                    
+            # Dampen momentum (reversion to mean) so trends don't get mathematically runaway
+            momentum = momentum * 0.5 
+            
+            base_data.append({
+                "w": w,
+                "r": r,
+                "margin": margin,
+                "momentum": momentum
             })
             
     # Run 1000 iterations
@@ -1786,7 +1822,9 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
             
             w = c["w"]
             r = c["r"]
-            margin = c["margin"]
+            
+            # The base margin is shifted by the historical momentum for the winner
+            base_margin = c["margin"] + c["momentum"]
             
             net_swing = local_swing
             
@@ -1798,7 +1836,7 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
             elif r == "SP": net_swing -= state_swing_sp
             elif r == "BSP": net_swing -= random.gauss(-2000, 5000)
             
-            new_margin = margin + net_swing
+            new_margin = base_margin + net_swing
             
             if new_margin > 0:
                 iter_seats[w] += 1
@@ -1813,6 +1851,7 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
     
     for p in parties:
         results_for_party = sorted([sim[p] for sim in simulation_results])
+        if not results_for_party: continue
         low = results_for_party[int(iterations * 0.05)] # 5th percentile
         high = results_for_party[int(iterations * 0.95)] # 95th percentile
         predicted = sum(results_for_party) // iterations # Mean
@@ -1827,5 +1866,5 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
     return {
         "forecast": forecast_data,
         "iterations": iterations,
-        "base_year": 2022
+        "base_year": "2017 & 2022"
     }
