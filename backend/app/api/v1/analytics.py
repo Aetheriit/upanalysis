@@ -772,55 +772,112 @@ async def get_district_winners(
 @router.get("/constituencies-map")
 async def get_constituency_map_winners(
     election_year: Optional[int] = None,
+    compare_year: Optional[int] = None,
     state: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get constituency-level winning party for the map."""
+    """Get constituency-level winning party for the map, including spoiler and swing data."""
     year_to_fetch = election_year if election_year is not None else 2022
     
-    query = (
-        select(Constituency, Party.abbreviation.label("winner_party_from_candidate"))
-        .join(Election)
-        .outerjoin(
-            Candidate,
-            and_(
-                Candidate.constituency_id == Constituency.id,
-                Candidate.election_id == Constituency.election_id,
-                Candidate.is_winner.is_(True),
-            ),
-        )
-        .outerjoin(Party, Party.id == Candidate.party_id)
+    def normalize_name(n):
+        n = re.sub(r'\[[^\]]*\]', '', n.lower())
+        n = re.sub(r'\s*\((?:sc|st)\)\s*', ' ', n)
+        return re.sub(r'\s+', ' ', n).strip()
+        
+    def get_party_enum(p_raw):
+        p_raw = (p_raw or 'OTH').upper().strip()
+        if p_raw in ['BJP', 'BHARATIYA JANATA PARTY'] or 'BHARATIYA JANATA PARTY' in p_raw: return 'BJP'
+        elif p_raw in ['SP', 'SAMAJWADI PARTY'] or 'SAMAJWADI' in p_raw: return 'SP'
+        elif p_raw in ['BSP', 'BAHUJAN SAMAJ PARTY'] or 'BAHUJAN SAMAJ PARTY' in p_raw: return 'BSP'
+        elif p_raw in ['INC', 'INDIAN NATIONAL CONGRESS'] or 'CONGRESS' in p_raw: return 'INC'
+        elif p_raw in ['RLD', 'RASHTRIYA LOK DAL'] or 'RASHTRIYA LOK DAL' in p_raw: return 'RLD'
+        return 'OTH'
+
+    # 1. Fetch constituencies
+    consts_result = await db.execute(select(Constituency).join(Election).filter(Election.year == year_to_fetch))
+    consts = consts_result.scalars().all()
+    
+    # 2. Fetch candidates for election_year
+    cands_result = await db.execute(
+        select(Candidate, Party.abbreviation, Constituency.name)
+        .join(Constituency, Candidate.constituency_id == Constituency.id)
+        .outerjoin(Party, Candidate.party_id == Party.id)
+        .join(Election, Candidate.election_id == Election.id)
         .filter(Election.year == year_to_fetch)
     )
-    result = await db.execute(query)
-    constituency_rows = result.all()
-    
+    cands_by_const = {}
+    for cand, p_abbr, c_name in cands_result.all():
+        name = normalize_name(c_name)
+        if name not in cands_by_const: cands_by_const[name] = []
+        cands_by_const[name].append((cand, p_abbr))
+        
+    # 3. Fetch candidates for compare_year if provided
+    compare_cands_by_const = {}
+    if compare_year:
+        cmp_result = await db.execute(
+            select(Candidate, Party.abbreviation, Constituency.name)
+            .join(Constituency, Candidate.constituency_id == Constituency.id)
+            .outerjoin(Party, Candidate.party_id == Party.id)
+            .join(Election, Candidate.election_id == Election.id)
+            .filter(Election.year == compare_year)
+        )
+        for cand, p_abbr, c_name in cmp_result.all():
+            name = normalize_name(c_name)
+            if name not in compare_cands_by_const: compare_cands_by_const[name] = []
+            compare_cands_by_const[name].append((cand, p_abbr))
+
     const_data = {}
-    for c, candidate_party in constituency_rows:
+    for c in consts:
         if not c.name: continue
+        name = normalize_name(c.name)
         
-        # normalize string
-        name = re.sub(r'\[[^\]]*\]', '', c.name.lower())
-        name = re.sub(r'\s*\((?:sc|st)\)\s*', ' ', name)
-        name = re.sub(r'\s+', ' ', name).strip()
+        cands = cands_by_const.get(name, [])
+        cands.sort(key=lambda x: x[0].votes_received or 0, reverse=True)
         
-        # Constituency.winner_party can be stale after candidate ingestion.
-        # Prefer the party attached to the winning candidate, then fall back
-        # to the denormalized constituency field for legacy rows.
-        p_raw = (candidate_party or c.winner_party or 'OTH').upper().strip()
+        winner_party_raw = cands[0][1] if cands else c.winner_party
+        winner_name = cands[0][0].name if cands else c.winner_name
+        winner_enum = get_party_enum(winner_party_raw)
         
-        if p_raw in ['BJP', 'BHARATIYA JANATA PARTY'] or 'BHARATIYA JANATA PARTY' in p_raw: p = 'BJP'
-        elif p_raw in ['SP', 'SAMAJWADI PARTY'] or 'SAMAJWADI' in p_raw: p = 'SP'
-        elif p_raw in ['BSP', 'BAHUJAN SAMAJ PARTY'] or 'BAHUJAN SAMAJ PARTY' in p_raw: p = 'BSP'
-        elif p_raw in ['INC', 'INDIAN NATIONAL CONGRESS'] or 'CONGRESS' in p_raw: p = 'INC'
-        elif p_raw in ['RLD', 'RASHTRIYA LOK DAL'] or 'RASHTRIYA LOK DAL' in p_raw: p = 'RLD'
-        else: p = 'OTH'
+        margin = c.winning_margin or 0
+        is_spoiled = False
+        runner_up = None
+        third = None
+        
+        if len(cands) >= 2:
+            margin_actual = (cands[0][0].votes_received or 0) - (cands[1][0].votes_received or 0)
+            if margin == 0: margin = margin_actual
+            runner_up = get_party_enum(cands[1][1])
+            
+        if len(cands) >= 3:
+            third = get_party_enum(cands[2][1])
+            third_votes = cands[2][0].votes_received or 0
+            if third_votes > margin and margin > 0:
+                is_spoiled = True
+                
+        swing = None
+        if compare_year and name in compare_cands_by_const:
+            cmp_cands = compare_cands_by_const[name]
+            total_votes = sum((x[0].votes_received or 0) for x in cands)
+            winner_votes = cands[0][0].votes_received or 0
+            curr_share = (winner_votes / total_votes * 100) if total_votes else 0
+            
+            cmp_total = sum((x[0].votes_received or 0) for x in cmp_cands)
+            cmp_party_votes = sum((x[0].votes_received or 0) for x in cmp_cands if get_party_enum(x[1]) == winner_enum)
+            cmp_share = (cmp_party_votes / cmp_total * 100) if cmp_total else 0
+            
+            swing = round(curr_share - cmp_share, 2)
         
         const_data[name] = {
-            "winner": p,
-            "winner_name": c.winner_name,
-            "margin": c.winning_margin,
-            "original_name": c.name
+            "winner": winner_enum,
+            "winner_name": winner_name,
+            "margin": margin,
+            "original_name": c.name,
+            "is_spoiled": is_spoiled,
+            "runner_up": runner_up,
+            "third": third,
+            "swing": swing,
+            "turnout_pct": round(c.turnout_pct, 1) if c.turnout_pct else None,
+            "total_electors": c.total_electors
         }
         
     return {"constituencies": const_data, "year": year_to_fetch}
