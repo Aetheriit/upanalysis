@@ -227,7 +227,7 @@ export default function CandidatesPage() {
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">
                       {c.margin > 0 ? (
-                        <span className="text-emerald-500">+{c.margin.toLocaleString()}</span>
+                        <span className="text-emerald-500">{c.margin.toLocaleString()}</span>
                       ) : (
                         <span className="text-rose-500">{c.margin.toLocaleString()}</span>
                       )}
