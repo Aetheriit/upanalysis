@@ -37,8 +37,10 @@ const DEFAULT_LAYERS: Record<MapLayerKey, boolean> = {
 const REGION_DISTRICTS: Record<string, string[]> = {
   "Western UP": ["Saharanpur", "Muzaffarnagar", "Shamli", "Meerut", "Baghpat", "Ghaziabad", "Hapur", "Bulandshahr", "Gautam Buddha Nagar", "Amroha", "Moradabad", "Rampur", "Bijnor", "Bareilly", "Badaun", "Pilibhit", "Shahjahanpur"],
   Rohilkhand: ["Bareilly", "Badaun", "Pilibhit", "Shahjahanpur", "Moradabad", "Rampur", "Bijnor", "Amroha"],
+  "Central UP": ["Kanpur Dehat", "Kanpur Nagar", "Unnao", "Lucknow", "Rae Bareli", "Hardoi", "Sitapur", "Lakhimpur Kheri", "Barabanki", "Fatehpur", "Kaushambi", "Prayagraj"],
   Awadh: ["Lucknow", "Unnao", "Rae Bareli", "Barabanki", "Ayodhya", "Sultanpur", "Amethi", "Pratapgarh", "Lakhimpur Kheri", "Sitapur", "Hardoi", "Bahraich", "Gonda", "Balrampur", "Shrawasti"],
   Bundelkhand: ["Jhansi", "Lalitpur", "Jalaun", "Hamirpur", "Mahoba", "Banda", "Chitrakoot", "Fatehpur"],
+  "Eastern UP": ["Pratapgarh", "Ayodhya", "Ambedkar Nagar", "Amethi", "Sultanpur", "Gonda", "Balrampur", "Shravasti", "Bahraich", "Basti", "Sant Kabir Nagar", "Siddharth Nagar", "Gorakhpur", "Maharajganj", "Kushinagar", "Deoria", "Mau", "Azamgarh", "Ballia", "Varanasi", "Chandauli", "Ghazipur", "Jaunpur", "Mirzapur", "Sonbhadra"],
   Purvanchal: ["Gorakhpur", "Deoria", "Kushinagar", "Maharajganj", "Azamgarh", "Mau", "Ballia", "Jaunpur", "Varanasi", "Ghazipur", "Mirzapur", "Sonbhadra", "Sant Kabir Nagar", "Basti", "Siddharthnagar", "Maharajganj"],
 };
 

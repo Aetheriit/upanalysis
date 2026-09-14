@@ -46,6 +46,13 @@ const defaultSeatChangesData = [
   { name: 'Changed hands', value: 97, color: '#EF4444' },
 ];
 
+const normalizeConstituencyName = (value: string) => value
+  .toLowerCase()
+  .replace(/\[[^\]]*\]/g, "")
+  .replace(/\s*\((?:sc|st)\)\s*/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
 export default function ExecutiveDashboard() {
   const [kpis2017, setKpis2017] = useState<any>(null);
   const [kpis2022, setKpis2022] = useState<any>(null);
@@ -108,17 +115,22 @@ export default function ExecutiveDashboard() {
         ])).filter(Boolean).sort() as string[];
         setDistrictList(districts);
         
-        // Transform vote share data for Recharts
+        // Transform vote share data for Recharts. Build the party list from
+        // both years so a party present in only one election is not dropped.
         if (vote17Data.vote_share && vote22Data.vote_share) {
           const s17: any = {};
           const s22: any = {};
-          const transformed = vote17Data.vote_share.map((v17: any) => {
-            s17[v17.abbreviation] = v17.seats_won;
-            const v22 = vote22Data.vote_share.find((v: any) => v.abbreviation === v17.abbreviation);
+          const byParty17 = new globalThis.Map(vote17Data.vote_share.map((item: any) => [item.abbreviation, item]));
+          const byParty22 = new globalThis.Map(vote22Data.vote_share.map((item: any) => [item.abbreviation, item]));
+          const parties = Array.from(new Set([...byParty17.keys(), ...byParty22.keys()]));
+          const transformed = parties.map((party) => {
+            const v17: any = byParty17.get(party);
+            const v22: any = byParty22.get(party);
+            if (v17) s17[v17.abbreviation] = v17.seats_won;
             if (v22) s22[v22.abbreviation] = v22.seats_won;
             return {
-              name: v17.abbreviation,
-              2017: v17.vote_share,
+              name: party,
+              2017: v17 ? v17.vote_share : 0,
               2022: v22 ? v22.vote_share : 0,
             };
           });
@@ -206,7 +218,8 @@ export default function ExecutiveDashboard() {
     let maxSwingConst: any = null;
 
     filtered22.forEach((c22: any) => {
-      const c17 = allConst17.find(c => c.name === c22.name || c.code === c22.code);
+      const c17 = allConst17.find(c => c.code === c22.code)
+        || allConst17.find(c => normalizeConstituencyName(c.name || "") === normalizeConstituencyName(c22.name || ""));
       if (c17) {
         if (c17.winner_party === c22.winner_party) {
           same++;
@@ -292,6 +305,19 @@ export default function ExecutiveDashboard() {
   }, [filterDistrict, filterRegion, filterParty, allConst22, seats22]);
 
   const hasActiveFilter = !!(filterDistrict || filterRegion || filterParty);
+  const mapRegion = filterRegion || "All Regions";
+  const activeConstituencies = viewMode === "2017 Only" ? allConst17 : allConst22;
+  const activeSeatTally = viewMode === "2017 Only" ? displayedSeats17 : displayedSeats22;
+  const leadingParty = Object.entries(activeSeatTally)
+    .filter(([party]) => party !== "OTH")
+    .sort(([, left], [, right]) => Number(right) - Number(left))[0];
+  const dataCoverage = useMemo(() => {
+    const source = viewMode === "Comparison (17 vs 22)"
+      ? allConst22.filter((c22: any) => allConst17.some((c17: any) => c17.code === c22.code || normalizeConstituencyName(c17.name || "") === normalizeConstituencyName(c22.name || "")))
+      : activeConstituencies;
+    const complete = source.filter((item: any) => item.votes_polled > 0 && item.winning_margin >= 0).length;
+    return source.length ? Math.round((complete / source.length) * 100) : 0;
+  }, [viewMode, allConst17, allConst22, activeConstituencies]);
 
   const clearFilters = () => {
     setFilterDistrict("");
@@ -489,10 +515,10 @@ export default function ExecutiveDashboard() {
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center bg-gradient-to-br from-[var(--bg-surface)] to-[var(--accent-primary)]/5">
             <div className="flex items-center gap-2 text-[var(--accent-primary)] mb-2">
-              <Brain className="w-4 h-4" /> <span className="text-xs font-medium uppercase">AI Confidence</span>
+              <Brain className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Data Coverage</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">92%</span>
-            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">High Confidence</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{dataCoverage}%</span>
+            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Data Coverage</span>
           </PremiumCard>
         </div>
       ) : (
@@ -544,10 +570,10 @@ export default function ExecutiveDashboard() {
 
           <PremiumCard padding="sm" className="flex flex-col justify-center items-center text-center bg-gradient-to-br from-[var(--bg-surface)] to-[var(--accent-primary)]/5">
             <div className="flex items-center gap-2 text-[var(--accent-primary)] mb-2">
-              <Brain className="w-4 h-4" /> <span className="text-xs font-medium uppercase">AI Confidence</span>
+              <Brain className="w-4 h-4" /> <span className="text-xs font-medium uppercase">Data Coverage</span>
             </div>
-            <span className="text-3xl font-bold text-[var(--text-primary)]">92%</span>
-            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">High Confidence</span>
+            <span className="text-3xl font-bold text-[var(--text-primary)]">{dataCoverage}%</span>
+            <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Data Coverage</span>
           </PremiumCard>
         </div>
       )}
@@ -569,7 +595,11 @@ export default function ExecutiveDashboard() {
               </button>
             </div>
             <div className="flex-1 rounded-xl overflow-hidden" style={{ minHeight: "380px" }}>
-               {!isMapFullscreen && <UPMap />}
+               {!isMapFullscreen && <UPMap
+                 electionYear={viewMode === "2017 Only" ? "2017" : "2022"}
+                 region={mapRegion}
+                 partyFilter={filterParty || "All Parties"}
+               />}
             </div>
 
             {/* Seat Tally Row */}
@@ -652,9 +682,8 @@ export default function ExecutiveDashboard() {
               <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-medium">Generated just now</span>
             </div>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-              Based on the comprehensive {viewMode === "Comparison (17 vs 22)" ? "2017 & 2022" : viewMode.split(' ')[0]} data ingestion, BJP established strong dominance. 
-              {activeKpis?.total_votes ? ` Total votes polled reached ${activeKpis.total_votes.toLocaleString()} across ${activeKpis.total_booths?.toLocaleString() || 0} booths.` : ''}
-              The platform is now processing real booth-level margins and voter turnout statistics.
+              This brief is derived from the loaded {viewMode === "Comparison (17 vs 22)" ? "2017 and 2022" : viewMode.split(' ')[0]} constituency results. {leadingParty ? `${leadingParty[0]} leads the current seat tally with ${leadingParty[1]} seats.` : "Seat-tally data is not available yet."}
+              {activeKpis?.total_votes ? ` Total votes polled: ${activeKpis.total_votes.toLocaleString()}.` : " Total-vote data is not available yet."}
             </p>
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider mb-2">Key Insights ({viewMode === "Comparison (17 vs 22)" ? "Overall" : viewMode.split(' ')[0]})</h4>
@@ -662,7 +691,8 @@ export default function ExecutiveDashboard() {
                 `Total Polled Votes: ${activeKpis?.total_votes?.toLocaleString() || 0}`,
                 `Overall Turnout: ${activeKpis?.turnout_pct || 0}%`,
                 `Total Constituencies Analyzed: ${displayedKpis?.total_constituencies || activeKpis?.total_constituencies || 403}`,
-                "Machine Learning predictions active"
+                `Leading party by seats: ${leadingParty ? `${leadingParty[0]} (${leadingParty[1]})` : "Unavailable"}`,
+                `Constituency records with vote and margin data: ${dataCoverage}%`
               ].map((highlight, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
                   <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -789,7 +819,11 @@ export default function ExecutiveDashboard() {
           </div>
           <div className="flex-1 relative p-4">
             <div className="absolute inset-4 rounded-xl overflow-hidden border border-[var(--border-subtle)]">
-              <UPMap />
+              <UPMap
+                electionYear={viewMode === "2017 Only" ? "2017" : "2022"}
+                region={mapRegion}
+                partyFilter={filterParty || "All Parties"}
+              />
             </div>
           </div>
         </div>
