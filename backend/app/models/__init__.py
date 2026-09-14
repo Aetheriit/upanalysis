@@ -7,8 +7,9 @@ from app.models.party import Party, Alliance
 from app.models.demographic import Demographic
 from app.models.project import Project
 from app.models.upload import UploadedFile
+from app.models.setting import UserSetting
 
 __all__ = [
     "Election", "Constituency", "Booth", "Candidate",
-    "Party", "Alliance", "Demographic", "Project", "UploadedFile"
+    "Party", "Alliance", "Demographic", "Project", "UploadedFile", "UserSetting"
 ]

@@ -11,7 +11,7 @@ import uvicorn
 from app.core.config import settings
 from app.core.database import Base, engine
 from app import models  # noqa: F401 - register all ORM models with Base.metadata
-from app.api.v1 import upload, projects, analytics, filters, maps, insights, reports, export, search
+from app.api.v1 import upload, projects, analytics, filters, maps, insights, reports, export, search, settings as app_settings
 
 
 @asynccontextmanager
@@ -55,6 +55,7 @@ app.include_router(insights.router, prefix="/api/v1/insights", tags=["AI Insight
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(export.router, prefix="/api/v1/export", tags=["Export"])
 app.include_router(search.router, prefix="/api/v1/search", tags=["Search"])
+app.include_router(app_settings.router, prefix="/api/v1/settings", tags=["Settings"])
 
 
 @app.get("/health")
