@@ -278,6 +278,42 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
         </div>
       )}
       <div ref={mapContainerRef} className="w-full h-full rounded-xl" style={{ minHeight: "400px" }} />
+      
+      {!isLoading && (queryType === "Margin heatmap" || queryType === "margin") && (
+        <div className="absolute bottom-6 left-6 z-[400] bg-white/90 backdrop-blur-md p-3 rounded-lg shadow-lg border border-gray-200 text-xs">
+          <h4 className="font-semibold mb-2 text-gray-800">Margin Heatmap</h4>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#166534'}}></div><span>&gt; 80k</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#65a30d'}}></div><span>40k - 80k</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#f59e0b'}}></div><span>15k - 40k</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#dc2626'}}></div><span>&lt; 15k</span></div>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && queryType === "spoiler" && (
+        <div className="absolute bottom-6 left-6 z-[400] bg-white/90 backdrop-blur-md p-3 rounded-lg shadow-lg border border-gray-200 text-xs">
+          <h4 className="font-semibold mb-2 text-gray-800">Spoiler Effect</h4>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#ef4444'}}></div><span>Spoiler (3rd &gt; Margin)</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#e5e7eb', border: '1px solid #d1d5db'}}></div><span>Not Spoiled</span></div>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && queryType === "swing" && (
+        <div className="absolute bottom-6 left-6 z-[400] bg-white/90 backdrop-blur-md p-3 rounded-lg shadow-lg border border-gray-200 text-xs">
+          <h4 className="font-semibold mb-2 text-gray-800">Swing Momentum</h4>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#166534'}}></div><span>&gt; +8%</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#22c55e'}}></div><span>+3% to +8%</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#86efac'}}></div><span>0% to +3%</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#fca5a5'}}></div><span>-3% to 0%</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#ef4444'}}></div><span>-8% to -3%</span></div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded shadow-sm" style={{backgroundColor: '#991b1b'}}></div><span>&lt; -8%</span></div>
+          </div>
+        </div>
+      )}
       <style jsx global>{`
         .district-tooltip {
           background: var(--bg-surface, #fff) !important;
