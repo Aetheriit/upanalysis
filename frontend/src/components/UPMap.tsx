@@ -9,6 +9,7 @@ const normalizeConstituencyName = (value: string) => value
   .toLowerCase()
   .replace(/\[[^\]]*\]/g, "")
   .replace(/\s*\((?:sc|st)\)\s*/g, " ")
+  .replace(/[^a-z0-9]/g, " ")
   .replace(/\s+/g, " ")
   .trim();
 

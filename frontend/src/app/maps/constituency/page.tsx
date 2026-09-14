@@ -15,7 +15,7 @@ const layerOptions: { key: MapLayerKey; label: string }[] = [
   { key: "districts", label: "District Boundaries" }, { key: "highways", label: "Roads & Highways" },
   { key: "urban", label: "Urban Areas" }, { key: "rivers", label: "River Systems" }, { key: "railways", label: "Railway Lines" },
 ];
-const normalize = (value: string) => value.toLowerCase().replace(/\[[^\]]*\]/g, "").replace(/\s*\((?:sc|st)\)\s*/g, " ").replace(/\s+/g, " ").trim();
+const normalize = (value: string) => value.toLowerCase().replace(/\[[^\]]*\]/g, "").replace(/\s*\((?:sc|st)\)\s*/g, " ").replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
 
 export default function ConstituencyMapPage() {
   const { viewMode } = useElectionContext();
