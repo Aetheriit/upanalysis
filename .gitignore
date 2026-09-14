@@ -52,3 +52,6 @@ deployment.tar.gz
 backend/.venv312/
 # Ignore scratch scripts
 *.py
+
+# Raw 2017 booth workbooks are deployed to the VPS, not stored in Git history.
+2017 data/2017_data_3/
