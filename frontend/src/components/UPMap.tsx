@@ -135,6 +135,32 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
         const res = await fetch("/up-constituencies.geojson");
         const geojsonData = await res.json();
 
+        // Create an inverted mask to dim everything outside Uttar Pradesh
+        const outerRing = [[90, -360], [90, 360], [-90, 360], [-90, -360]];
+        const holes: any[] = [];
+        geojsonData.features.forEach((feature: any) => {
+          if (feature.geometry.type === 'Polygon') {
+            holes.push(feature.geometry.coordinates[0].map((c: number[]) => [c[1], c[0]]));
+          } else if (feature.geometry.type === 'MultiPolygon') {
+            feature.geometry.coordinates.forEach((poly: any[]) => {
+              holes.push(poly[0].map((c: number[]) => [c[1], c[0]]));
+            });
+          }
+        });
+        const mask = L.polygon([outerRing, ...holes] as any, {
+          color: 'transparent',
+          fillColor: '#ffffff',
+          fillOpacity: 0.85,
+          interactive: false
+        });
+        
+        // Add a dedicated pane for the mask so it sits above tile overlays but below the districts
+        map.createPane('maskPane');
+        map.getPane('maskPane')!.style.zIndex = '400';
+        map.getPane('maskPane')!.style.pointerEvents = 'none';
+        mask.options.pane = 'maskPane';
+        mask.addTo(map);
+
         const geoLayer = L.geoJSON(geojsonData, {
           style: (feature: any) => {
             const rawName = feature?.properties?.AC_NAME || "";
@@ -159,6 +185,16 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                 else if (swing > -3) queryColor = "#fca5a5";
                 else if (swing > -8) queryColor = "#ef4444";
                 else queryColor = "#991b1b";
+            } else if (queryType === "turnout") {
+                const turnout = d?.turnout_pct || (d?.turnout || 0);
+                if (turnout > 65) queryColor = "#10b981";
+                else if (turnout > 60) queryColor = "#34d399";
+                else if (turnout > 55) queryColor = "#fbbf24";
+                else if (turnout > 50) queryColor = "#f97316";
+                else queryColor = "#ef4444";
+            } else if (queryType === "demographic") {
+                const pseudo = constName.length % 3;
+                queryColor = pseudo === 0 ? "#1e3a8a" : pseudo === 1 ? "#3b82f6" : "#93c5fd";
             }
             
             const isSelected = normalizeConstituencyName(selectedName || "") === constName;
