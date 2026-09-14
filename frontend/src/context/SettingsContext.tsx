@@ -63,12 +63,29 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
+    // 1. Quick initial load from local storage
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) });
     } catch {
-      // Keep defaults if local storage contains invalid data.
+      // Keep defaults
     }
+
+    // 2. Fetch real settings from backend API
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`);
+        if (response.ok) {
+          const data = await response.json();
+          const serverSettings = { ...DEFAULT_SETTINGS, ...data };
+          setSettings(serverSettings);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(serverSettings));
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings from server:", error);
+      }
+    };
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -77,17 +94,42 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SettingsContextValue>(() => ({
     settings,
-    saveSettings: (next) => {
+    saveSettings: async (next) => {
+      // Optimistic update
       setSettings(next);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       window.dispatchEvent(new CustomEvent("ei-settings-updated", { detail: next }));
+
+      // Persist to backend
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        });
+      } catch (error) {
+        console.error("Failed to save settings to server:", error);
+      }
     },
-    setSidebarCollapsed: (collapsed) => {
+    setSidebarCollapsed: async (collapsed) => {
+      let nextSettings: AppSettings | null = null;
       setSettings((current) => {
-        const next = { ...current, sidebarDefault: collapsed ? "Collapsed" : "Expanded" } as AppSettings;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        return next;
+        nextSettings = { ...current, sidebarDefault: collapsed ? "Collapsed" : "Expanded" } as AppSettings;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSettings));
+        return nextSettings;
       });
+      
+      if (nextSettings) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sidebarDefault: collapsed ? "Collapsed" : "Expanded" }),
+          });
+        } catch (error) {
+          console.error("Failed to save sidebar state to server:", error);
+        }
+      }
     },
   }), [settings]);
 
