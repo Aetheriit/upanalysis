@@ -15,6 +15,8 @@ export default function ConstituenciesPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDistrict, setSelectedDistrict] = useState("All Districts");
+  const [selectedStatus, setSelectedStatus] = useState("All Statuses");
   const itemsPerPage = 50;
 
   // Reset to first page when search changes
@@ -22,7 +24,7 @@ export default function ConstituenciesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedDistrict, selectedStatus]);
 
   useEffect(() => {
     async function fetchData() {
@@ -83,10 +85,21 @@ export default function ConstituenciesPage() {
     fetchData();
   }, [viewMode, isComparison]);
 
-  const filteredData = data.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.district.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const districts = Array.from(new Set(data.map(c => c.district))).filter(Boolean).sort();
+
+  const filteredData = data.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          c.district.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDistrict = selectedDistrict === "All Districts" || c.district === selectedDistrict;
+    
+    let matchesStatus = true;
+    if (selectedStatus !== "All Statuses") {
+      const statusValue = isComparison ? (c.margin22 < 5000 ? "Close Contest" : "Safe") : c.status;
+      matchesStatus = statusValue === selectedStatus;
+    }
+    
+    return matchesSearch && matchesDistrict && matchesStatus;
+  });
 
 
 
@@ -124,16 +137,24 @@ export default function ConstituenciesPage() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <select className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]">
-              <option>All Districts</option>
-              <option>Saharanpur</option>
-              <option>Shamli</option>
+            <select 
+              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]"
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+            >
+              <option value="All Districts">All Districts</option>
+              {districts.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
             </select>
-            <select className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]">
-              <option>All Statuses</option>
-              <option>Safe</option>
-              <option>Close Contest</option>
-              <option>Critical Swing</option>
+            <select 
+              className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)]"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="All Statuses">All Statuses</option>
+              <option value="Safe">Safe</option>
+              <option value="Close Contest">Close Contest</option>
             </select>
             <button className="px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors">
               <Filter className="w-4 h-4" />
