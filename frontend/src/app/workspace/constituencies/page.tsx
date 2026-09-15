@@ -8,6 +8,7 @@ import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
 import { SearchSync } from "@/components/shared/search-sync";
 import { Suspense } from "react";
+import { downloadCsv } from "@/lib/export";
 
 export default function ConstituenciesPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -101,6 +102,8 @@ export default function ConstituenciesPage() {
     return matchesSearch && matchesDistrict && matchesStatus;
   });
 
+  const exportConstituencies = () => downloadCsv(`constituencies-${isComparison ? "comparison" : viewMode.replace(/\s+/g, "-").toLowerCase()}.csv`, filteredData);
+
 
 
   return (
@@ -117,7 +120,7 @@ export default function ConstituenciesPage() {
           { label: "Constituencies" }
         ]}
         action={
-          <button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <button onClick={exportConstituencies} disabled={!filteredData.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
             <Download className="w-4 h-4" /> Export Data
           </button>
         }

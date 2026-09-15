@@ -10,6 +10,7 @@ import {
 import { Download, Share2, Loader2, AlertTriangle } from "lucide-react";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { downloadCsv } from "@/lib/export";
 
 const COLORS = {
   BJP: "#F97316",
@@ -91,6 +92,10 @@ export default function VoteShareAnalytics() {
   const combinedTop2 = (bjp2022 + sp2022).toFixed(1);
   const spSwing = (sp2022 - sp2017).toFixed(1);
   const bjpSwing = (bjp2022 - bjp2017).toFixed(1);
+  const exportVoteShare = () => downloadCsv(`vote-share-${is2017 ? 2017 : 2022}.csv`, [
+    ...regionalData,
+    ...historicalTrendData,
+  ]);
 
   if (loading) {
     return (
@@ -130,7 +135,7 @@ export default function VoteShareAnalytics() {
             <button className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <button onClick={exportVoteShare} disabled={!regionalData.length && !historicalTrendData.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
               <Download className="w-4 h-4" /> Export Report
             </button>
           </>

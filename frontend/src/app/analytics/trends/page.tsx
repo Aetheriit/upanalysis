@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { Download, History } from "lucide-react";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { downloadCsv } from "@/lib/export";
 
 const seatTrend = [
   { year: "2002", BJP: 88, SP: 143, BSP: 98, INC: 25, Others: 49 },
@@ -25,13 +26,14 @@ const voteShareTrend = [
 const COLORS: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", INC: "#22C55E", Others: "#94A3B8" };
 
 export default function TrendsPage() {
+  const exportTrends = () => downloadCsv("historical-trends.csv", seatTrend.map((row, index) => ({ ...row, ...voteShareTrend[index] })));
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
         title="Historical Trends"
         description="Long-term electoral patterns from 2002 to 2022 — five election cycles of seat and vote share data."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Historical Trends" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button onClick={exportTrends} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <PremiumCard className="p-6 h-[450px] flex flex-col">

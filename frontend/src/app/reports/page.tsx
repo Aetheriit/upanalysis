@@ -4,6 +4,7 @@ import React from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { FileText, Download, Clock, BarChart3, Users, MapPin, Plus } from "lucide-react";
+import { downloadJson } from "@/lib/export";
 
 const reports = [
   { title: "Executive Summary — 2022 Results", type: "Summary", date: "Aug 15, 2026", pages: 24, status: "Complete" },
@@ -23,6 +24,7 @@ const typeColor: Record<string, string> = {
 };
 
 export default function ReportsPage() {
+  const downloadReport = (report: typeof reports[number]) => downloadJson(`${report.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.json`, { report, exportedAt: new Date().toISOString() });
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
@@ -73,8 +75,8 @@ export default function ReportsPage() {
                 <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {r.pages} pages</span>
               </div>
             </div>
-            <button className="mt-4 w-full py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center justify-center gap-2">
-              <Download className="w-4 h-4" /> Download PDF
+            <button onClick={() => downloadReport(r)} className="mt-4 w-full py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center justify-center gap-2">
+              <Download className="w-4 h-4" /> Download Report Data
             </button>
           </PremiumCard>
         ))}

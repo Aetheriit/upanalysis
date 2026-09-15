@@ -7,6 +7,7 @@ import { Download, Users, TrendingUp, ArrowDown, ArrowUp, AlertTriangle } from "
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { apiUrl } from "@/lib/api";
 import { useElectionContext } from "@/context/ElectionContext";
+import { downloadCsv } from "@/lib/export";
 
 type TurnoutData = {
   year: number;
@@ -49,6 +50,9 @@ export default function TurnoutPage() {
   }, [selectedYear]);
 
   const changeIsPositive = (data?.change_from_prev || 0) >= 0;
+  const exportTurnout = () => data && downloadCsv(`turnout-${selectedYear}.csv`, [
+    ...(data.regional || []), ...(data.gender || []), ...(data.historical || []),
+  ]);
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -56,7 +60,7 @@ export default function TurnoutPage() {
         title="Turnout Analytics"
         description={`Voter participation analysis by region, gender, urban/rural, and historical trends for the ${selectedYear} election.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Turnout Analysis" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>}
+        action={<button onClick={exportTurnout} disabled={!data} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -161,4 +165,3 @@ export default function TurnoutPage() {
     </div>
   );
 }
-

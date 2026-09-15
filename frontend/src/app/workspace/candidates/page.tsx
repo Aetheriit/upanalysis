@@ -9,6 +9,7 @@ import { apiUrl } from "@/lib/api";
 import { getPartyColor } from "@/lib/party-colors";
 import { SearchSync } from "@/components/shared/search-sync";
 import { Suspense } from "react";
+import { downloadCsv } from "@/lib/export";
 
 const partyColor = getPartyColor;
 
@@ -99,6 +100,8 @@ export default function CandidatesPage() {
     return true;
   });
 
+  const exportCandidates = () => downloadCsv(`candidates-${activeYear}.csv`, displayCandidates);
+
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <Suspense fallback={null}>
@@ -108,7 +111,7 @@ export default function CandidatesPage() {
         title="Candidates"
         description="Candidate profiles, historical performance, and election results."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Candidates" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button onClick={exportCandidates} disabled={!displayCandidates.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

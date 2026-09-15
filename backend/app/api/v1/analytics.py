@@ -1526,12 +1526,12 @@ async def get_turnout_analysis(
         "gender": gender_turnout
     }
 
-@router.get("/alliance")
+@router.get("/alliance-legacy")
 async def get_alliance_analysis(
     election_year: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get pre-poll alliance impact and partner metrics."""
+    """Legacy alliance response retained for backwards compatibility."""
     year_to_fetch = election_year if election_year is not None else 2022
     
     if year_to_fetch == 2017:

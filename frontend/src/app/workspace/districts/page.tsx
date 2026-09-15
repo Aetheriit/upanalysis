@@ -11,6 +11,7 @@ import { SearchSync } from "@/components/shared/search-sync";
 import { Suspense } from "react";
 import { getPartyColor } from "@/lib/party-colors";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { downloadCsv } from "@/lib/export";
 
 export default function DistrictsPage() {
   const { viewMode, isComparison, is2017, is2022 } = useElectionContext();
@@ -186,6 +187,7 @@ export default function DistrictsPage() {
 
   // Show all districts for chart
   const turnoutComparison = districts;
+  const exportDistricts = () => downloadCsv(`districts-${viewMode.replace(/\s+/g, "-").toLowerCase()}.csv`, filteredDistricts);
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -201,7 +203,7 @@ export default function DistrictsPage() {
           { label: "Districts" }
         ]}
         action={
-          <button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <button onClick={exportDistricts} disabled={!filteredDistricts.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
             <Download className="w-4 h-4" /> Export
           </button>
         }

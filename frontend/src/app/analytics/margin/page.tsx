@@ -7,6 +7,7 @@ import { Download, Target, AlertTriangle, ShieldCheck, Loader2 } from "lucide-re
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
 import { apiUrl } from "@/lib/api";
+import { downloadCsv } from "@/lib/export";
 
 const partyColor: Record<string, string> = { 
   BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", RLD: "#EAB308", 
@@ -43,13 +44,17 @@ export default function MarginPage() {
     fetchMarginData();
   }, [viewMode]);
 
+  const exportMargin = () => data && downloadCsv(`margin-analysis-${is2017 ? 2017 : 2022}.csv`, [
+    ...(data.closest_contests || []), ...(data.distribution || []),
+  ]);
+
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
         title="Margin Analysis"
         description={`Victory margins, close contest tracking, and vulnerability assessment across 403 constituencies for ${viewMode}.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Margin Analysis" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button onClick={exportMargin} disabled={!data} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
 
       {loading ? (

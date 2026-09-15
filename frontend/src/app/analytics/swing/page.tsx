@@ -7,6 +7,7 @@ import { Download, ArrowRightLeft, TrendingUp, AlertTriangle } from "lucide-reac
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiUrl } from "@/lib/api";
 import { useElectionContext } from "@/context/ElectionContext";
+import { downloadCsv } from "@/lib/export";
 
 type Constituency = {
   code: string | number;
@@ -98,6 +99,7 @@ export default function SwingPage() {
   const maxSwing = rows[0];
   const averageSwing = rows.length ? rows.reduce((sum, row) => sum + row.swing, 0) / rows.length : 0;
   const highSwing = rows.filter((row) => row.swing > 10).length;
+  const exportSwing = () => downloadCsv(`swing-analysis-${isComparison ? "comparison" : is2017 ? 2017 : 2022}.csv`, rows);
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -105,7 +107,7 @@ export default function SwingPage() {
         title="Swing Analysis"
         description={isComparison ? "Real constituency-level change in winning-margin share between the 2017 and 2022 results." : `Real ${is2017 ? "2017" : "2022"} constituency winning-margin analysis.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Swing Analysis" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>}
+        action={<button onClick={exportSwing} disabled={!rows.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

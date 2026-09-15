@@ -7,6 +7,7 @@ import { getPartyColor } from "@/lib/party-colors";
 import { Search, Download, MoreHorizontal, Flag } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
+import { downloadCsv } from "@/lib/export";
 
 const PARTIES = [
   { name: "BJP", fullName: "Bharatiya Janata Party", seats2017: 312, seats2022: 255, voteShare2017: "39.7%", voteShare2022: "41.3%", color: "#F97316", allies: "Apna Dal, NISHAD" },
@@ -31,6 +32,7 @@ export default function PartiesPage() {
   }));
 
   const filteredParties = PARTIES.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
+  const exportParties = () => downloadCsv(`parties-${isComparison ? "comparison" : activeYear}.csv`, filteredParties);
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -38,7 +40,7 @@ export default function PartiesPage() {
         title="Political Parties"
         description="Party performance, alliances, vote share footprint, and historical trajectory."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Parties" }]}
-        action={<button className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button onClick={exportParties} disabled={!filteredParties.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
