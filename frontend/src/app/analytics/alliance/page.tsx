@@ -9,7 +9,7 @@ import { apiUrl } from "@/lib/api";
 import { downloadCsv as downloadCsvFile } from "@/lib/export";
 
 type Partner = { party: string; seats_contested: number; seats_won: number; votes: number; vote_share: number; impact_seats: number };
-type Alliance = { name: string; short_name: string; main_party: string; members: string[]; actual_seats: number; pooled_seats: number; seat_change: number; votes: number; vote_share: number; partners: Partner[] };
+type Alliance = { name: string; short_name: string; main_party: string; members: string[]; actual_seats: number; main_party_seats: number; pooled_seats: number; seat_change: number; modeled_seat_gain: number; votes: number; vote_share: number; partners: Partner[] };
 type AllianceResponse = { year: number; constituencies: number; total_votes: number; alliances: Alliance[]; regions: Record<string, string | number>[]; methodology: string; error?: string };
 
 const PARTY_COLORS: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", INC: "#22C55E", BSP: "#2563EB", RLD: "#EAB308", SBSP: "#A855F7", "AD(S)": "#0EA5E9", NISHAD: "#14B8A6", "MAHAN DAL": "#8B5CF6", PSPL: "#EC4899" };
@@ -79,7 +79,7 @@ export default function AlliancePage() {
             </PremiumCard>
             <PremiumCard padding="sm" className="text-center">
               <Handshake className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-[var(--text-primary)]">{data.alliances.reduce((total, item) => total + Math.max(0, item.seat_change), 0)}</div>
+              <div className="text-2xl font-bold text-[var(--text-primary)]">{data.alliances.reduce((total, item) => total + Math.max(0, item.modeled_seat_gain), 0)}</div>
               <div className="text-xs text-[var(--text-secondary)]">Modeled Seat Gain</div>
             </PremiumCard>
           </div>

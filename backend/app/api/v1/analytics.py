@@ -950,6 +950,7 @@ async def get_alliance_analysis(
         # dropping alliance partners.
         observed_members = list(alliance["members"])
         actual_seats = sum(party_totals.get(p, {}).get("seats", 0) for p in members)
+        main_party_seats = party_totals.get(main_party, {}).get("seats", 0)
         alliance_votes = sum(party_totals.get(p, {}).get("votes", 0) for p in members)
         pooled_seats = 0
         region_totals = {}
@@ -992,8 +993,13 @@ async def get_alliance_analysis(
             "main_party": main_party,
             "members": observed_members,
             "actual_seats": actual_seats,
+            "main_party_seats": main_party_seats,
             "pooled_seats": pooled_seats,
-            "seat_change": pooled_seats - actual_seats,
+            # Modeled gain is measured against the lead party standing alone;
+            # comparing with all alliance seats would hide the value of allies
+            # because their already-won seats are included in the baseline.
+            "seat_change": pooled_seats - main_party_seats,
+            "modeled_seat_gain": pooled_seats - main_party_seats,
             "votes": alliance_votes,
             "vote_share": round(alliance_votes / total_votes * 100, 2) if total_votes else 0,
             "partners": partners,
