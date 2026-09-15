@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { apiUrl } from "@/lib/api";
 import { downloadCsv as downloadCsvFile } from "@/lib/export";
+import { useElectionContext } from "@/context/ElectionContext";
 
 type Partner = { party: string; seats_contested: number; seats_won: number; votes: number; vote_share: number; impact_seats: number };
 type Alliance = { name: string; short_name: string; main_party: string; members: string[]; actual_seats: number; main_party_seats: number; pooled_seats: number; seat_change: number; modeled_seat_gain: number; votes: number; vote_share: number; partners: Partner[] };
@@ -16,7 +17,10 @@ const PARTY_COLORS: Record<string, string> = { BJP: "#F97316", SP: "#EF4444", IN
 const colorFor = (party: string) => PARTY_COLORS[party] || "#64748B";
 
 export default function AlliancePage() {
-  const [year, setYear] = useState(2022);
+  const { viewMode } = useElectionContext();
+  // Alliance analysis is a single-election view. In comparison mode the
+  // header represents the current/latest election, so use 2022 consistently.
+  const year = viewMode === "2017 Only" ? 2017 : 2022;
   const [data, setData] = useState<AllianceResponse | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);
