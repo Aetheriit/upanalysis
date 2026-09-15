@@ -84,18 +84,18 @@ export default function AlliancePage() {
             </PremiumCard>
           </div>
 
-          <PremiumCard className="p-6 h-[420px] flex flex-col">
+          <PremiumCard className="p-6 h-[360px] flex flex-col">
             <div className="mb-4 flex items-center justify-between gap-4"><h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Vote Share: Standalone vs Alliance ({year})</h2><select value={selectedIndex} onChange={event => setSelectedIndex(Number(event.target.value))} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-app)] px-3 py-2 text-sm text-[var(--text-primary)]">{data.alliances.map((item, index) => <option key={item.short_name} value={index}>{item.name}</option>)}</select></div>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                  <XAxis dataKey="region" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <BarChart data={chartData} layout="vertical" barCategoryGap="28%" margin={{ top: 8, right: 24, left: 12, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" horizontal={false} />
+                  <XAxis type="number" domain={[0, 'dataMax + 10']} stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                  <YAxis type="category" dataKey="region" width={88} stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="standalone" name={`${alliance?.main_party || "Party"} Standalone`} fill={colorFor(alliance?.main_party || "")} fillOpacity={0.4} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="pooled" name={`${alliance?.short_name || "Alliance"} Pooled`} fill={colorFor(alliance?.main_party || "")} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="standalone" name={`${alliance?.main_party || "Party"} Standalone`} fill={colorFor(alliance?.main_party || "")} fillOpacity={0.35} barSize={18} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="pooled" name={`${alliance?.short_name || "Alliance"} Pooled`} fill={colorFor(alliance?.main_party || "")} barSize={18} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
