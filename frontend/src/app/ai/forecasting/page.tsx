@@ -8,15 +8,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getPartyColor } from "@/lib/party-colors";
 import { apiUrl } from "@/lib/api";
 
-const modelMetrics = [
-  { name: "Overall Accuracy", value: "89.2%", icon: Target, color: "text-emerald-500" },
-  { name: "Constituency Precision", value: "84.7%", icon: ShieldCheck, color: "text-blue-500" },
-  { name: "Confidence Interval", value: "95%", icon: TrendingUp, color: "text-amber-500" },
-  { name: "Data Freshness", value: "Live", icon: AlertTriangle, color: "text-rose-500" },
-];
-
 export default function ForecastingPage() {
   const [data, setData] = useState<any>(null);
+  const [backtest, setBacktest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,10 +18,14 @@ export default function ForecastingPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch(apiUrl("/api/v1/analytics/forecast/predict"));
-        if (!res.ok) throw new Error("Failed to run forecast simulation");
-        const json = await res.json();
-        setData(json);
+        const [forecastRes, backtestRes] = await Promise.all([
+          fetch(apiUrl("/api/v1/analytics/forecast/predict")),
+          fetch(apiUrl("/api/v1/analytics/forecast/backtest")),
+        ]);
+        if (!forecastRes.ok) throw new Error("Failed to run forecast simulation");
+        if (!backtestRes.ok) throw new Error("Failed to validate forecast model");
+        setData(await forecastRes.json());
+        setBacktest(await backtestRes.json());
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -40,6 +38,19 @@ export default function ForecastingPage() {
   const bjpPrediction = data?.forecast?.find((f: any) => f.party === "BJP");
   const spPrediction = data?.forecast?.find((f: any) => f.party === "SP");
   const bspPrediction = data?.forecast?.find((f: any) => f.party === "BSP");
+  const validation = backtest?.validation;
+  const intervalValues = validation?.seat_count_intervals
+    ? Object.values(validation.seat_count_intervals) as Array<{ covered: boolean }>
+    : [];
+  const intervalCoverage = intervalValues.length
+    ? `${Math.round(intervalValues.filter(v => v.covered).length / intervalValues.length * 100)}%`
+    : "—";
+  const modelMetrics = [
+    { name: "Holdout Accuracy", value: validation ? `${validation.winner_accuracy}%` : "—", icon: Target, color: "text-emerald-500" },
+    { name: "Constituency Precision", value: validation ? `${validation.constituency_precision}%` : "—", icon: ShieldCheck, color: "text-blue-500" },
+    { name: "Interval Coverage", value: intervalCoverage, icon: TrendingUp, color: "text-amber-500" },
+    { name: "Validation", value: validation ? `${validation.train_year} → ${validation.test_year}` : "—", icon: AlertTriangle, color: "text-rose-500" },
+  ];
 
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
@@ -77,7 +88,7 @@ export default function ForecastingPage() {
               <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Brain className="w-5 h-5 text-[var(--accent-primary)]" /> Seat Forecast — Next Election Simulation
               </h2>
-              <span className="text-xs text-[var(--text-tertiary)]">Based on {data.base_year} baseline</span>
+              <span className="text-xs text-[var(--text-tertiary)]">Based on {data.base_year} baseline · validated {validation ? `${validation.train_year} → ${validation.test_year}` : "—"}</span>
             </div>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -112,6 +123,7 @@ export default function ForecastingPage() {
                   { label: "Algorithm", value: "Monte Carlo Normal Distribution" },
                   { label: "Simulations", value: `${data.iterations.toLocaleString()} iterations` },
                   { label: "Execution Time", value: "Real-time" },
+                  { label: "Backtest", value: validation ? `${validation.matched_constituencies} constituencies (${validation.test_year} held out)` : "Unavailable" },
                 ].map(p => (
                   <div key={p.label} className="flex justify-between items-center">
                     <span className="text-xs text-[var(--text-secondary)]">{p.label}</span>

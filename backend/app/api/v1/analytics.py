@@ -1473,6 +1473,7 @@ async def get_turnout_analysis(
     # 4. Gender-wise Turnout
     gender_query = (
         select(Election.year, func.sum(Booth.male_electors), func.sum(Booth.female_electors), func.sum(Booth.third_gender_electors), func.sum(Booth.male_votes), func.sum(Booth.female_votes))
+        .select_from(Booth)
         .join(Constituency)
         .join(Election)
         .filter(Election.year.in_([year_to_fetch, prev_year]), Booth.male_votes > 0)
@@ -1831,4 +1832,135 @@ async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
         "forecast": forecast_data,
         "iterations": iterations,
         "base_year": "2017 & 2022"
+    }
+
+
+@router.get("/forecast/backtest")
+async def get_forecast_backtest(db: AsyncSession = Depends(get_db)):
+    """Validate the forecast mechanics on a strictly held-out election.
+
+    The 2017 result is the only input to the model.  The 2022 result is read
+    separately and is used only as the observed target, preventing target
+    leakage.  This is a retrospective validation, not a claim about future
+    election accuracy.
+    """
+    query = (
+        select(Constituency, Election.year)
+        .join(Election)
+        .filter(Election.year.in_([2017, 2022]))
+        .options(selectinload(Constituency.candidates).selectinload(Candidate.party))
+    )
+    result = await db.execute(query)
+    rows = result.all()
+
+    def normalize_party(value):
+        party = (value or "Others").upper().strip()
+        if party in {"BJP", "SP", "BSP", "INC", "RLD"}:
+            return party
+        if "ADAL" in party or "NISHAD" in party:
+            return "BJP"
+        if "SBSP" in party or party in {"MD", "PSPL"}:
+            return "SP"
+        return "Others"
+
+    def snapshot(constituency):
+        excluded = {"NOTA", "TOTAL VOTES POLLED", "TOTAL VOTES"}
+        candidates = [
+            candidate for candidate in constituency.candidates
+            if (candidate.name or "").strip().upper() not in excluded
+        ]
+        candidates.sort(key=lambda candidate: candidate.votes_received or 0, reverse=True)
+        if len(candidates) < 2:
+            return None
+        winner = candidates[0]
+        runner_up = candidates[1]
+        winner_party = normalize_party(
+            winner.party.abbreviation if winner.party else constituency.winner_party
+        )
+        runner_party = normalize_party(
+            runner_up.party.abbreviation if runner_up.party else "Others"
+        )
+        # Constituency codes were not stored consistently across the two
+        # imported elections; the normalized name is the stable join key.
+        key = re.sub(r"\s+", " ", (constituency.name or "").strip().upper())
+        return {
+            "key": key,
+            "winner": winner_party,
+            "runner": runner_party,
+            "margin": max(0, int(constituency.winning_margin or 0)),
+            "name": constituency.name,
+        }
+
+    source = {}
+    observed = {}
+    for constituency, year in rows:
+        item = snapshot(constituency)
+        if not item or not item["key"]:
+            continue
+        if year == 2017:
+            source[item["key"]] = item
+        elif year == 2022:
+            observed[item["key"]] = item
+
+    cases = [source[key] for key in source.keys() & observed.keys()]
+    if not cases:
+        return {"error": "2017 and 2022 validation data not found"}
+
+    parties = ["BJP", "SP", "BSP", "INC", "RLD", "Others"]
+    iterations = 1000
+    rng = random.Random(2022)
+    winner_counts = {case["key"]: {party: 0 for party in parties} for case in cases}
+    seat_counts = []
+
+    for _ in range(iterations):
+        seats = {party: 0 for party in parties}
+        state_swing_bjp = rng.gauss(0, 5000)
+        state_swing_sp = rng.gauss(0, 5000)
+        for case in cases:
+            swing = rng.gauss(0, 10000)
+            if case["winner"] == "BJP":
+                swing += state_swing_bjp
+            elif case["winner"] == "SP":
+                swing += state_swing_sp
+            elif case["winner"] == "BSP":
+                swing += rng.gauss(-2000, 5000)
+            if case["runner"] == "BJP":
+                swing -= state_swing_bjp
+            elif case["runner"] == "SP":
+                swing -= state_swing_sp
+            elif case["runner"] == "BSP":
+                swing -= rng.gauss(-2000, 5000)
+            predicted = case["winner"] if case["margin"] + swing > 0 else case["runner"]
+            winner_counts[case["key"]][predicted] += 1
+            seats[predicted] += 1
+        seat_counts.append(seats)
+
+    actual_seats = {party: 0 for party in parties}
+    exact_correct = 0
+    for case in cases:
+        actual = observed[case["key"]]["winner"]
+        actual_seats[actual] += 1
+        most_likely = max(winner_counts[case["key"]], key=winner_counts[case["key"]].get)
+        if most_likely == actual:
+            exact_correct += 1
+
+    seat_intervals = {}
+    for party in parties:
+        values = sorted(result[party] for result in seat_counts)
+        low = values[int(iterations * 0.05)]
+        high = values[int(iterations * 0.95)]
+        seat_intervals[party] = {"actual": actual_seats[party], "low": low, "high": high,
+                                 "covered": low <= actual_seats[party] <= high}
+
+    return {
+        "validation": {
+            "train_year": 2017,
+            "test_year": 2022,
+            "matched_constituencies": len(cases),
+            "iterations": iterations,
+            "winner_accuracy": round(exact_correct / len(cases) * 100, 2),
+            "constituency_precision": round(exact_correct / len(cases) * 100, 2),
+            "seat_count_intervals": seat_intervals,
+            "method": "2017-only baseline; 2022 held out; seeded Monte Carlo",
+        }
     }
