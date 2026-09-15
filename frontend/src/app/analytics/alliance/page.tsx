@@ -8,7 +8,7 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { apiUrl } from "@/lib/api";
 import { downloadCsv as downloadCsvFile } from "@/lib/export";
 
-type Partner = { party: string; seats_contested: number; seats_won: number; votes: number; vote_share: number };
+type Partner = { party: string; seats_contested: number; seats_won: number; votes: number; vote_share: number; impact_seats: number };
 type Alliance = { name: string; short_name: string; main_party: string; members: string[]; actual_seats: number; pooled_seats: number; seat_change: number; votes: number; vote_share: number; partners: Partner[] };
 type AllianceResponse = { year: number; constituencies: number; total_votes: number; alliances: Alliance[]; regions: Record<string, string | number>[]; methodology: string; error?: string };
 
@@ -35,7 +35,7 @@ export default function AlliancePage() {
   const alliance = data?.alliances[selectedIndex];
   const nda = data?.alliances.find(item => item.main_party === "BJP");
   const spAlliance = data?.alliances.find(item => item.main_party === "SP");
-  const chartData = useMemo(() => alliance && data ? data.regions.map(region => ({ region: region.region, standalone: Number(region[`${alliance.short_name}_standalone`] || 0), pooled: Number(region[`${alliance.short_name}_pooled`] || 0) })) : [], [data, alliance]);
+  const chartData = useMemo(() => alliance && data ? data.regions.map(region => ({ region: String(region.region || "Statewide"), standalone: Number(region[`${alliance.short_name}_standalone`] ?? 0), pooled: Number(region[`${alliance.short_name}_pooled`] ?? 0) })) : [], [data, alliance]);
   const exportAlliance = () => alliance && downloadCsvFile(`alliance-analysis-${year}.csv`, alliance.partners.map((p: Partner) => ({
     year, alliance: alliance.name, party: p.party, seats_contested: p.seats_contested,
     seats_won: p.seats_won, votes: p.votes, vote_share: p.vote_share,
@@ -122,7 +122,7 @@ export default function AlliancePage() {
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)] text-center">{partner.seats_contested}</td>
                       <td className="px-6 py-4 text-sm font-mono font-bold text-[var(--text-primary)] text-center">{partner.seats_won}</td>
                       <td className="px-6 py-4 text-sm font-mono text-[var(--text-primary)]">{partner.vote_share}%</td>
-                      <td className="px-6 py-4 text-sm font-bold text-emerald-500 text-center">—</td>
+                      <td className="px-6 py-4 text-sm font-bold text-emerald-500 text-center">{partner.impact_seats}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -44,7 +44,7 @@ HISTORICAL_ALLIANCES = {
     ],
     2022: [
         {"name": "BJP-led NDA", "short_name": "NDA", "main_party": "BJP", "members": ["BJP", "AD(S)", "NISHAD"]},
-        {"name": "SP-led alliance", "short_name": "SP alliance", "main_party": "SP", "members": ["SP", "RLD", "SBSP", "MAHAN DAL", "PSPL"]},
+        {"name": "SP-led alliance", "short_name": "SP alliance", "main_party": "SP", "members": ["SP", "RLD", "SBSP", "MAHAN DAL", "AD(K)", "PSPL"]},
     ],
 }
 
@@ -55,6 +55,11 @@ def _party_key(abbreviation: Optional[str], name: Optional[str] = None) -> str:
         "APNA DAL (SONEYAL)": "AD(S)",
         "APNA DAL (S)": "AD(S)",
         "AD (S)": "AD(S)",
+        "AD(S)": "AD(S)",
+        "APNA DAL (KAMERAWADI)": "AD(K)",
+        "APNA DAL (K)": "AD(K)",
+        "AD (K)": "AD(K)",
+        "APNA DAL(K)": "AD(K)",
         "NISHAD PARTY": "NISHAD",
         "SUHAILDEV BHARTIYA SAMAJ PARTY": "SBSP",
         "SUHELDEV BHARTIYA SAMAJ PARTY": "SBSP",
@@ -919,7 +924,7 @@ async def get_alliance_analysis(
         party_totals.setdefault(party_key, {"votes": 0, "seats": 0, "contested": set()})
         party_totals[party_key]["votes"] += votes
         party_totals[party_key]["contested"].add(key)
-        constituencies.setdefault(key, {"region": constituency.region or "Unclassified", "parties": {}, "actual_winner": None})
+        constituencies.setdefault(key, {"region": constituency.region or "Statewide", "parties": {}, "actual_winner": None})
         constituencies[key]["parties"][party_key] = constituencies[key]["parties"].get(party_key, 0) + votes
         if candidate.is_winner or candidate.position == 1:
             current = constituencies[key]["actual_winner"]
@@ -939,17 +944,28 @@ async def get_alliance_analysis(
     for alliance in alliances:
         members = set(alliance["members"])
         main_party = alliance["main_party"]
-        observed_members = [p for p in members if p in party_totals]
+        # Keep every historically declared alliance member in the response,
+        # including a zero row when that party has no imported candidate rows.
+        # This makes data coverage explicit and prevents the UI from silently
+        # dropping alliance partners.
+        observed_members = list(alliance["members"])
         actual_seats = sum(party_totals.get(p, {}).get("seats", 0) for p in members)
         alliance_votes = sum(party_totals.get(p, {}).get("votes", 0) for p in members)
         pooled_seats = 0
         region_totals = {}
+        pivotal_seats = {member: 0 for member in members}
         for item in constituencies.values():
             parties = item["parties"]
             pooled = sum(v for p, v in parties.items() if p in members)
             strongest_opponent = max((v for p, v in parties.items() if p not in members), default=0)
             if pooled > strongest_opponent and pooled > 0:
                 pooled_seats += 1
+                # A partner gets an impact seat only when its recorded votes
+                # are pivotal to the pooled alliance winning that seat.
+                for member in members:
+                    without_member = pooled - parties.get(member, 0)
+                    if parties.get(member, 0) > 0 and without_member <= strongest_opponent:
+                        pivotal_seats[member] += 1
             region = item["region"]
             region_totals.setdefault(region, {"alliance_votes": 0, "main_votes": 0, "total_votes": 0})
             region_totals[region]["alliance_votes"] += pooled
@@ -961,13 +977,14 @@ async def get_alliance_analysis(
             regional[region][f"{alliance['short_name']}_pooled"] = round(values["alliance_votes"] / values["total_votes"] * 100, 2) if values["total_votes"] else 0
         partners = []
         for member in observed_members:
-            stats = party_totals[member]
+            stats = party_totals.get(member, {"votes": 0, "seats": 0, "contested": set()})
             partners.append({
                 "party": member,
                 "seats_contested": len(stats["contested"]),
                 "seats_won": stats["seats"],
                 "votes": stats["votes"],
                 "vote_share": round(stats["votes"] / total_votes * 100, 2) if total_votes else 0,
+                "impact_seats": pivotal_seats.get(member, 0),
             })
         alliance_results.append({
             "name": alliance["name"],
