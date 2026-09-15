@@ -590,7 +590,14 @@ async def get_booth_analysis(
 
             final_margin = b.winning_margin if getattr(b, 'winning_margin', 0) > 0 else actual_margin
 
-
+            calc_winner = "Unknown"
+            calc_runner_up = "Unknown"
+            if party_votes:
+                sorted_parties = sorted(party_votes.items(), key=lambda item: item[1], reverse=True)
+                if len(sorted_parties) > 0:
+                    calc_winner = sorted_parties[0][0]
+                if len(sorted_parties) > 1:
+                    calc_runner_up = sorted_parties[1][0]
 
             # Derive turnout from the booth's own electors and polled votes.
             # Stored turnout fields have been inconsistent in some imports.
@@ -608,9 +615,9 @@ async def get_booth_analysis(
 
                 "turnout_pct": calculated_turnout,
 
-                "winner_party": b.winner_party or "Unknown",
+                "winner_party": b.winner_party or calc_winner,
 
-                "runner_up_party": b.runner_up_party or "Unknown",
+                "runner_up_party": b.runner_up_party or calc_runner_up,
 
                 "winning_margin": final_margin,
 
