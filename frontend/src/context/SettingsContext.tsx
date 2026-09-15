@@ -1,7 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { apiUrl } from "@/lib/api";
 
+type ViewMode = "2017" | "2022" | "Comparison (17 vs 22)";
 export type ThemePreference = "Light" | "Dark" | "System";
 export type SidebarPreference = "Expanded" | "Collapsed";
 export type ChartColorScheme = "Party Colors" | "Monochrome" | "Accessibility";
@@ -74,7 +76,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // 2. Fetch real settings from backend API
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`);
+        const response = await fetch(apiUrl('/api/v1/settings'));
         if (response.ok) {
           const data = await response.json();
           const serverSettings = { ...DEFAULT_SETTINGS, ...data };
@@ -102,7 +104,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       // Persist to backend
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`, {
+        await fetch(apiUrl('/api/v1/settings'), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(next),
@@ -121,7 +123,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       
       if (nextSettings) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/settings`, {
+          await fetch(apiUrl('/api/v1/settings'), {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sidebarDefault: collapsed ? "Collapsed" : "Expanded" }),

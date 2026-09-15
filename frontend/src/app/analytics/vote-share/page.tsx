@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { Download, Share2, Loader2, AlertTriangle } from "lucide-react";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 
 const COLORS = {
   BJP: "#F97316",
@@ -32,17 +33,16 @@ export default function VoteShareAnalytics() {
         setLoading(true);
         setError(null);
         const year = is2017 ? 2017 : 2022;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         
         // Fetch regional data for current selected year
-        const regionalResponse = await fetch(`${apiUrl}/api/v1/analytics/regional-vote-share?election_year=${year}`);
+        const regionalResponse = await fetch(apiUrl(`/api/v1/analytics/regional-vote-share?election_year=${year}`));
         const regionalJson = await regionalResponse.json();
         
         // Fetch overall vote share for 2017 and 2022 for historical trend
-        const vs2017Resp = await fetch(`${apiUrl}/api/v1/analytics/vote-share?election_year=2017`);
+        const vs2017Resp = await fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2017"));
         const vs2017Json = await vs2017Resp.json();
         
-        const vs2022Resp = await fetch(`${apiUrl}/api/v1/analytics/vote-share?election_year=2022`);
+        const vs2022Resp = await fetch(apiUrl("/api/v1/analytics/vote-share?election_year=2022"));
         const vs2022Json = await vs2022Resp.json();
 
         // Process Regional

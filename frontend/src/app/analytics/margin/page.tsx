@@ -6,6 +6,7 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import { Download, Target, AlertTriangle, ShieldCheck, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useElectionContext } from "@/context/ElectionContext";
+import { apiUrl } from "@/lib/api";
 
 const partyColor: Record<string, string> = { 
   BJP: "#F97316", SP: "#EF4444", BSP: "#2563EB", RLD: "#EAB308", 
@@ -24,8 +25,7 @@ export default function MarginPage() {
         setLoading(true);
         setError(null);
         const year = is2017 ? 2017 : 2022;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await fetch(`${apiUrl}/api/v1/analytics/margin?election_year=${year}`);
+        const response = await fetch(apiUrl(`/api/v1/analytics/margin?election_year=${year}`));
         
         if (!response.ok) {
           throw new Error("Failed to fetch margin data");
