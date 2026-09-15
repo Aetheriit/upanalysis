@@ -214,8 +214,12 @@ export default function BoothsPage() {
         </PremiumCard>
         <PremiumCard padding="sm" className="text-center">
           <TrendingUp className="w-5 h-5 text-rose-500 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[var(--text-primary)]">{swingBooths === null ? "—" : swingBooths.toLocaleString()}</div>
-          <div className="text-xs text-[var(--text-secondary)]">Winner changes</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)]">
+            {swingBooths === null ? "N/A" : swingBooths.toLocaleString()}
+          </div>
+          <div className="text-xs text-[var(--text-secondary)]">
+            Winner changes {swingBooths === null && <span className="text-[var(--text-tertiary)]">(Compare Mode)</span>}
+          </div>
         </PremiumCard>
       </div>
 
