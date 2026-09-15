@@ -24,7 +24,7 @@ export default function ForecastingPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch(apiUrl("/api/v1/forecast/predict"));
+        const res = await fetch(apiUrl("/api/v1/analytics/forecast/predict"));
         if (!res.ok) throw new Error("Failed to run forecast simulation");
         const json = await res.json();
         setData(json);
