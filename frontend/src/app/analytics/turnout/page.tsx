@@ -50,6 +50,13 @@ export default function TurnoutPage() {
   }, [selectedYear]);
 
   const changeIsPositive = (data?.change_from_prev || 0) >= 0;
+  // Turnout is displayed as a percentage throughout the app. Older API/cache
+  // responses can contain the equivalent fraction (0.6129), so normalize it
+  // before plotting to prevent a misleading 0.x/1.x axis.
+  const historicalChartData = (data?.historical || []).map((point) => ({
+    ...point,
+    turnout: point.turnout > 0 && point.turnout <= 1.5 ? point.turnout * 100 : point.turnout,
+  }));
   const exportTurnout = () => data && downloadCsv(`turnout-${selectedYear}.csv`, [
     ...(data.regional || []), ...(data.gender || []), ...(data.historical || []),
   ]);
@@ -127,10 +134,10 @@ export default function TurnoutPage() {
                </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data?.historical || []} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                <LineChart data={historicalChartData} margin={{ top: 10, right: 30, left: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
                   <XAxis dataKey="year" stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `${v}%`} />
+                  <YAxis width={50} stroke="var(--text-secondary)" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} domain={['dataMin - 1', 'dataMax + 1']} tickFormatter={(v) => `${Number(v).toFixed(1)}%`} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-primary)' }} />
                   <Line type="monotone" name="Turnout %" dataKey="turnout" stroke="#D4AF37" strokeWidth={3} dot={{ fill: '#D4AF37', r: 6 }} activeDot={{ r: 8 }} />
                 </LineChart>
