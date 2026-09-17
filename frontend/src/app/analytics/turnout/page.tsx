@@ -151,7 +151,8 @@ export default function TurnoutPage() {
       </div>
 
       <PremiumCard className="p-6 h-[350px] flex flex-col">
-        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">Gender-wise Turnout Comparison</h2>
+        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-1">Gender-wise Turnout Comparison</h2>
+        <p className="text-xs text-[var(--text-secondary)] mb-3">Statewide published figures · booth-level gender votes are not available in the imported records</p>
         <div className="flex-1 w-full min-h-0">
           {loading ? (
                <div className="h-full flex items-center justify-center text-[var(--text-secondary)] text-sm gap-2">
