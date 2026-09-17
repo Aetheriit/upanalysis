@@ -13,6 +13,9 @@ const seatTrend = [
   { year: "2012", BJP: 47, SP: 224, BSP: 80, INC: 28, Others: 24 },
   { year: "2017", BJP: 312, SP: 47, BSP: 19, INC: 7, Others: 18 },
   { year: "2022", BJP: 255, SP: 111, BSP: 1, INC: 2, Others: 34 },
+  // 2027 is a forecast point from the Forecasting Engine low/high estimates.
+  // The residual is kept in Others so the projection always totals 403 seats.
+  { year: "2027 (Forecast)", BJP: 181, SP: 198, BSP: 0, INC: 0, Others: 24, forecast: true },
 ];
 
 const voteShareTrend = [
@@ -30,14 +33,20 @@ export default function TrendsPage() {
   return (
     <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
       <PageHeader
-        title="Historical Trends"
-        description="Long-term electoral patterns from 2002 to 2022 — five election cycles of seat and vote share data."
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Historical Trends" }]}
+        title="Winning Trends"
+        description="Long-term electoral patterns from 2002 to 2022, with a clearly labelled 2027 forecast seat projection."
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Winning Trends" }]}
         action={<button onClick={exportTrends} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <PremiumCard className="p-6 h-[450px] flex flex-col">
-        <h2 className="text-lg font-serif font-bold text-[var(--text-primary)] mb-4">Seat Tally Trend (2002–2022)</h2>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-lg font-serif font-bold text-[var(--text-primary)]">Seat Tally Trend (2002–2027)</h2>
+            <p className="mt-1 text-xs text-[var(--text-secondary)]">2027 forecast: BJP 181, SP 198, Others 24. Total: 403 seats.</p>
+          </div>
+          <span className="rounded-full border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-2.5 py-1 text-[10px] font-semibold text-[var(--accent-primary)]">Forecast point</span>
+        </div>
         <div className="flex-1 w-full min-h-0">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={seatTrend} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
