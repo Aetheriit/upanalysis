@@ -35,8 +35,8 @@ const NAV_GROUPS = [
       { name: "Vote Share", href: "/analytics/vote-share", icon: PieChart },
       { name: "Swing Analysis", href: "/analytics/swing", icon: TrendingUp },
       { name: "Turnout Analysis", href: "/analytics/turnout", icon: Activity },
-      { name: "Margin Analysis", href: "/analytics/margin", icon: Target },
-      { name: "Historical Trends", href: "/analytics/trends", icon: History },
+      { name: "Voting Analysis", href: "/analytics/margin", icon: Target },
+      { name: "Winning Trends", href: "/analytics/trends", icon: History },
       { name: "Alliance Analysis", href: "/analytics/alliance", icon: BarChart3 },
     ]
   },
