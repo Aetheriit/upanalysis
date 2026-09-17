@@ -7,11 +7,58 @@ import { PARTY_COLORS } from "@/lib/party-colors";
 
 const normalizeConstituencyName = (value: string) => value
   .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
   .replace(/\[[^\]]*\]/g, "")
   .replace(/\s*\((?:sc|st)\)\s*/g, " ")
   .replace(/[^a-z0-9]/g, " ")
   .replace(/\s+/g, " ")
   .trim();
+
+const compactConstituencyName = (value: string) => normalizeConstituencyName(value).replace(/\s+/g, "");
+
+const getFeatureCode = (feature: any) => {
+  const value = feature?.properties?.AC_NO ?? feature?.properties?.AC_CODE ?? feature?.properties?.ac_no ?? feature?.properties?.code;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : String(value || "").trim();
+};
+
+const getFeatureName = (feature: any) => String(
+  feature?.properties?.AC_NAME ?? feature?.properties?.ac_name ?? feature?.properties?.NAME ?? feature?.properties?.name ?? ""
+).trim();
+
+const resolveConstituencyData = (feature: any, data: Record<string, any>) => {
+  const code = getFeatureCode(feature);
+  const name = getFeatureName(feature);
+  const normalized = normalizeConstituencyName(name);
+  const compact = compactConstituencyName(name);
+  const entries = Object.entries(data);
+
+  // Codes are the authoritative join key; names are only a compatibility fallback
+  // for older API deployments that do not yet return `code`.
+  const byCode = entries.find(([key, value]) => {
+    const candidateCode = value?.code ?? value?.ac_no ?? value?.ac_code ?? key.match(/^\s*(\d+)\s*[-:]/)?.[1];
+    return candidateCode !== undefined && String(candidateCode).replace(/^0+/, "") === String(code).replace(/^0+/, "");
+  });
+  if (byCode) return byCode[1];
+
+  const byName = entries.find(([key, value]) => {
+    const candidates = [key, value?.original_name, value?.name].filter(Boolean).map(String);
+    return candidates.some((candidate) => {
+      const candidateNormalized = normalizeConstituencyName(candidate);
+      return candidateNormalized === normalized || compactConstituencyName(candidate) === compact;
+    });
+  });
+  if (byName) return byName[1];
+
+  // A few published boundary files differ only by a legacy prefix or spacing.
+  const withoutLegacyPrefix = normalized.replace(/^\d+\s+/, "");
+  const fuzzy = entries.find(([key, value]) => [key, value?.original_name, value?.name].filter(Boolean).some((candidate) => {
+    const candidateNormalized = normalizeConstituencyName(String(candidate)).replace(/^\d+\s+/, "");
+    return candidateNormalized === withoutLegacyPrefix || candidateNormalized.replace(/\s+/g, "") === withoutLegacyPrefix.replace(/\s+/g, "");
+  }));
+  return fuzzy?.[1];
+};
 
 type MapLayerKey = "districts" | "highways" | "urban" | "rivers" | "railways";
 
@@ -163,9 +210,9 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
 
         const geoLayer = L.geoJSON(geojsonData, {
           style: (feature: any) => {
-            const rawName = feature?.properties?.AC_NAME || "";
+            const rawName = getFeatureName(feature);
             const constName = normalizeConstituencyName(rawName);
-            const d = constituencyData[constName];
+            const d = resolveConstituencyData(feature, constituencyData);
             const district = feature?.properties?.DIST_NAME || feature?.properties?.dtname11 || "";
             const visibleInRegion = matchesRegion(district, region);
             const partyMatches = partyFilter === "All Parties" || d?.winner === partyFilter;
@@ -208,9 +255,9 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
             };
           },
           onEachFeature: (feature: any, layer: any) => {
-            const rawName = feature?.properties?.AC_NAME || "";
+            const rawName = getFeatureName(feature);
             const constName = normalizeConstituencyName(rawName);
-            const d = constituencyData[constName];
+            const d = resolveConstituencyData(feature, constituencyData);
             const district = feature?.properties?.DIST_NAME || feature?.properties?.dtname11 || "";
             const visibleInRegion = matchesRegion(district, region);
             const partyMatches = partyFilter === "All Parties" || d?.winner === partyFilter;
@@ -221,7 +268,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                   Winner: ${d.winner_name || "Unknown"} (${d.winner})
                 </div>
                 <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                  Margin: ${d.margin ? d.margin.toLocaleString() : "Unknown"}
+                  Margin: ${d.margin !== undefined && d.margin !== null ? Number(d.margin).toLocaleString() : "Unknown"}
                 </div>
                 ${queryType === 'spoiler' && d.is_spoiled ? `<div style="font-size: 11px; color: #dc2626; margin-top: 4px; font-weight: 600;">⚠️ Spoiler: 3rd party (${d.third}) > margin</div>` : ''}
                 ${queryType === 'swing' && d.swing !== undefined ? `<div style="font-size: 11px; color: ${d.swing > 0 ? '#16a34a' : '#dc2626'}; margin-top: 4px; font-weight: 600;">Swing: ${d.swing > 0 ? '+' : ''}${d.swing}%</div>` : ''}
@@ -247,7 +294,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                   winner: d?.winner,
                   winnerName: d?.winner_name,
                   margin: d?.margin,
-                  code: feature?.properties?.AC_NO,
+                  code: Number(getFeatureCode(feature)) || undefined,
                   turnout: d?.turnout_pct,
                   totalElectors: d?.total_electors,
                   spoiler: d?.is_spoiled,

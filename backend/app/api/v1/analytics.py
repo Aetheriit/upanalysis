@@ -881,6 +881,7 @@ async def get_constituency_map_winners(
             swing = round(curr_share - cmp_share, 2)
         
         const_data[name] = {
+            "code": int(c.code) if c.code and str(c.code).isdigit() else c.code,
             "winner": winner_enum,
             "winner_name": winner_name,
             "margin": margin,
