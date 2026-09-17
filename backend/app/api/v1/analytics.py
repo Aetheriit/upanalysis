@@ -1524,7 +1524,7 @@ async def get_turnout_analysis(
         .select_from(Booth)
         .join(Constituency)
         .join(Election)
-        .filter(Election.year.in_([year_to_fetch, prev_year]), Booth.male_votes > 0)
+        .filter(Election.year.in_([year_to_fetch, prev_year]))
         .group_by(Election.year)
     )
     result = await db.execute(gender_query)
@@ -1537,22 +1537,24 @@ async def get_turnout_analysis(
     curr_g = gender_stats[str(year_to_fetch)]
     prev_g = gender_stats[str(prev_year)]
     
-    # Calculate percentages. Third gender votes are likely in total but missing separate breakdown, so keep third gender flat or 0 if missing
+    # Publish a percentage only when the source contains both the
+    # gender-specific votes and electorate totals. Third-gender votes are not
+    # present in the imported booth records, so do not invent a value.
     gender_turnout = [
         {
             "category": "Male",
-            str(year_to_fetch): round((curr_g["m_v"] / curr_g["m_e"] * 100), 1) if curr_g["m_e"] else 0.0,
-            str(prev_year): round((prev_g["m_v"] / prev_g["m_e"] * 100), 1) if prev_g["m_e"] else 0.0,
+            str(year_to_fetch): round((curr_g["m_v"] / curr_g["m_e"] * 100), 1) if curr_g["m_e"] and curr_g["m_v"] else None,
+            str(prev_year): round((prev_g["m_v"] / prev_g["m_e"] * 100), 1) if prev_g["m_e"] and prev_g["m_v"] else None,
         },
         {
             "category": "Female",
-            str(year_to_fetch): round((curr_g["f_v"] / curr_g["f_e"] * 100), 1) if curr_g["f_e"] else 0.0,
-            str(prev_year): round((prev_g["f_v"] / prev_g["f_e"] * 100), 1) if prev_g["f_e"] else 0.0,
+            str(year_to_fetch): round((curr_g["f_v"] / curr_g["f_e"] * 100), 1) if curr_g["f_e"] and curr_g["f_v"] else None,
+            str(prev_year): round((prev_g["f_v"] / prev_g["f_e"] * 100), 1) if prev_g["f_e"] and prev_g["f_v"] else None,
         },
         {
             "category": "Third Gender",
-            str(year_to_fetch): 38.7, # Missing from UP Election raw booth data typically, mock for UI completeness
-            str(prev_year): 34.2,
+            str(year_to_fetch): None,
+            str(prev_year): None,
         }
     ]
     

@@ -17,7 +17,7 @@ type TurnoutData = {
   lowest: { name: string; turnout: number };
   historical: { year: string; turnout: number }[];
   regional: { region: string; [year: string]: number | string }[];
-  gender: { category: string; [year: string]: number | string }[];
+  gender: { category: string; [year: string]: number | string | null }[];
 };
 
 export default function TurnoutPage() {
@@ -57,6 +57,9 @@ export default function TurnoutPage() {
     ...point,
     turnout: point.turnout > 0 && point.turnout <= 1.5 ? point.turnout * 100 : point.turnout,
   }));
+  const genderHasValues = (data?.gender || []).some((row) =>
+    [String(prevYear), String(selectedYear)].some((year) => typeof row[year] === "number" && row[year] !== null)
+  );
   const exportTurnout = () => data && downloadCsv(`turnout-${selectedYear}.csv`, [
     ...(data.regional || []), ...(data.gender || []), ...(data.historical || []),
   ]);
@@ -154,6 +157,10 @@ export default function TurnoutPage() {
                <div className="h-full flex items-center justify-center text-[var(--text-secondary)] text-sm gap-2">
                  Loading gender breakdown...
                </div>
+          ) : !genderHasValues ? (
+            <div className="h-full flex items-center justify-center text-center text-[var(--text-secondary)] text-sm px-8">
+              Gender-specific turnout votes are not available in the imported booth records for these elections.
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.gender || []} layout="vertical" margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
