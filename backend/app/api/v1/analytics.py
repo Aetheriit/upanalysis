@@ -793,9 +793,9 @@ async def get_constituency_map_winners(
     year_to_fetch = election_year if election_year is not None else 2022
     
     def normalize_name(n):
-        n = re.sub(r'\[[^\]]*\]', '', n.lower())
+        n = re.sub(r'\[[^\]]*\]', '', (n or '').lower())
         n = re.sub(r'\s*\((?:sc|st)\)\s*', ' ', n)
-        return re.sub(r'\s+', ' ', n).strip()
+        return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9 ]', ' ', n)).strip()
         
     def get_party_enum(p_raw):
         p_raw = (p_raw or 'OTH').upper().strip()
@@ -826,18 +826,21 @@ async def get_constituency_map_winners(
         
     # 3. Fetch candidates for compare_year if provided
     compare_cands_by_const = {}
+    compare_cands_by_code = {}
     if compare_year:
         cmp_result = await db.execute(
-            select(Candidate, Party.abbreviation, Constituency.name)
+            select(Candidate, Party.abbreviation, Constituency.name, Constituency.code)
             .join(Constituency, Candidate.constituency_id == Constituency.id)
             .outerjoin(Party, Candidate.party_id == Party.id)
             .join(Election, Candidate.election_id == Election.id)
             .filter(Election.year == compare_year)
         )
-        for cand, p_abbr, c_name in cmp_result.all():
+        for cand, p_abbr, c_name, c_code in cmp_result.all():
             name = normalize_name(c_name)
             if name not in compare_cands_by_const: compare_cands_by_const[name] = []
             compare_cands_by_const[name].append((cand, p_abbr))
+            if c_code:
+                compare_cands_by_code.setdefault(str(c_code).lstrip('0') or '0', []).append((cand, p_abbr))
 
     const_data = {}
     for c in consts:
@@ -868,8 +871,10 @@ async def get_constituency_map_winners(
                 is_spoiled = True
                 
         swing = None
-        if compare_year and name in compare_cands_by_const:
-            cmp_cands = compare_cands_by_const[name]
+        cmp_cands = compare_cands_by_code.get(str(c.code).lstrip('0') or '0') if c.code else None
+        if not cmp_cands:
+            cmp_cands = compare_cands_by_const.get(name)
+        if compare_year and cmp_cands:
             total_votes = sum((x[0].votes_received or 0) for x in cands)
             winner_votes = cands[0][0].votes_received or 0
             curr_share = (winner_votes / total_votes * 100) if total_votes else 0

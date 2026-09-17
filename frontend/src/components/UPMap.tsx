@@ -271,7 +271,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                   Margin: ${d.margin !== undefined && d.margin !== null ? Number(d.margin).toLocaleString() : "Unknown"}
                 </div>
                 ${queryType === 'spoiler' && d.is_spoiled ? `<div style="font-size: 11px; color: #dc2626; margin-top: 4px; font-weight: 600;">⚠️ Spoiler: 3rd party (${d.third}) > margin</div>` : ''}
-                ${queryType === 'swing' && d.swing !== undefined ? `<div style="font-size: 11px; color: ${d.swing > 0 ? '#16a34a' : '#dc2626'}; margin-top: 4px; font-weight: 600;">Swing: ${d.swing > 0 ? '+' : ''}${d.swing}%</div>` : ''}
+                ${queryType === 'swing' && d.swing !== undefined && d.swing !== null ? `<div style="font-size: 11px; color: ${d.swing > 0 ? '#16a34a' : '#dc2626'}; margin-top: 4px; font-weight: 600;">Swing: ${d.swing > 0 ? '+' : ''}${d.swing}%</div>` : ''}
                 ` : '<div style="margin-top: 4px; font-size: 11px; color: #666;">Data not available</div>'}
               </div>`;
 
