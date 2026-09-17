@@ -26,6 +26,7 @@ from app.models.booth import Booth, VoteRecord
 from app.models.candidate import Candidate
 
 from app.models.party import Party
+from app.services.voting_results import summarize_results
 
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -1357,6 +1358,17 @@ async def get_margin_analysis(
     
     if not constituencies:
         return {"error": "No data found for this election year"}
+
+    # Final election outcomes are independent of booth-import completeness.
+    # Use the validated ECI detailed-results dataset for this analysis so a
+    # partial or duplicated candidate import cannot fabricate a margin.
+    constituency_ids = {}
+    for constituency in constituencies:
+        try:
+            constituency_ids[int(constituency.code)] = constituency.id
+        except (TypeError, ValueError):
+            continue
+    return summarize_results(year_to_fetch, constituency_ids)
         
     margins = [c.winning_margin for c in constituencies if c.winning_margin is not None]
     avg_margin = sum(margins) / len(margins) if margins else 0
