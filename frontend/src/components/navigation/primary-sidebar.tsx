@@ -57,7 +57,7 @@ const NAV_GROUPS = [
   {
     label: "PREDICTION",
     items: [
-      { name: "Prediction", href: "/ai/forecasting", icon: Target },
+      { name: "Prediction", href: "/ai/prediction", icon: Target },
     ]
   },
   {

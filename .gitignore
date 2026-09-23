@@ -53,5 +53,14 @@ backend/.venv312/
 # Ignore scratch scripts
 *.py
 
+# Prediction engine modules are application code, not scratch scripts.
+!backend/app/api/v1/predictions.py
+!backend/app/models/prediction.py
+!backend/app/models/booth_feature.py
+!backend/app/models/atmosphere.py
+!backend/app/services/prediction_engine.py
+!backend/app/services/prediction/
+!backend/app/services/prediction/*.py
+
 # Raw 2017 booth workbooks are deployed to the VPS, not stored in Git history.
 2017 data/2017_data_3/

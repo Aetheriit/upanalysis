@@ -8,8 +8,12 @@ from app.models.demographic import Demographic
 from app.models.project import Project
 from app.models.upload import UploadedFile
 from app.models.setting import UserSetting
+from app.models.prediction import PredictionRun, Prediction
+from app.models.booth_feature import BoothFeatureVector
+from app.models.atmosphere import AtmosphereCache
 
 __all__ = [
     "Election", "Constituency", "Booth", "Candidate",
-    "Party", "Alliance", "Demographic", "Project", "UploadedFile", "UserSetting"
+    "Party", "Alliance", "Demographic", "Project", "UploadedFile", "UserSetting",
+    "PredictionRun", "Prediction", "BoothFeatureVector", "AtmosphereCache"
 ]
