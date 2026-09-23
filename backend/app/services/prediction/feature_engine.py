@@ -134,7 +134,6 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
         .join(Election)
         .where(Election.year.in_(year_pair))
         .options(
-            selectinload(Constituency.booths).selectinload(Booth.vote_records).selectinload(VoteRecord.candidate).selectinload(Candidate.party),
             selectinload(Constituency.candidates).selectinload(Candidate.party),
             selectinload(Constituency.demographics),
         )
@@ -152,8 +151,15 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
             continue
         current = years[current_year]
         previous = years.get(previous_year)
-        current_booths = [_booth_record(booth) for booth in current.booths]
-        previous_booths = [_booth_record(booth) for booth in previous.booths] if previous else []
+        constituency_ids = [current.id] + ([previous.id] if previous else [])
+        booth_query = (
+            select(Booth)
+            .where(Booth.constituency_id.in_(constituency_ids))
+            .options(selectinload(Booth.vote_records).selectinload(VoteRecord.candidate).selectinload(Candidate.party))
+        )
+        booths = (await db.execute(booth_query)).scalars().all()
+        current_booths = [_booth_record(booth) for booth in booths if booth.constituency_id == current.id]
+        previous_booths = [_booth_record(booth) for booth in booths if previous and booth.constituency_id == previous.id]
         matches, audit = reconcile_booths(previous_booths, current_booths)
         audits.append({"code": current.code, "name": current.name, **audit})
         pairs = [(left, right) for left, right, _score in matches]
