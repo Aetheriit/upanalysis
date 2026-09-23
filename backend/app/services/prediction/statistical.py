@@ -119,7 +119,7 @@ def _grouped_oof(train_rows: list[dict[str, Any]], x_train: list[list[float]], y
         calibrated = _temperature_scale(raw, temperature)
         return {"status": "grouped_oof_calibrated", **_metrics(calibrated, y_train), "folds": split_count, "group_key": "district", "temperature": temperature}, temperature
     except Exception as error:
-        return {"status": "calibration_unavailable", "reason": type(error).__name__, **_metrics([], [])}, 1.0
+        return {"status": "calibration_unavailable", "reason": f"{type(error).__name__}: {error}", **_metrics([], [])}, 1.0
 
 
 def train_and_predict(rows: list[dict[str, Any]]) -> StatisticalResult:
