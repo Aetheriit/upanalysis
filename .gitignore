@@ -64,3 +64,9 @@ backend/.venv312/
 
 # Raw 2017 booth workbooks are deployed to the VPS, not stored in Git history.
 2017 data/2017_data_3/
+
+# Retrieved datasets and runtime snapshots are deployed separately, not source.
+.prediction-source-cache/
+uploads/prediction/
+backend/uploads/prediction/
+prediction-engine-vps.tar.gz

@@ -42,6 +42,10 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/election_intel
       - REDIS_URL=redis://redis:6379/0
       - DEBUG=false # Set to false for production
+      - PREDICTION_ATMOSPHERE_API_URL=${PREDICTION_ATMOSPHERE_API_URL:-}
+      - PREDICTION_ATMOSPHERE_API_KEY=${PREDICTION_ATMOSPHERE_API_KEY:-}
+      - PREDICTION_ADMIN_TOKEN=${PREDICTION_ADMIN_TOKEN:-}
+      - PREDICTION_MC_DRAWS=${PREDICTION_MC_DRAWS:-20000}
     depends_on:
       db:
         condition: service_healthy

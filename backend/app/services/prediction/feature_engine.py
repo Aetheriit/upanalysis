@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import math
 import re
+import logging
+import unicodedata
 from collections import defaultdict
 from difflib import SequenceMatcher
 from statistics import mean, pstdev
@@ -22,11 +24,11 @@ from app.models.candidate import Candidate
 from app.models.constituency import Constituency
 from app.models.election import Election
 from app.models.demographic import Demographic
-from app.services.prediction_engine import PARTIES, normalize_party
+from app.services.prediction.parties import PARTIES, normalize_party
 
 
 def _clean(value: str | None) -> str:
-    return re.sub(r"[^a-z0-9 ]", " ", (value or "").lower()).strip()
+    return " ".join(re.findall(r"\w+", unicodedata.normalize("NFKC", value or "").casefold()))
 
 
 def _booth_key(booth: Booth) -> str:
@@ -39,6 +41,8 @@ def _party_shares(booth: Booth) -> dict[str, float]:
     totals: dict[str, int] = defaultdict(int)
     for record in booth.vote_records:
         candidate = record.candidate
+        if candidate and (candidate.name or "").strip().upper() in {"NOTA", "TOTAL VOTES", "TOTAL VOTES POLLED"}:
+            continue
         label = normalize_party(candidate.party.abbreviation if candidate and candidate.party else booth.winner_party)
         totals[label] += max(0, int(record.votes or 0))
     total = sum(totals.values()) or max(int(booth.valid_votes or booth.total_votes_polled or 0), 1)
@@ -61,59 +65,74 @@ def _booth_record(booth: Booth) -> dict[str, Any]:
 
 
 def _match_score(left: dict[str, Any], right: dict[str, Any]) -> float:
-    number_match = bool(left["number"] and right["number"] and re.sub(r"\D", "", left["number"]) == re.sub(r"\D", "", right["number"]))
-    name_score = SequenceMatcher(None, _clean(left["name"]), _clean(right["name"])).ratio()
+    number_match = bool(left["number"] and right["number"] and _clean(left["number"]) == _clean(right["number"]))
+    left_name, right_name = _clean(left["name"]), _clean(right["name"])
+    name_score = SequenceMatcher(None, left_name[:160], right_name[:160]).ratio() if left_name and right_name else 0
     elector_score = math.exp(-abs(math.log(max(left["electors"], 1) / max(right["electors"], 1))))
     return (0.55 if number_match else 0) + 0.3 * name_score + 0.15 * elector_score
 
 
 def reconcile_booths(previous: list[dict[str, Any]], current: list[dict[str, Any]]) -> tuple[list[tuple[dict[str, Any], dict[str, Any], float]], dict[str, int]]:
-    """Greedy high-confidence one-to-one matching within a constituency.
+    """Bounded candidates and maximum-weight one-to-one assignment.
 
-    Exact normalized keys are accepted first. Remaining booths are matched by
-    composite number/name/elector similarity; low-score and duplicate matches
-    stay explicitly unmatched.
+    Non-unique, unsupported, or structurally changed pairs stay incomparable.
+    Thresholds are engineering defaults, not a fitted match-quality claim.
     """
-    by_key: dict[str, list[int]] = defaultdict(list)
+    import numpy as np
+    from scipy.optimize import linear_sum_assignment
+
+    previous = sorted(previous, key=lambda item: (item["key"], item["electors"]))
+    current = sorted(current, key=lambda item: (item["key"], item["electors"]))
     by_number: dict[str, list[int]] = defaultdict(list)
+    by_token: dict[str, set[int]] = defaultdict(set)
     for index, item in enumerate(previous):
-        by_key[item["key"]].append(index)
-        number = re.sub(r"\D", "", item["number"])
+        number = _clean(item["number"])
         if number: by_number[number].append(index)
-    used: set[int] = set()
+        for token in set(_clean(item["name"]).split()):
+            if len(token) >= 4:
+                by_token[token].add(index)
+    matrix = np.zeros((len(current), len(previous)))
+    structural = set()
+    for i, item in enumerate(current):
+        candidates = set(by_number.get(_clean(item["number"]), []))
+        token_candidates = set()
+        for token in set(_clean(item["name"]).split()):
+            indexes = by_token.get(token, set())
+            if len(indexes) <= 24:
+                token_candidates.update(indexes)
+        candidates.update(sorted(token_candidates)[:24])
+        for j in candidates:
+            old = previous[j]
+            if item["electors"] > 0 and old["electors"] > 0 and not 0.5 < item["electors"] / old["electors"] < 2:
+                structural.add(i)
+                continue
+            score = _match_score(old, item)
+            if _clean(old["name"]) and _clean(old["name"]) == _clean(item["name"]):
+                score = max(score, 0.8)
+            matrix[i, j] = score
     matches: list[tuple[dict[str, Any], dict[str, Any], float]] = []
-    exact = 0
-    ambiguous = 0
-    for current_item in current:
-        exact_candidates = [index for index in by_key.get(current_item["key"], []) if index not in used]
-        number = re.sub(r"\D", "", current_item["number"])
-        indexed_candidates = [index for index in by_number.get(number, []) if index not in used] if number else []
-        candidate_indexes = exact_candidates or indexed_candidates
-        # Fuzzy matching is a last resort for renamed/renumbered booths only.
-        if not candidate_indexes:
-            candidate_indexes = [index for index in range(len(previous)) if index not in used]
-        candidates = [(idx, previous[idx], _match_score(previous[idx], current_item)) for idx in candidate_indexes]
-        candidates.sort(key=lambda item: item[2], reverse=True)
-        if not candidates:
-            continue
-        idx, previous_item, score = candidates[0]
-        second = candidates[1][2] if len(candidates) > 1 else 0
-        threshold = 0.62 if current_item["key"] in by_key else 0.72
-        if score >= threshold and score - second >= (0.03 if second else 0):
-            used.add(idx)
-            exact += int(current_item["key"] in by_key)
-            matches.append((previous_item, current_item, round(score, 4)))
-        else:
-            ambiguous += 1
-    return matches, {"previous": len(previous), "current": len(current), "matched": len(matches), "exact": exact, "ambiguous": ambiguous, "unmatched": len(current) - len(matches)}
+    exact = ambiguous = 0
+    if matrix.size:
+        left, right = linear_sum_assignment(matrix, maximize=True)
+        for i, j in zip(left, right):
+            score = matrix[i, j]
+            second_row = max(np.delete(matrix[i], j), default=0)
+            second_col = max(np.delete(matrix[:, j], i), default=0)
+            if score >= 0.72 and score - max(second_row, second_col) >= 0.03:
+                matches.append((previous[j], current[i], round(float(score), 4)))
+                exact += int(previous[j]["key"] == current[i]["key"])
+            elif score > 0:
+                ambiguous += 1
+    return matches, {"previous": len(previous), "current": len(current), "matched": len(matches), "exact": exact, "ambiguous": ambiguous, "structural_candidates": len(structural), "unmatched": len(current) - len(matches)}
 
 
 def _values(items: list[dict[str, Any]], key: str) -> list[float]:
-    return [float(item[key]) for item in items] if items else [0.0]
+    return [float(item[key]) for item in items if item.get(key) is not None and math.isfinite(float(item[key]))]
 
 
 def _mean(items: list[dict[str, Any]], key: str) -> float:
-    return mean(_values(items, key)) if items else 0.0
+    values = _values(items, key)
+    return mean(values) if values else float("nan")
 
 
 def _std(items: list[dict[str, Any]], key: str) -> float:
@@ -134,8 +153,9 @@ def _candidate_summary(constituency: Constituency) -> dict[str, Any]:
         totals[label] += max(0, int(candidate.votes_received or 0))
     total = sum(totals.values()) or 1
     shares = {party: totals.get(party, 0) / total for party in PARTIES}
-    ordered = sorted(shares.items(), key=lambda item: item[1], reverse=True)
-    return {"shares": shares, "winner": ordered[0][0] if ordered else normalize_party(constituency.winner_party), "margin": int(constituency.winning_margin or 0), "total": total}
+    winner = max(candidates, key=lambda candidate: candidate.votes_received or 0) if candidates else None
+    winning_party = winner.party.abbreviation if winner and winner.party else constituency.winner_party
+    return {"shares": shares, "winner": normalize_party(winning_party), "actual_winner": winning_party, "margin": int(constituency.winning_margin or 0), "total": total}
 
 
 async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, int] = (2017, 2022)) -> dict[str, Any]:
@@ -151,7 +171,11 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
     rows = (await db.execute(query)).all()
     grouped: dict[str, dict[int, Constituency]] = defaultdict(dict)
     for constituency, year in rows:
-        grouped[re.sub(r"\s+", " ", (constituency.name or "").strip().upper())][year] = constituency
+        if not constituency.code:
+            raise ValueError("Missing canonical constituency code")
+        if year in grouped[str(constituency.code)]:
+            raise ValueError("Duplicate constituency code/year")
+        grouped[str(constituency.code)][year] = constituency
 
     feature_rows: list[dict[str, Any]] = []
     audits: list[dict[str, Any]] = []
@@ -177,15 +201,15 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
         matched_current = [pair[1] for pair in pairs]
         features: dict[str, float] = {}
         for party in PARTIES:
-            current_shares = [item["shares"][party] for item in matched_current or current_booths]
-            previous_shares = [item["shares"][party] for item in matched_previous] if matched_previous else [0.0]
+            current_shares = [item["shares"][party] for item in current_booths]
+            previous_shares = [item["shares"][party] for item in previous_booths]
             swings = [right["shares"][party] - left["shares"][party] for left, right in pairs] if pairs else [0.0]
             features[f"{party.lower()}_share_2022"] = mean(current_shares) if current_shares else 0.0
             features[f"{party.lower()}_share_2017"] = mean(previous_shares) if previous_shares else 0.0
             features[f"{party.lower()}_swing"] = mean(swings) if swings else 0.0
             features[f"{party.lower()}_swing_std"] = pstdev(swings) if len(swings) > 1 else 0.0
-        current_turnout = matched_current or current_booths
-        previous_turnout = matched_previous
+        current_turnout = current_booths
+        previous_turnout = previous_booths
         features.update({
             "turnout_2022": _mean(current_turnout, "turnout"),
             "turnout_2017": _mean(previous_turnout, "turnout"),
@@ -197,6 +221,8 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
             "margin_2017": _mean(previous_turnout, "margin"),
             "margin_change": _mean(current_turnout, "margin") - _mean(previous_turnout, "margin"),
             "gender_ratio_2022": _mean(current_turnout, "gender_ratio"),
+            "gender_ratio_2017": _mean(previous_turnout, "gender_ratio"),
+            "booth_count_2017": float(len(previous_booths)),
             "booth_count_2022": float(len(current_booths)),
             "match_rate": len(matches) / max(len(current_booths), 1),
             "strong_booth_ratio": sum(item["classification"] == "strong" for item in current_booths) / max(len(current_booths), 1),
@@ -207,10 +233,11 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
         })
         summary_2017 = _candidate_summary(previous) if previous else {"shares": {party: 0.0 for party in PARTIES}, "winner": "IPT", "margin": 0, "total": 0}
         summary_2022 = _candidate_summary(current)
-        demographic = defaultdict(float)
-        for item in current.demographics:
-            demographic[f"demographic_{(item.category or 'unknown').lower()}_share"] = max(demographic[f"demographic_{(item.category or 'unknown').lower()}_share"], float(item.population_pct or item.support_pct or 0) / (100 if float(item.population_pct or item.support_pct or 0) > 1 else 1))
-        features.update(demographic)
+        # Existing demographic rows have no source/date/geography provenance.
+        # Never use support_pct as population or turn unsourced group shares
+        # into party-support assumptions. Context ingestion is separate.
+        missing_features = [key for key, value in features.items() if value is None or not math.isfinite(value)]
+        features = {key: value if key not in missing_features else None for key, value in features.items()}
         feature_rows.append({
             "id": current.id,
             "code": current.code or current.name,
@@ -220,8 +247,10 @@ async def build_constituency_features(db: AsyncSession, year_pair: tuple[int, in
             "constituency_type": current.constituency_type or "assembly",
             "is_urban": current.is_urban or "unknown",
             "features": features,
+            "missing_features": missing_features,
             "summary_2017": summary_2017,
             "summary_2022": summary_2022,
         })
+        logging.getLogger(__name__).warning("prediction_features completed=%s code=%s booths=%s matched=%s", len(feature_rows), current.code, len(current_booths), len(matches))
     feature_names = sorted({name for row in feature_rows for name in row["features"]})
-    return {"rows": feature_rows, "audits": audits, "feature_names": feature_names, "schema_version": "booth-features-v2"}
+    return {"rows": feature_rows, "audits": audits, "feature_names": feature_names, "schema_version": "booth-features-v3-canonical"}

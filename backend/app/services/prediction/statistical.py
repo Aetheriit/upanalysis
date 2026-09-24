@@ -1,225 +1,154 @@
-"""Calibrated statistical layer: XGBoost + random forest + logistic baseline."""
-from __future__ import annotations
+"""District-isolated hindcast with nested calibration and no 2022 feature leakage.
 
+Only one historical transition is available. Metrics are grouped hindcasts,
+not proof of out-of-cycle 2027 accuracy. Booth deltas are explanatory context;
+they cannot be trained without an earlier, comparable transition.
+"""
 import math
-from collections import Counter
 from dataclasses import dataclass
-from typing import Any
 
-from app.services.prediction_engine import PARTIES
+from app.services.prediction.parties import PARTIES
 
-
-BASE_FEATURES = (
-    "share", "swing", "swing_std", "turnout", "nota", "margin", "enp",
-    "gender_ratio", "booth_count", "match_rate", "strong_booth_ratio",
-    "weak_booth_ratio", "swing_booth_ratio",
-)
+METRICS = ("turnout", "nota", "margin", "enp", "gender_ratio", "booth_count")
 
 
-def _feature_value(row: dict[str, Any], party: str, period: str, metric: str) -> float:
+def vectorize(row, period="2022"):
     features = row["features"]
-    value: float
-    if metric == "share":
-        value = float(features.get(f"{party.lower()}_share_{period}", 0))
-    elif metric == "swing":
-        value = float(features.get(f"{party.lower()}_swing", 0)) if period == "2022" else 0.0
-    elif metric == "swing_std":
-        value = float(features.get(f"{party.lower()}_swing_std", 0)) if period == "2022" else 0.0
-    elif metric == "turnout": value = float(features.get(f"turnout_{period}", 0))
-    elif metric == "nota": value = float(features.get(f"nota_{period}", 0))
-    elif metric == "margin": value = float(features.get(f"margin_{period}", 0)) / 100000
-    elif metric == "enp": value = float(features.get(f"enp_{period}", 0))
-    else: value = float(features.get(metric, 0))
-    return value if math.isfinite(value) else 0.0
-
-
-def vectorize(row: dict[str, Any], period: str = "2022") -> list[float]:
-    vector: list[float] = []
-    for party in PARTIES:
-        for metric in ("share", "swing", "swing_std"):
-            vector.append(_feature_value(row, party, period, metric))
-    for metric in BASE_FEATURES[3:]:
-        vector.append(_feature_value(row, "", period, metric))
-    return vector
-
-
-def feature_names() -> list[str]:
-    return [f"{party.lower()}_{metric}" for party in PARTIES for metric in ("share", "swing", "swing_std")] + list(BASE_FEATURES[3:])
-
-
-def _aligned_probabilities(model: Any, matrix: list[list[float]], classes: list[str]) -> list[list[float]]:
-    raw = model.predict_proba(matrix)
-    result = []
-    model_classes = [int(value) for value in getattr(model, "classes_", range(len(classes)))]
-    for row in raw:
-        aligned = [0.0] * len(classes)
-        for index, probability in zip(model_classes, row):
-            if 0 <= index < len(classes): aligned[index] = float(probability)
-        total = sum(aligned) or 1
-        result.append([value / total for value in aligned])
-    return result
-
-
-def _normalise(matrix: list[list[float]]) -> list[list[float]]:
-    if not matrix: return []
-    columns = list(zip(*matrix))
-    means = [sum(column) / len(column) for column in columns]
-    scales = [math.sqrt(sum((value - mean) ** 2 for value in column) / max(len(column) - 1, 1)) or 1 for column, mean in zip(columns, means)]
-    return [[(value - means[index]) / scales[index] for index, value in enumerate(row)] for row in matrix]
+    keys = [f"{p.lower()}_share_{period}" for p in PARTIES] + [f"{m}_{period}" for m in METRICS]
+    values = [float(features[key]) if features.get(key) is not None else float("nan") for key in keys]
+    # Fixed-width missingness flags prevent silent missing=zero interpretation.
+    return [value if math.isfinite(value) else 0 for value in values] + [int(not math.isfinite(value)) for value in values]
 
 
 @dataclass
 class StatisticalResult:
-    predictions: list[dict[str, Any]]
-    backtest: dict[str, Any]
-    feature_importance: dict[str, float]
+    predictions: list
+    backtest: dict
+    feature_importance: dict
     model_version: str
 
 
-def _metrics(probabilities: list[list[float]], labels: list[int]) -> dict[str, Any]:
-    if not labels: return {"accuracy": None, "log_loss": None, "brier": None, "sample_size": 0}
-    eps = 1e-9
-    predicted = [max(range(len(row)), key=row.__getitem__) for row in probabilities]
-    log_loss = -sum(math.log(max(probabilities[i][label], eps)) for i, label in enumerate(labels)) / len(labels)
-    brier = sum(sum((probability - (1 if index == label else 0)) ** 2 for index, probability in enumerate(probabilities[i])) for i, label in enumerate(labels)) / len(labels)
-    return {"accuracy": round(sum(a == b for a, b in zip(predicted, labels)) / len(labels) * 100, 2), "log_loss": round(log_loss, 5), "brier": round(brier, 5), "sample_size": len(labels), "predicted_class_counts": dict(Counter(predicted))}
+def _fit(x, y):
+    import numpy as np
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from xgboost import XGBClassifier
+    labels = np.unique(y)
+    if len(labels) < 2:
+        raise ValueError("Insufficient classes in training fold")
+    encoded = np.searchsorted(labels, y)
+    models = [
+        RandomForestClassifier(n_estimators=120, max_depth=5, min_samples_leaf=4, random_state=42, n_jobs=1),
+        make_pipeline(StandardScaler(), LogisticRegression(max_iter=1500, C=0.5, random_state=42)),
+        XGBClassifier(objective="multi:softprob", num_class=len(labels), n_estimators=120, max_depth=3,
+                      learning_rate=0.05, subsample=0.85, colsample_bytree=0.85, random_state=42,
+                      n_jobs=1, eval_metric="mlogloss"),
+    ]
+    for model in models:
+        model.fit(x, encoded)
+    return models, labels
 
 
-def _temperature_scale(probabilities: list[list[float]], temperature: float) -> list[list[float]]:
-    scaled = []
-    for row in probabilities:
-        logits = [math.log(max(value, 1e-8)) / temperature for value in row]
-        maximum = max(logits)
-        values = [math.exp(value - maximum) for value in logits]
-        total = sum(values) or 1
-        scaled.append([value / total for value in values])
-    return scaled
+def _predict(fitted, x):
+    import numpy as np
+    models, labels = fitted
+    results = []
+    for model in models:
+        values = np.full((len(x), len(PARTIES)), 1e-8)
+        values[:, labels] = model.predict_proba(x)
+        results.append(values / values.sum(axis=1, keepdims=True))
+    return np.stack(results)
 
 
-def _grouped_oof(train_rows: list[dict[str, Any]], x_train: list[list[float]], y_train: list[int]) -> tuple[dict[str, Any], float]:
-    """District-grouped OOF ensemble and temperature calibration."""
-    try:
-        from sklearn.ensemble import RandomForestClassifier
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.model_selection import GroupKFold
-        groups = [row["district"] for row in train_rows]
-        split_count = min(5, len(set(groups)))
-        if split_count < 2: return {**_metrics([], []), "status": "insufficient_groups"}, 1.0
-        oof: list[list[float] | None] = [None] * len(train_rows)
-        for training, testing in GroupKFold(n_splits=split_count).split(x_train, y_train, groups):
-            rf = RandomForestClassifier(n_estimators=160, max_depth=6, min_samples_leaf=3, class_weight="balanced", random_state=42, n_jobs=1)
-            rf.fit([x_train[i] for i in training], [y_train[i] for i in training])
-            logistic = LogisticRegression(max_iter=1000, C=0.5, class_weight="balanced", random_state=42)
-            logistic.fit(_normalise([x_train[i] for i in training]), [y_train[i] for i in training])
-            rf_probabilities = _aligned_probabilities(rf, [x_train[i] for i in testing], list(PARTIES))
-            logistic_probabilities = _aligned_probabilities(logistic, _normalise([x_train[i] for i in testing]), list(PARTIES))
-            for offset, index in enumerate(testing):
-                oof[index] = [(0.65 * left + 0.35 * right) for left, right in zip(rf_probabilities[offset], logistic_probabilities[offset])]
-        raw = [row or [1 / len(PARTIES)] * len(PARTIES) for row in oof]
-        candidates = [0.65, 0.8, 1.0, 1.2, 1.4, 1.7]
-        temperature = min(candidates, key=lambda value: _metrics(_temperature_scale(raw, value), y_train)["log_loss"])
-        calibrated = _temperature_scale(raw, temperature)
-        return {"status": "grouped_oof_calibrated", **_metrics(calibrated, y_train), "folds": split_count, "group_key": "district", "temperature": temperature}, temperature
-    except Exception as error:
-        return {"status": "calibration_unavailable", "reason": f"{type(error).__name__}: {error}", **_metrics([], [])}, 1.0
+def _scale(probabilities, temperature):
+    import numpy as np
+    logits = np.log(np.clip(probabilities, 1e-8, 1)) / temperature
+    exp = np.exp(logits - logits.max(axis=1, keepdims=True))
+    return exp / exp.sum(axis=1, keepdims=True)
 
 
-def train_and_predict(rows: list[dict[str, Any]]) -> StatisticalResult:
-    """Train on the 2017 snapshot, backtest against 2022, score 2027 from 2022."""
-    if not rows:
-        return StatisticalResult([], {"status": "no_data", "sample_size": 0}, {}, "ensemble-v1-fallback")
-    class_to_index = {party: index for index, party in enumerate(PARTIES)}
-    train_rows = [row for row in rows if row["summary_2017"]["total"] > 0]
-    if len(train_rows) < 12:
-        # A transparent fallback is retained for development datasets that do
-        # not contain enough historical records to fit six classes.
-        outputs = []
-        for row in rows:
-            probabilities = {party: max(0.0001, row["summary_2022"]["shares"].get(party, 0.0)) for party in PARTIES}
-            total = sum(probabilities.values())
-            probabilities = {party: value / total for party, value in probabilities.items()}
-            outputs.append(_prediction_payload(row, probabilities, "historical-fallback"))
-        return StatisticalResult(outputs, {"status": "fallback", "sample_size": len(train_rows), "reason": "insufficient training rows"}, {}, "historical-fallback")
-
-    x_train = [vectorize(row, "2017") for row in train_rows]
-    y_train = [class_to_index[row["summary_2022"]["winner"]] for row in train_rows]
-    x_score = [vectorize(row, "2022") for row in rows]
-    x_train_scaled = _normalise(x_train)
-    x_score_scaled = _normalise(x_score)
-    models: list[tuple[str, Any, list[list[float]]]] = []
-    try:
-        from sklearn.ensemble import RandomForestClassifier
-        rf = RandomForestClassifier(n_estimators=240, max_depth=6, min_samples_leaf=3, class_weight="balanced", random_state=42, n_jobs=1)
-        rf.fit(x_train, y_train)
-        models.append(("random_forest", rf, _aligned_probabilities(rf, x_score, list(PARTIES))))
-    except Exception:
-        pass
-    try:
-        from sklearn.linear_model import LogisticRegression
-        logistic = LogisticRegression(max_iter=1200, C=0.5, class_weight="balanced", random_state=42)
-        logistic.fit(x_train_scaled, y_train)
-        models.append(("logistic", logistic, _aligned_probabilities(logistic, x_score_scaled, list(PARTIES))))
-    except Exception:
-        pass
-    try:
-        from xgboost import XGBClassifier
-        xgb = XGBClassifier(objective="multi:softprob", num_class=len(PARTIES), max_depth=4, learning_rate=0.06, n_estimators=180, subsample=0.85, colsample_bytree=0.85, eval_metric="mlogloss", random_state=42, n_jobs=1)
-        xgb.fit(x_train, y_train)
-        models.append(("xgboost", xgb, _aligned_probabilities(xgb, x_score, list(PARTIES))))
-    except Exception:
-        pass
-    if not models:
-        return _fallback_result(rows, "ml-dependencies-unavailable")
-    weights = {"xgboost": 0.5, "random_forest": 0.3, "logistic": 0.2}
-    total_weight = sum(weights.get(name, 0.2) for name, _model, _probabilities in models)
-    ensemble: list[list[float]] = []
-    for row_index in range(len(rows)):
-        values = [0.0] * len(PARTIES)
-        for name, _model, probabilities in models:
-            weight = weights.get(name, 0.2) / total_weight
-            values = [current + weight * probability for current, probability in zip(values, probabilities[row_index])]
-        normalizer = sum(values) or 1
-        ensemble.append([value / normalizer for value in values])
-
-    backtest_probabilities = []
-    for _name, model, _score_probabilities in models:
-        try:
-            backtest_probabilities.append((weights.get(_name, 0.2), _aligned_probabilities(model, x_train, list(PARTIES))))
-        except Exception:
-            pass
-    backtest = []
-    for row_index in range(len(train_rows)):
-        values = [0.0] * len(PARTIES)
-        for weight, probabilities in backtest_probabilities:
-            values = [current + weight * probability for current, probability in zip(values, probabilities[row_index])]
-        total = sum(values) or 1
-        backtest.append([value / total for value in values])
-    importance: dict[str, float] = {}
-    for name, model, _probabilities in models:
-        if hasattr(model, "feature_importances_"):
-            for feature, value in zip(feature_names(), model.feature_importances_): importance[feature] = importance.get(feature, 0) + float(value) / len(models)
-    backtest_metrics, temperature = _grouped_oof(train_rows, x_train, y_train)
-    ensemble = _temperature_scale(ensemble, temperature)
-    outputs = [_prediction_payload(row, {party: ensemble[index][party_index] for party_index, party in enumerate(PARTIES)}, "ensemble-v1-calibrated", importance) for index, row in enumerate(rows)]
-    return StatisticalResult(outputs, {**backtest_metrics, "train_year": 2017, "test_year": 2022, "models": [name for name, _model, _probs in models]}, importance, "ensemble-v1-calibrated")
+def _metrics(p, labels):
+    import numpy as np
+    from sklearn.metrics import log_loss, f1_score, precision_recall_fscore_support
+    winners = p.argmax(axis=1)
+    confidence = p.max(axis=1)
+    ece = 0
+    for low in np.arange(0, 1, 0.1):
+        mask = (confidence >= low) & (confidence < low + 0.1 + (1e-8 if low >= 0.9 else 0))
+        if mask.any():
+            ece += mask.mean() * abs((winners[mask] == labels[mask]).mean() - confidence[mask].mean())
+    precision, recall, f1, support = precision_recall_fscore_support(labels, winners, labels=range(6), zero_division=0)
+    return {"accuracy": round(float((winners == labels).mean() * 100), 2),
+            "log_loss": float(log_loss(labels, p, labels=range(6))),
+            "brier": float(np.square(p - np.eye(6)[labels]).sum(axis=1).mean()),
+            "macro_f1": float(f1_score(labels, winners, average="macro", labels=range(6), zero_division=0)),
+            "ece": float(ece), "sample_size": len(labels),
+            "per_party": {party: {"precision": float(precision[i]), "recall": float(recall[i]),
+                                   "f1": float(f1[i]), "support": int(support[i])} for i, party in enumerate(PARTIES)}}
 
 
-def _prediction_payload(row: dict[str, Any], probabilities: dict[str, float], model_version: str, importance: dict[str, float] | None = None) -> dict[str, Any]:
-    predicted = max(PARTIES, key=lambda party: probabilities[party])
-    ordered = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
-    factors = []
-    swings = sorted(((party, float(row["features"].get(f"{party.lower()}_swing", 0))) for party in PARTIES), key=lambda item: abs(item[1]), reverse=True)
-    if swings and abs(swings[0][1]) >= 0.01: factors.append(f"{swings[0][0]} swing {swings[0][1] * 100:+.1f}pp")
-    if row["features"].get("match_rate", 0) < 0.7: factors.append("limited booth comparability")
-    if row["features"].get("turnout_change", 0) >= 0.02: factors.append("turnout increase")
-    if not factors: factors.append("historical booth vote pattern")
-    return {"constituency_id": row.get("id"), "code": row["code"], "name": row["name"], "district": row["district"], "region": row["region"], "stat_predicted_party": predicted, "stat_probabilities": {party: round(probabilities[party], 6) for party in PARTIES}, "stat_confidence": round(ordered[0][1] * 100, 2), "stat_key_factors": factors, "stat_model_version": model_version, "historical_winner_2022": row["summary_2022"]["winner"], "historical_margin_2022": row["summary_2022"]["margin"], "features": row["features"], "feature_importance": importance or {}}
+def _choose(raw, y):
+    import numpy as np
+    candidates = [(1/3, 1/3, 1/3), (0.3, 0.2, 0.5), (0.5, 0.25, 0.25), (0.25, 0.5, 0.25)]
+    best = None
+    for weights in candidates:
+        blended = np.tensordot(weights, raw, axes=(0, 0))
+        for temperature in (0.8, 1.0, 1.2, 1.5, 2.0):
+            values = _scale(blended, temperature)
+            loss = -np.log(values[np.arange(len(y)), y]).mean()
+            if best is None or loss < best[0]:
+                best = (loss, weights, temperature)
+    return best[1], best[2]
 
 
-def _fallback_result(rows: list[dict[str, Any]], reason: str) -> StatisticalResult:
+def train_and_predict(rows):
+    import numpy as np
+    from sklearn.model_selection import GroupKFold
+    train = [row for row in rows if row["summary_2017"]["total"] > 0]
+    if len(train) < 30:
+        raise ValueError("Insufficient paired historical constituencies for model validation")
+    x = np.array([vectorize(row, "2017") for row in train])
+    y = np.array([PARTIES.index(row["summary_2022"]["winner"]) for row in train])
+    groups = np.array([row["district"] for row in train])
+    if len(set(groups)) < 5:
+        raise ValueError("At least five independent district groups are required")
+    raw = np.zeros((3, len(train), len(PARTIES)))
+    evaluated = np.zeros((len(train), len(PARTIES)))
+    for outer_train, test in GroupKFold(n_splits=5).split(x, y, groups):
+        inner = np.zeros((3, len(outer_train), len(PARTIES)))
+        for fit, held in GroupKFold(n_splits=3).split(x[outer_train], y[outer_train], groups[outer_train]):
+            model = _fit(x[outer_train][fit], y[outer_train][fit])
+            inner[:, held, :] = _predict(model, x[outer_train][held])
+        weights, temperature = _choose(inner, y[outer_train])
+        model = _fit(x[outer_train], y[outer_train])
+        raw[:, test, :] = _predict(model, x[test])
+        evaluated[test] = _scale(np.tensordot(weights, raw[:, test, :], axes=(0, 0)), temperature)
+    final_weights, temperature = _choose(raw, y)
+    fitted = _fit(x, y)
+    predictions = _scale(np.tensordot(final_weights, _predict(fitted, np.array([vectorize(row) for row in rows])), axes=(0, 0)), temperature)
+    version = "ensemble-v2-nested-grouped-hindcast"
     outputs = []
-    for row in rows:
-        probabilities = {party: max(0.0001, float(row["features"].get(f"{party.lower()}_share_2022", 0))) for party in PARTIES}
-        total = sum(probabilities.values()) or 1
-        outputs.append(_prediction_payload(row, {party: value / total for party, value in probabilities.items()}, "historical-fallback"))
-    return StatisticalResult(outputs, {"status": "fallback", "reason": reason, "sample_size": len(rows)}, {}, "historical-fallback")
+    for row, values in zip(rows, predictions):
+        probabilities = {party: float(values[index]) for index, party in enumerate(PARTIES)}
+        leader = max(probabilities, key=probabilities.get)
+        outputs.append({"constituency_id": row.get("id"), "code": row["code"], "name": row["name"],
+                        "district": row["district"], "region": row["region"], "features": row["features"],
+                        "missing_features": row.get("missing_features", []),
+                        "stat_predicted_party": leader, "stat_probabilities": probabilities,
+                        "stat_confidence": probabilities[leader] * 100, "stat_model_version": version,
+                        "stat_key_factors": ["Historical single-cycle booth shares, turnout and competition.",
+                                             "2017–2022 booth deltas are context, not a trained 2027 swing estimate."],
+                        "historical_winner_2022": row["summary_2022"]["winner"],
+                        "historical_actual_winner_2022": row["summary_2022"].get("actual_winner"),
+                        "historical_margin_2022": row["summary_2022"]["margin"]})
+    metrics = {"status": "nested_grouped_hindcast", **_metrics(evaluated, y), "folds": 5,
+               "group_key": "district", "feature_year": 2017, "target_year": 2022,
+               "temperature": temperature, "weights": list(final_weights),
+               "models": ["random_forest", "standardized_logistic", "xgboost"],
+               "limitations": ["One historical transition; no independent future-cycle validation.",
+                               "Hyperparameter grid and calibration evaluated inside district-held-out folds.",
+                               "Demographics excluded until sourced and time-bounded.",
+                               "Vote-share and margin models are not fitted."]}
+    return StatisticalResult(outputs, metrics, {}, version)
