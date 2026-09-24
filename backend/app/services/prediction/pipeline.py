@@ -131,7 +131,8 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmos
         result['vote_estimate'] = public_estimate(vote_values, feature_row['summary_2022']['total'],
                                                 result['final_predicted_party'], result['atmo_weight_used'], vote_bundle['backtest'])
         fused.append(result)
-    simulation = await asyncio.to_thread(simulate_validated, fused, int(os.getenv("PREDICTION_MC_DRAWS", "20000")), 202709)
+    # Product contract: each explicit Run executes exactly 1,000 draws.
+    simulation = await asyncio.to_thread(simulate_validated, fused, 1000, 202709)
     audits = {str(audit["code"]): audit for audit in snapshot["audits"]}
     public = [_public_row(row, audits.get(str(row["code"]))) for row in fused]
     public.sort(key=lambda row: int(row["code"]))

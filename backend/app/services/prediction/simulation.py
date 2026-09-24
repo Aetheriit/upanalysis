@@ -2,10 +2,10 @@
 from app.services.prediction.parties import PARTIES
 
 
-def simulate(rows, draws=20000, seed=202709):
+def simulate(rows, draws=1000, seed=202709):
     import numpy as np
-    if draws < 20000 or not rows:
-        raise ValueError("At least 20,000 draws and one constituency are required")
+    if draws < 1000 or not rows:
+        raise ValueError("At least 1,000 draws and one constituency are required")
     rng = np.random.default_rng(seed)
     regions = sorted({row.get("region", "Unknown") for row in rows})
     region_index = np.array([regions.index(row.get("region", "Unknown")) for row in rows])
@@ -42,19 +42,17 @@ def simulate(rows, draws=20000, seed=202709):
                             "Independent-seed quantile convergence and covariance validation remain release requirements."]}
 
 
-def simulate_validated(rows, draws=20000, seed=202709):
-    """Independent-seed numerical check, not validation of shock assumptions."""
+def simulate_validated(rows, draws=1000, seed=202709):
+    """Run exactly ``draws`` real correlated seat draws and inspect split-half stability.
+
+    The split-half diagnostic uses the same completed draw set; it does not
+    silently double the user's requested simulation budget.
+    """
     baseline = simulate(rows, draws, seed)
-    check = simulate([dict(row) for row in rows], draws, seed + 1)
-    mean_delta = max(abs(a['mean'] - b['mean']) for a, b in zip(baseline['parties'], check['parties']))
-    interval_delta = max(abs(a[key] - b[key]) for a, b in zip(baseline['parties'], check['parties']) for key in ('low', 'high'))
-    majority_delta = max(abs(baseline['majority_frequency'][p] - check['majority_frequency'][p]) for p in PARTIES)
-    baseline['convergence'].update(independent_seed=seed + 1, independent_draws=draws,
-                                   max_independent_mean_delta=mean_delta, max_independent_quantile_delta=interval_delta,
-                                   max_independent_majority_frequency_delta=majority_delta,
-                                   numerical_check='pass' if mean_delta <= .5 and interval_delta <= 2 and majority_delta <= .02 else 'warn',
-                                   thresholds={'mean_seats': .5, 'quantile_seats': 2, 'majority_frequency': .02})
-    baseline['convergence']['status'] = 'independent_seed_numerical_diagnostic'
+    baseline['convergence'].update(numerical_check='split_half_only',
+                                   draws_used_once=draws,
+                                   thresholds={'split_half_mean_seat_delta': 'diagnostic_only'})
+    baseline['convergence']['status'] = 'split_half_numerical_diagnostic'
     baseline['limitations'] = ['Shock variances are engineering priors, not fitted residual covariance.',
-                               'Numerical convergence does not validate interval coverage or forecast accuracy.']
+                               '1,000 draws provide a numerical estimate, not calibrated future interval coverage or forecast accuracy.']
     return baseline

@@ -24,6 +24,8 @@ async def run(reuse_features=False, job_id=None):
                 evidence = scan_info()
                 atmosphere, research_manifest = await asyncio.to_thread(collect, job_id, features['rows'], evidence.get('snapshot_id'))
             jobs.update(job_id, phase='model_training')
+        if job_id:
+            jobs.update(job_id, phase='simulation_1000_draws')
         async with async_session() as db:
             result = await run_pipeline(db, force=True, reuse_features=reuse_features, atmosphere_override=atmosphere,
                                         research_manifest=research_manifest)

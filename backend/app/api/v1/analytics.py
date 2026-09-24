@@ -1745,7 +1745,27 @@ async def get_alliance_analysis(
 
 @router.get("/forecast/predict")
 async def get_forecast_predict(db: AsyncSession = Depends(get_db)):
-    """Run Monte Carlo simulation for next election based on 2017-2022 momentum."""
+    """Read the latest explicit Prediction run; never simulate on page load.
+
+    The old endpoint's 2017/2022-only calculation is retained below as a
+    historical implementation reference, but is unreachable. Forecasting now
+    consumes the shared fused artifact, including source-linked atmosphere
+    evidence when that evidence was present in the explicit run.
+    """
+    from app.services.prediction.pipeline import run_pipeline
+    result = await run_pipeline(db)
+    simulation = result.get("simulation") or {}
+    return {
+        "forecast": simulation.get("parties", []),
+        "iterations": simulation.get("draws", 0),
+        "base_year": "2017 & 2022 + explicit web-evidence run",
+        "run_id": result["run_id"],
+        "model_version": result.get("model_version"),
+        "research": result.get("manifest", {}).get("research"),
+        "quality": result.get("summary", {}).get("quality"),
+        "method": "Shared fused constituency probabilities with correlated stochastic seat draws",
+    }
+    # Historical momentum-only implementation intentionally unreachable.
     
     # 1. Fetch 2017 and 2022 baseline
     query = (

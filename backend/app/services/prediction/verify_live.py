@@ -61,6 +61,7 @@ def main():
         if not state['manifest'].get('research'):
             assert atmosphere == 0
     assert sum(party["predicted"] for party in state["summary"]["parties"]) == 403
+    assert state["simulation"]["draws"] == 1000
     assert state["status"] == "review"
     historical = Counter(row['historical_winner_class_2022'] for row in all_rows)
     assert historical == {'BJP': 255, 'SP': 111, 'IPT': 26, 'RLD': 8, 'INC': 2, 'BSP': 1}
