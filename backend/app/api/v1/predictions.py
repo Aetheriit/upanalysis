@@ -7,13 +7,17 @@ import os
 import secrets
 import subprocess
 import sys
+import csv
+import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.prediction.pipeline import run_pipeline
 from app.services.prediction.evidence import artifact_dir, scan_info, get_seat_evidence, create_scan
+from app.services.prediction.parties import PARTIES
 
 router = APIRouter()
 
@@ -88,6 +92,35 @@ async def list_predictions(
 async def battleground_predictions(db: AsyncSession = Depends(get_db)):
     result = await run_pipeline(db)
     return {"run_id": result["run_id"], "predictions": [row for row in result["predictions"] if row["confidence"] < 55]}
+
+
+@router.get('/export.csv')
+async def export_predictions_csv(run_id: str, db: AsyncSession = Depends(get_db)):
+    result = await run_pipeline(db, run_id=run_id)
+    output = io.StringIO(newline='')
+    columns = ['constituency_code', 'constituency_name', 'district', 'Winning_Party', 'Winning_margin',
+               'Vote_share', 'Change', 'historical_winner_2022', 'confidence', 'run_id', 'status',
+               'model_version', 'evidence_snapshot_id', 'evidence_cutoff', 'atmosphere_weight',
+               'vote_estimate_status', *[f'{party}_win_probability' for party in PARTIES], 'caveat']
+    writer = csv.DictWriter(output, fieldnames=columns)
+    writer.writeheader()
+    for row in result['predictions']:
+        values = {'constituency_code': row['code'], 'constituency_name': row['name'], 'district': row['district'],
+                  'Winning_Party': row['predicted_party'], 'Winning_margin': row['predicted_margin'],
+                  'Vote_share': row['predicted_vote_share'], 'Change': row['change'],
+                  'historical_winner_2022': row['historical_winner_2022'], 'confidence': row['confidence'],
+                  'run_id': result['run_id'], 'status': result['status'], 'model_version': result['model_version'],
+                  'evidence_snapshot_id': result['manifest'].get('evidence_snapshot_id'),
+                  'evidence_cutoff': result['manifest'].get('evidence_cutoff'),
+                  'atmosphere_weight': row['final']['weights']['atmosphere'],
+                  'vote_estimate_status': row['vote_estimate_status'],
+                  **{f'{party}_win_probability': row['final']['probabilities'][party] for party in PARTIES},
+                  'caveat': 'Review model estimate, not an election fact. Win probability is not vote share; unscored news has no influence.'}
+        writer.writerow({key: "'" + value if isinstance(value, str) and value.lstrip().startswith(('=', '+', '-', '@', '\t', '\r')) else value
+                         for key, value in values.items()})
+    return Response(content=('\ufeff' + output.getvalue()).encode('utf-8'), media_type='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename="up-2027-all-403-{result["run_id"]}.csv"',
+                             'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
 
 
 @router.get("/flips")

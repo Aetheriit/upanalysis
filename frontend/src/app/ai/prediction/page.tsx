@@ -46,9 +46,10 @@ const externalApi = process.env.NEXT_PUBLIC_PREDICTION_API_URL?.replace(/\/$/, "
 const labelParty = (party: string) => party === "IPT" ? "Others / Independent (IPT)" : party;
 const date = (value?: string) => value ? new Date(value).toLocaleString("en-IN") : "Unavailable";
 const color = (party: string) => getPartyColor(party === "IPT" ? "Others" : party);
+const endpoint = (path: string) => externalApi ? `${externalApi}${path}` : apiUrl(`/api/v1/predictions${path}`);
 
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(externalApi ? `${externalApi}${path}` : apiUrl(`/api/v1/predictions${path}`), { cache: "no-store", signal });
+  const response = await fetch(endpoint(path), { cache: "no-store", signal });
   if (!response.ok) throw new Error(response.status === 503 ? "The model is being prepared. Evidence remains available; refresh to check the model run." : `Prediction service returned ${response.status}`);
   return response.json();
 }
@@ -114,8 +115,6 @@ export default function PredictionPage() {
   const [error, setError] = useState("");
   const [evidenceError, setEvidenceError] = useState("");
   const [selected, setSelected] = useState<{row: Prediction; runId: string} | null>(null);
-  const [exporting, setExporting] = useState(false);
-  const [exportError, setExportError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -141,19 +140,8 @@ export default function PredictionPage() {
     evidence_snapshot_id: state?.manifest.evidence_snapshot_id, evidence_cutoff: state?.manifest.evidence_cutoff,
     atmosphere_weight: row.final.weights.atmosphere, caveat: "Model estimates; vote-share and margin model unavailable.",
   })));
-  const exportAll = async () => {
-    if (!state) return;
-    setExporting(true); setExportError("");
-    try {
-      const result = await get<{run_id: string; total: number; predictions: Prediction[]}>(`/list?page=1&page_size=403&run_id=${encodeURIComponent(state.run_id)}`);
-      if (result.run_id !== state.run_id || result.total !== 403 || new Set(result.predictions.map(row => row.code)).size !== 403) throw new Error("Export is incomplete; please refresh and try again.");
-      exportRows(result.predictions, `up-2027-all-403-${state.run_id}.csv`);
-    } catch (error) { setExportError(error instanceof Error ? error.message : "Export failed"); }
-    finally { setExporting(false); }
-  };
   return <div className="p-4 md:p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
-    <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<div className="flex flex-wrap gap-2"><button disabled={!rows.length} onClick={() => exportRows(rows, "up-2027-predictions-page.csv")} className="flex gap-2 items-center px-3 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button><button disabled={!state || exporting} onClick={exportAll} className="px-3 py-2 rounded-lg border disabled:opacity-40">{exporting ? "Exporting…" : "Export all 403"}</button></div>} />
-    {exportError && <p role="alert" className="text-rose-500">{exportError}</p>}
+    <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<div className="flex flex-wrap gap-2"><button disabled={!rows.length} onClick={() => exportRows(rows, "up-2027-predictions-page.csv")} className="flex gap-2 items-center px-3 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button>{state ? <a href={endpoint(`/export.csv?run_id=${encodeURIComponent(state.run_id)}`)} className="px-3 py-2 rounded-lg border">Export all 403</a> : <button disabled className="px-3 py-2 rounded-lg border opacity-40">Export all 403</button>}</div>} />
     <div className="flex justify-between items-start gap-4 text-sm"><div>{state ? <><p className="font-semibold">Review snapshot — not an approved publication</p><p className="text-xs text-[var(--text-secondary)]">Run {state.run_id} · {date(state.created_at)} · {state.summary.quality}</p><p className="text-xs text-[var(--text-secondary)]">Model evidence cut-off: {date(state.manifest.evidence_cutoff)}</p></> : <p>2027 model workspace</p>}</div><button aria-label="Refresh prediction and evidence status" onClick={() => setRefresh(refresh + 1)} className="p-2 rounded-lg border"><RefreshCw size={18} /></button></div>
     {state && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">{state.summary.parties.map(item => <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div></PremiumCard>)}</div>}
     <PremiumCard className="p-5 space-y-2"><h2 className="font-semibold">Live evidence coverage</h2>{scan ? <><p>{scan.completed} / {scan.expected} constituencies searched · {scan.seats_with_results ?? 0} with results · {(scan.unique_urls ?? 0).toLocaleString()} unique links</p><p className="text-xs text-[var(--text-secondary)]">{scan.status} · {scan.queries_ok ?? 0} successful queries · {scan.queries_failed ?? 0} failed · cut-off {date(scan.cutoff)}</p></> : <p>{evidenceError || "Loading search coverage…"}</p>}<p className="text-xs text-[var(--text-secondary)]">Discovery coverage is not verified atmosphere coverage. News volume is not public opinion. Select a constituency to inspect sources, dates, geography and missing inputs.</p></PremiumCard>

@@ -80,6 +80,7 @@ GET endpoints never trigger training or live searches:
 - `/api/v1/predictions/statewide`, `/list?page=1&page_size=50`, `/{code}`
 - `/api/v1/predictions/evidence/status`, `/evidence/{code}?snapshot_id=UUID`
 - `/api/v1/predictions/run/status`
+- `/api/v1/predictions/export.csv?run_id=UUID` (all 403 seats, attachment response)
 
 POST `/run` and `/evidence/scan` require a server-configured
 `PREDICTION_ADMIN_TOKEN` as a Bearer token. Unconfigured write endpoints are

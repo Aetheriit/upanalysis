@@ -4,6 +4,8 @@ import math
 import time
 import hashlib
 import re
+import csv
+import io
 from collections import Counter
 from urllib.error import HTTPError
 from urllib.parse import urlencode
@@ -75,6 +77,11 @@ def main():
     for row, vector in zip(feature_snapshot['rows'], replay):
         np.testing.assert_allclose(vector, list(stored[str(row['code'])]['statistical']['probabilities'].values()), atol=1e-12)
     assert state['simulation']['convergence']['status'] == 'independent_seed_numerical_diagnostic'
+    with urlopen(base + '/export.csv?' + urlencode({'run_id': run_id}), timeout=15) as response:
+        assert 'attachment;' in response.headers['Content-Disposition']
+        exported = list(csv.DictReader(io.StringIO(response.read().decode('utf-8-sig'))))
+    assert len(exported) == 403 and len({row['constituency_code'] for row in exported}) == 403
+    assert all(row['run_id'] == run_id and row['Vote_share'] == '' for row in exported)
     # Exercise warm snapshot-cache reads separately from evidence scans.
     for _ in range(5):
         get('/list?page=1&page_size=50&run_id=' + run_id)
@@ -84,6 +91,7 @@ def main():
                       "unconfigured_atmosphere_bypassed": True, "evidence_snapshot_id": evidence["snapshot_id"],
                       "queries": evidence["queries_ok"], "max_local_api_ms": max(item['ms'] for item in timings),
                       'model_artifact_replay': 'passed_403_seats', 'historical_eci_winner_counts': dict(historical),
+                      'csv_export_rows': len(exported),
                       'warm_list_ms': [item['ms'] for item in timings[-5:]],
                       "checks_do_not_certify_model_accuracy": True}))
 
