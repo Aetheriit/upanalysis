@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from functools import lru_cache
 
 from app.models.prediction import Prediction, PredictionRun
-from app.services.prediction.atmosphere import load_atmosphere
 from app.services.prediction.evidence import artifact_dir, scan_info
 from app.services.prediction.feature_engine import build_constituency_features, FEATURE_SCHEMA_VERSION
 from app.services.prediction.fusion import fuse
@@ -86,7 +85,7 @@ async def _persist(db, result, rows):
     await db.commit()
 
 
-async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
+async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmosphere_override=None, research_manifest=None):
     if not force:
         if run_id:
             try:
@@ -121,7 +120,9 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
     statistical.backtest['vote_support'] = vote_bundle['backtest']
     vote_predictions = await asyncio.to_thread(predict_vote_support, vote_bundle, snapshot['rows'])
     model_artifact = await asyncio.to_thread(write_model, run_id, statistical.bundle)
-    atmosphere = await load_atmosphere(statistical.predictions, evidence_id) if evidence_id else {}
+    # All provider/network work is explicit in the Run-button worker. Training,
+    # read APIs and archived-run retrieval never call a paid provider.
+    atmosphere = atmosphere_override or {}
     fused = []
     for row, feature_row, vote_values in zip(statistical.predictions, snapshot['rows'], vote_predictions):
         atmo = atmosphere.get(str(row["code"]))
@@ -139,7 +140,7 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
               "model_version": statistical.model_version, "feature_schema_version": snapshot["schema_version"],
               "manifest": {"run_id": run_id, "feature_snapshot_sha256": features_artifact['sha256'],
                            'feature_artifact': features_artifact, 'model_artifact': model_artifact,
-                           'code': code_manifest(), 'started_at': started,
+                           'code': code_manifest(), 'started_at': started, 'research': research_manifest,
                            "party_mapping_version": PARTY_MAPPING_VERSION, "evidence_snapshot_id": evidence_id,
                            'official_sources': snapshot.get('official_sources', {}),
                            "evidence_cutoff": evidence.get("cutoff") if evidence_id else None,

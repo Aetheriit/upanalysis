@@ -10,7 +10,7 @@ import math
 from app.services.prediction.parties import PARTIES
 from app.services.prediction.statistical import vectorize, feature_keys
 
-VERSION = 'vote-support-v2-coherent-margin-nested-hindcast'
+VERSION = 'vote-support-v3-tested-contest-margin-fallback'
 HEADS = {'shares': slice(0, 6), 'margin_rate': slice(6, 7), 'vote_growth': slice(7, 8)}
 BLENDS = ((1, 0, 0), (0, 1, 0), (0, 0, 1), (0, .5, .5),
           (.5, .5, 0), (.5, 0, .5), (.25, .5, .25), (.25, .25, .5))
@@ -183,7 +183,7 @@ def predict_vote_support(bundle, rows):
 
 
 def public_estimate(values, previous_total, winning_party, atmo_weight, backtest):
-    """Withhold headline margins when they cannot coherently describe the winner."""
+    """Choose an explicitly labelled, historically tested margin estimator."""
     shares = {p: float(values[i]) * 100 for i, p in enumerate(PARTIES)}
     total = round(previous_total * math.exp(float(values[7])))
     contest_margin = round(float(values[6]) * total)
@@ -199,6 +199,14 @@ def public_estimate(values, previous_total, winning_party, atmo_weight, backtest
     share_status = 'review_party_class_estimate' if gates['shares'] else 'withheld_failed_hindcast_gate'
     residual = backtest['residual_p90']
     implied_margin = round((shares[leader] - max(value for party, value in shares.items() if party != leader)) / 100 * total)
+    table_margin = implied_margin if margin_status.startswith('review_') else None
+    margin_basis = 'share_implied' if table_margin is not None else 'unavailable'
+    implied_status = margin_status
+    if table_margin is None and gates['margin'] and gates['valid_votes']:
+        # Contest-size regression passed its own nested hindcast. It is not a
+        # margin conditional on the separately predicted winning party.
+        table_margin, margin_basis = contest_margin, 'candidate_contest_regression'
+        margin_status = 'review_contest_size_not_winner_conditional'
     return {'model_version': VERSION, 'status': 'review', 'basis': 'candidate_votes_excluding_nota',
             'party_shares_pct': shares, 'share_leader': leader,
             'share_winner_disagreement': leader != winning_party,
@@ -206,7 +214,8 @@ def public_estimate(values, previous_total, winning_party, atmo_weight, backtest
             'share_implied_margin_votes': implied_margin,
             'contest_margin_pct_points': float(values[6]) * 100,
             'table_vote_share': shares[winning_party] if gates['shares'] else None,
-            'table_margin': implied_margin if margin_status.startswith('review_') else None,
+            'table_margin': table_margin, 'margin_basis': margin_basis,
+            'share_implied_status': implied_status,
             'share_status': share_status, 'margin_status': margin_status,
             'historical_error_bands': {
                 'basis': 'p90_absolute_nested_hindcast_error_not_future_coverage_guarantee',

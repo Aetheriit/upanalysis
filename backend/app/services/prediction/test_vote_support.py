@@ -63,13 +63,14 @@ class VoteSupportTests(unittest.TestCase):
         self.assertEqual(result['table_margin'], 22000)
         self.assertEqual(result['historical_error_bands']['contest_margin_votes'], [0, 52000])
 
-    def test_margin_is_withheld_on_disagreement_or_ipt_or_atmosphere(self):
+    def test_margin_falls_back_on_disagreement_or_ipt_or_atmosphere(self):
         for party, atmo, status in [('SP', 0, 'withheld_support_winner_disagreement'),
                                     ('IPT', 0, 'withheld_ipt_candidate_unresolved'),
                                     ('BJP', .1, 'withheld_atmosphere_not_in_vote_model')]:
             result = public_estimate(self.values, 100000, party, atmo, self.backtest)
-            self.assertIsNone(result['table_margin'])
-            self.assertEqual(result['margin_status'], status)
+            self.assertEqual(result['table_margin'], result['contest_margin_votes'])
+            self.assertEqual(result['share_implied_status'], status)
+            self.assertEqual(result['margin_basis'], 'candidate_contest_regression')
             self.assertIsNotNone(result['table_vote_share'])
 
     def test_table_margin_matches_vote_shares_not_independent_contest_head(self):
@@ -81,11 +82,12 @@ class VoteSupportTests(unittest.TestCase):
     def test_pooled_ipt_runner_up_cannot_supply_candidate_margin(self):
         self.values[:6] = [.5, .1, .03, .03, .04, .3]
         result = public_estimate(self.values, 100000, 'BJP', 0, self.backtest)
-        self.assertIsNone(result['table_margin'])
-        self.assertEqual(result['margin_status'], 'withheld_ipt_opponent_unresolved')
+        self.assertEqual(result['table_margin'], result['contest_margin_votes'])
+        self.assertEqual(result['share_implied_status'], 'withheld_ipt_opponent_unresolved')
 
     def test_failed_hindcast_does_not_fill_headline_columns(self):
         self.backtest['beats_or_matches_persistence']['shares'] = False
+        self.backtest['beats_or_matches_persistence']['margin'] = False
         result = public_estimate(self.values, 100000, 'BJP', 0, self.backtest)
         self.assertIsNone(result['table_vote_share'])
         self.assertIsNone(result['table_margin'])

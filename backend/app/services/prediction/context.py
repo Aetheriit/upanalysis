@@ -16,6 +16,22 @@ ALIAS_REFERENCES = {
     "lakhimpur kheri": "https://kheri.nic.in/about-district/",
     "hathras": "https://informatics.nic.in/news/298",
 }
+# District portals fill context gaps for districts absent from the 71-district
+# Census download. Reported figures are not AC crosswalks or model features.
+SUPPLEMENTAL = {
+    'amethi': [{'label': 'District population reported by district administration', 'value': '1,867,678', 'year': 2011,
+                'source_url': 'https://amethi.nic.in/',
+                'caveat': 'Portal labels this Census 2011. Historical district context, not current AC population.'}],
+    'sambhal': [{'label': 'Provisional district population reported by district administration', 'value': '2,192,933', 'year': 2011,
+                 'source_url': 'https://sambhal.nic.in/demography/',
+                 'caveat': 'Explicitly provisional on the portal; not reconciled to final boundary-matched Census tables or an AC.'}],
+    'shamli': [{'label': 'District population reported on demography page', 'value': '1,313,650', 'year': 2011,
+                'source_url': 'https://shamli.nic.in/demography/',
+                'caveat': 'Reported Census figure; other district pages give different totals. Conflict unresolved: context only, not used numerically in the model.'}],
+    'hapur': [{'label': 'District administrative context', 'value': '3 tehsils; 4 development blocks; 273 gram panchayats; 352 villages', 'year': None,
+               'source_url': 'https://hapur.nic.in/demography/',
+               'caveat': 'Reference year is not stated on this page. This does not fill missing population, income or religion shares.'}],
+}
 REFERENCES = [
     {"title": "ECI official historical election reports", "url": "https://www.eci.gov.in/statistical-reports/",
      "status": "reference_portal_not_row_level_reconciliation"},
@@ -41,7 +57,10 @@ def context_for_seat(district):
     key = ALIASES.get(normal(district), normal(district))
     with connect() as db:
         record = db.execute("SELECT payload FROM context_sources WHERE name=?", (f"district:{key}",)).fetchone()
-    return {"district": district, "status": "district_context_only" if record else "unavailable",
+    supplemental = [{**item, 'checked_at': '2026-09-24', 'geography': 'district', 'used_as_model_feature': False}
+                    for item in SUPPLEMENTAL.get(normal(district), [])]
+    return {"district": district, "status": "district_context_only" if record or supplemental else "unavailable",
+            "supplemental": supplemental,
             "lookup": {"census_name": key, "method": "name_alias_only_not_boundary_crosswalk" if key != normal(district) else "name_match_only",
                        "alias_reference": ALIAS_REFERENCES.get(normal(district))},
             "demographics": json.loads(record[0]) if record else None, "references": REFERENCES,

@@ -45,15 +45,21 @@ def main():
         assert 0 <= vote['contest_margin_votes'] <= vote['predicted_valid_votes']
         if row['margin_estimate_status'].startswith('withheld_'):
             assert row['predicted_margin'] is None
-        if row['predicted_margin'] is not None:
+        if row['predicted_margin'] is not None and vote['margin_basis'] == 'share_implied':
             assert vote['share_leader'] == row['predicted_party'] != 'IPT'
             support = vote['party_shares_pct']
             runner = max((p for p in support if p != row['predicted_party']), key=support.get)
             assert runner != 'IPT'
             expected_margin = round((support[row['predicted_party']] - support[runner]) / 100 * vote['predicted_valid_votes'])
             assert row['predicted_margin'] == expected_margin
-        assert row["final"]["weights"]["atmosphere"] == 0
-        assert row["final"]["weights"]["statistical"] == 1
+        elif row['predicted_margin'] is not None:
+            assert vote['margin_basis'] == 'candidate_contest_regression'
+            assert row['predicted_margin'] == vote['contest_margin_votes']
+        atmosphere = row["final"]["weights"]["atmosphere"]
+        assert 0 <= atmosphere <= .35
+        assert abs(row["final"]["weights"]["statistical"] + atmosphere - 1) < 1e-9
+        if not state['manifest'].get('research'):
+            assert atmosphere == 0
     assert sum(party["predicted"] for party in state["summary"]["parties"]) == 403
     assert state["status"] == "review"
     historical = Counter(row['historical_winner_class_2022'] for row in all_rows)
@@ -120,7 +126,8 @@ def main():
     print(json.dumps({"status": "passed", "run_id": run_id, "constituencies": len(all_rows),
                       "pages": 9, "page_size": 50, "probability_invariants": "passed",
                       "simulation_seat_total": 403, "vote_estimate_gates_and_replay": 'passed_403_seats',
-                      "unconfigured_atmosphere_bypassed": True, "evidence_snapshot_id": evidence["snapshot_id"],
+                      "static_run_atmosphere_bypassed": not state['manifest'].get('research'), "evidence_snapshot_id": evidence["snapshot_id"],
+                      'populated_margin_rows': sum(row['predicted_margin'] is not None for row in all_rows),
                       "queries": evidence["queries_ok"], "max_local_api_ms": max(item['ms'] for item in timings),
                       'model_artifact_replay': 'passed_403_seats', 'historical_eci_winner_counts': dict(historical),
                       'csv_export_rows': len(exported),

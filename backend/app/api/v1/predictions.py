@@ -9,6 +9,8 @@ import subprocess
 import sys
 import csv
 import io
+import uuid
+from pydantic import BaseModel, ConfigDict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from fastapi.responses import Response
@@ -60,8 +62,29 @@ async def start_evidence_scan():
 
 @router.get("/run/status")
 async def model_job_status():
+    from app.services.prediction import jobs
+    from app.services.prediction.research import configured, MODEL
+    current = await asyncio.to_thread(jobs.status)
+    if current['status'] != 'not_started':
+        return {**current, 'provider_configured': configured(), 'provider_model': MODEL,
+                'run_access_configured': bool(os.getenv('PREDICTION_ADMIN_TOKEN'))}
     path = artifact_dir() / "model-job.json"
-    return json.loads(path.read_text()) if path.exists() else {"status": "not_started"}
+    return {**(json.loads(path.read_text()) if path.exists() else {'status': 'not_started'}),
+            'provider_configured': configured(), 'provider_model': MODEL,
+            'run_access_configured': bool(os.getenv('PREDICTION_ADMIN_TOKEN'))}
+
+
+@router.get('/research/{code}')
+async def research_for_seat(code: str, run_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    from app.services.prediction import jobs
+    if not code.isdigit() or not 1 <= int(code) <= 403:
+        raise HTTPException(404, 'Unknown constituency code')
+    run = await run_pipeline(db, run_id=run_id)
+    manifest = run['manifest'].get('research') or {}
+    research = await asyncio.to_thread(jobs.research, manifest['job_id'], str(int(code))) if manifest.get('job_id') else None
+    return {'run_id': run['run_id'], 'research': research,
+            'status': research['status'] if research else 'not_researched_in_this_run',
+            'message': 'Only an explicit Run action performs OpenAI web research; refresh reads saved results.'}
 
 
 @router.get("/statewide")
@@ -101,13 +124,15 @@ async def export_predictions_csv(run_id: str, db: AsyncSession = Depends(get_db)
     columns = ['constituency_code', 'constituency_name', 'district', 'Winning_Party', 'Winning_margin',
                'Vote_share', 'Change', 'historical_winner_2022', 'confidence', 'run_id', 'status',
                'model_version', 'evidence_snapshot_id', 'evidence_cutoff', 'atmosphere_weight',
-               'vote_estimate_status', 'margin_estimate_status', 'vote_support_model',
+               'vote_estimate_status', 'margin_estimate_status', 'margin_basis', 'vote_support_model',
                *[f'{party}_win_probability' for party in PARTIES],
                *[f'{party}_vote_share_pct' for party in PARTIES],
                'contest_margin_votes', 'margin_historical_error_low', 'margin_historical_error_high', 'caveat']
     writer = csv.DictWriter(output, fieldnames=columns)
     writer.writeheader()
     for row in result['predictions']:
+        vote = row.get('vote_estimate') or {}
+        margin_band_key = 'contest_margin_votes' if vote.get('margin_basis') == 'candidate_contest_regression' else 'share_implied_margin_votes'
         values = {'constituency_code': row['code'], 'constituency_name': row['name'], 'district': row['district'],
                   'Winning_Party': row['predicted_party'], 'Winning_margin': row['predicted_margin'],
                   'Vote_share': row['predicted_vote_share'], 'Change': row['change'],
@@ -118,13 +143,14 @@ async def export_predictions_csv(run_id: str, db: AsyncSession = Depends(get_db)
                   'atmosphere_weight': row['final']['weights']['atmosphere'],
                   'vote_estimate_status': row['vote_estimate_status'],
                   'margin_estimate_status': row.get('margin_estimate_status'),
+                  'margin_basis': vote.get('margin_basis'),
                   'vote_support_model': (row.get('vote_estimate') or {}).get('model_version'),
                   **{f'{party}_win_probability': row['final']['probabilities'][party] for party in PARTIES},
                   **{f'{party}_vote_share_pct': (row.get('vote_estimate') or {}).get('party_shares_pct', {}).get(party) for party in PARTIES},
                   'contest_margin_votes': (row.get('vote_estimate') or {}).get('contest_margin_votes'),
-                  'margin_historical_error_low': (row.get('vote_estimate') or {}).get('historical_error_bands', {}).get('share_implied_margin_votes', [None, None])[0],
-                  'margin_historical_error_high': (row.get('vote_estimate') or {}).get('historical_error_bands', {}).get('share_implied_margin_votes', [None, None])[1],
-                  'caveat': 'Review estimates, not election facts. Win probability is not vote share. Winning_margin is implied by estimated shares and votes, withheld for incompatible leaders or pooled IPT candidates. Contest margin is a separate diagnostic. Historical error bands are not calibrated future intervals. Unscored news has no influence.'}
+                  'margin_historical_error_low': vote.get('historical_error_bands', {}).get(margin_band_key, [None, None])[0],
+                  'margin_historical_error_high': vote.get('historical_error_bands', {}).get(margin_band_key, [None, None])[1],
+                  'caveat': 'Review estimates, not election facts. Win probability is not vote share. See margin_basis: candidate_contest_regression estimates contest size independently of named winner and share gap. Historical error bands are not calibrated future intervals. AI research is source-linked interpretation, not polling or human verification.'}
         writer.writerow({key: "'" + value if isinstance(value, str) and value.lstrip().startswith(('=', '+', '-', '@', '\t', '\r')) else value
                          for key, value in values.items()})
     return Response(content=('\ufeff' + output.getvalue()).encode('utf-8'), media_type='text/csv',
@@ -144,16 +170,37 @@ async def prediction_backtest(db: AsyncSession = Depends(get_db)):
     return {"run_id": result["run_id"], "backtest": result["backtest"], "feature_audit": result["feature_audit"], "model_version": result["model_version"]}
 
 
+class RunRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    request_id: uuid.UUID
+    dynamic_research: bool
+    confirm_api_usage: bool
+
+
 @router.post("/run", dependencies=[Depends(require_prediction_admin)], status_code=202)
-async def trigger_prediction_pipeline():
-    from app.services.prediction.pipeline import save_artifact
-    path = artifact_dir() / "model-job.json"
-    if path.exists() and json.loads(path.read_text()).get("status") in {"queued", "running"}:
-        raise HTTPException(409, "A model job is already active")
-    save_artifact("model-job.json", {"status": "queued"})
-    with (artifact_dir() / "model-job.log").open("ab") as log:
-        subprocess.Popen([sys.executable, "-u", "-m", "app.services.prediction.run_worker"], stdout=log, stderr=log, start_new_session=True)
-    return {"status": "queued", "status_url": "/api/v1/predictions/run/status"}
+async def trigger_prediction_pipeline(request: RunRequest):
+    from app.services.prediction import jobs
+    from app.services.prediction.research import configured
+    if request.dynamic_research and configured() and not request.confirm_api_usage:
+        raise HTTPException(400, 'Confirm OpenAI API usage before starting research')
+    if not (artifact_dir() / 'features-v4.json').exists():
+        raise HTTPException(503, 'Official static feature snapshot must be prepared first')
+    try:
+        job, created = await asyncio.to_thread(jobs.reserve, str(request.request_id), request.dynamic_research)
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from None
+    if created:
+        try:
+            with (artifact_dir() / 'model-job.log').open('ab') as log:
+                process = subprocess.Popen([sys.executable, '-u', '-m', 'app.services.prediction.run_worker',
+                                            '--reuse-features', '--job-id', job['job_id']],
+                                           stdout=log, stderr=log, start_new_session=True)
+            await asyncio.to_thread(jobs.update, job['job_id'], pid=process.pid)
+        except Exception:
+            await asyncio.to_thread(jobs.update, job['job_id'], status='failed', error_code='worker_start_failed')
+            raise HTTPException(503, 'Prediction worker could not start') from None
+    return {'job_id': job['job_id'], 'status': job['status'], 'status_url': '/api/v1/predictions/run/status',
+            'idempotent_replay': not created}
 
 
 @router.get("/{constituency_code}")

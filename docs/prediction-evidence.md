@@ -36,11 +36,50 @@ labelled separately in the UI. Source freshness is recomputed from publication
 dates, not refresh dates. Dedupe is conservative headline/URL clustering; it
 does not establish publisher independence or catch all syndication.
 
-## Optional atmosphere API
+## Run-button-only OpenAI research
 
-Set server-side `PREDICTION_ATMOSPHERE_API_URL` and optional
+The Prediction Run form is the only web-app trigger for paid research. It sends
+an authenticated POST with a UUID `request_id`, `dynamic_research` and
+`confirm_api_usage`. No GET, page reload, filter change or status poll starts
+research. Duplicate request IDs replay the same job; only one job may be active.
+Progress and per-seat results persist in `jobs.sqlite3`. Failed runs retain the
+last review snapshot, and interrupted work is not automatically retried.
+
+Set `OPENAI_API_KEY` and `PREDICTION_ADMIN_TOKEN` in the root-only VPS `.env`,
+then recreate the backend. The form asks for the **operator run-access token**,
+not the OpenAI key. It holds that token only in memory and clears it on submit.
+Never put the OpenAI key in public settings, `NEXT_PUBLIC_*`, git or frontend
+code. Rotate keys disclosed in chat. Without a key, research is bypassed and
+the statistical model still runs. There is no scheduled or startup research.
+
+All new provider calls use exactly `gpt-6-luna` through the Responses API,
+with web search and strict structured output. There is no fallback model.
+Each of 403 seats receives at most one generation request, bounded to four
+tool calls and 5,500 output tokens. This is potentially substantial paid work;
+the UI requires confirmation. Actual usage is persisted, not a promised price
+ceiling. Authentication/access/model/quota failures stop the job; timeouts are
+not automatically retried because they may already have been billed.
+
+Claims must cite URLs returned by the web-search tool. Exact AC code, dates,
+schema and numeric limits are validated. Facts show year, geography, caveats
+and clickable sources and remain **AI-extracted, review required**. They do
+not replace official election inputs. Recent source-linked event
+interpretations may contribute conservatively capped atmosphere scores;
+schema checks and URLs do not constitute human verification or polling.
+An extra quality discount applies to AI extraction. No party preference is
+inferred from caste/religion. Missing, conflicting and unverifiable data stay
+explicit instead of being invented by AI.
+
+GET `/research/{code}?run_id=UUID` reads the research pinned to that model run.
+CLI model-only runs do not call OpenAI, even when the key is configured.
+Official district-portal supplements cover gaps for Amethi, Sambhal, Shamli
+and Hapur without pretending to provide AC-level current demographics.
+
+## Legacy atmosphere adapter (not called by the current pipeline)
+
+The older adapter accepts server-side `PREDICTION_ATMOSPHERE_API_URL` and optional
 `PREDICTION_ATMOSPHERE_API_KEY` in the VPS compose `.env`, then recreate backend.
-Empty URL bypasses scoring. Never use NEXT_PUBLIC variables for secrets.
+It is retained for compatibility/testing only, not an automatic fallback.
 The service POSTs `{code,name,district,evidence_snapshot_id,cutoff,items}`.
 Implement an authorized extractor that opens permitted publisher sources and
 returns this structured contract, with actual source checking:
@@ -158,15 +197,15 @@ The IPT reference share is dropped from linear inputs. The fitted bundle,
 out-of-fold predictions/targets and district assignments are persisted with
 the winner model. Live verification replays both bundles for all 403 seats.
 
-The main table's margin is the predicted top-two share gap times estimated
-valid candidate votes, **not** the independent contest-margin regression. This
-keeps displayed shares and margins mathematically consistent. A separate
-historical error gate compares the implied margin with carrying forward the
-actual prior candidate margin. Margins are withheld if that gate fails, the
-vote-share and win-probability leaders disagree, a top class is pooled IPT, or
-atmosphere adjustments are absent from the vote-support model. The independent
-contest-margin estimate remains explicitly labelled as a diagnostic in seat
-details. It is not conditional on a named winner.
+Version 3 first checks the top-two share gap times estimated valid votes.
+That share-implied margin requires its historical error gate, leader agreement,
+no pooled IPT top class and no unmatched atmosphere adjustment. Otherwise, the
+table may use the independent candidate-contest margin head when **both** its
+margin and valid-vote historical gates pass. It is labelled approximate
+contest size, not conditional on a named winner, and can differ from the
+party-share gap. `margin_basis`, the original `share_implied_status`, separate
+errors and bands are exposed in the API/UI/exports. If neither estimator
+qualifies, the margin remains withheld. No gate is relaxed to populate a cell.
 
 Shares sum to 100% of candidate votes, excluding NOTA. IPT's pooled share is
 not one candidate's support. The growth factor is bounded to 0.5–2 for numerical
@@ -183,8 +222,9 @@ has share MAE 5.885 percentage points versus 7.890 for persistence. Per-party
 improvements are mixed: BJP, RLD and IPT share MAE did not improve. The separate
 contest-margin diagnostic has MAE 14,063 votes, but the share-implied table
 margin has MAE 16,111 versus 15,499 for the actual-margin persistence baseline.
-**The table margin gate failed, so all headline margins are withheld.** No
-threshold was relaxed to fill the column. Valid-vote total MAE is 6,347 versus
+That older run withheld all table margins. New v3 runs can use the independent
+contest head (14,063 vs 15,499 baseline MAE), explicitly labelled and subject
+to the same historical checks. Valid-vote total MAE is 6,347 versus
 13,928 for persistence. These are nested historical hindcast errors, not an
 independent future-cycle accuracy claim. Thirty-five unit tests and all-403
 artifact replay/invariant checks accompany this implementation.
