@@ -74,15 +74,25 @@ def reconcile_booths(previous: list[dict[str, Any]], current: list[dict[str, Any
     composite number/name/elector similarity; low-score and duplicate matches
     stay explicitly unmatched.
     """
-    by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for item in previous:
-        by_key[item["key"]].append(item)
+    by_key: dict[str, list[int]] = defaultdict(list)
+    by_number: dict[str, list[int]] = defaultdict(list)
+    for index, item in enumerate(previous):
+        by_key[item["key"]].append(index)
+        number = re.sub(r"\D", "", item["number"])
+        if number: by_number[number].append(index)
     used: set[int] = set()
     matches: list[tuple[dict[str, Any], dict[str, Any], float]] = []
     exact = 0
     ambiguous = 0
     for current_item in current:
-        candidates = [(idx, previous_item, _match_score(previous_item, current_item)) for idx, previous_item in enumerate(previous) if idx not in used]
+        exact_candidates = [index for index in by_key.get(current_item["key"], []) if index not in used]
+        number = re.sub(r"\D", "", current_item["number"])
+        indexed_candidates = [index for index in by_number.get(number, []) if index not in used] if number else []
+        candidate_indexes = exact_candidates or indexed_candidates
+        # Fuzzy matching is a last resort for renamed/renumbered booths only.
+        if not candidate_indexes:
+            candidate_indexes = [index for index in range(len(previous)) if index not in used]
+        candidates = [(idx, previous[idx], _match_score(previous[idx], current_item)) for idx in candidate_indexes]
         candidates.sort(key=lambda item: item[2], reverse=True)
         if not candidates:
             continue
