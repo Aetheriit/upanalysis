@@ -18,8 +18,13 @@ Run inside the backend container:
 python -u -m app.services.prediction.evidence_worker --workers 2
 # Resume an interrupted, incomplete snapshot without repeating completed seats:
 python -u -m app.services.prediction.evidence_worker --resume SNAPSHOT_UUID
+# Supplement selected seats while preserving the parent corpus:
+python -m app.services.prediction.evidence_worker --derive-from SNAPSHOT_UUID --refresh-code 58
 python -m unittest app.services.prediction.test_evidence -v
 python -u -m app.services.prediction.run_worker
+# Explicit model-only rerun from the completed ECI-reconciled v4 features:
+python -u -m app.services.prediction.run_worker --reuse-features
+python -m app.services.prediction.verify_live
 ```
 
 Snapshots live in the existing persistent uploads volume at
@@ -91,8 +96,35 @@ composition. Worker participation is not income or unemployment. Census
 district context is not an AC population estimate or a current demographic
 projection. Missing districts/boundary crosswalks remain missing; no invented
 allocation. These demographics are not used as model inputs until temporally
-valid AC crosswalks exist. ECI's report portal is referenced; row-level
-reconciliation against downloaded ECI results remains separate work.
+valid AC crosswalks exist. Name/spelling aliases do not establish a boundary
+crosswalk. Amethi, Hapur, Sambhal and Shamli remain unavailable rather than
+being assigned their parent districts' historical population.
+
+ECI's official detailed-result PDFs for 2017 and 2022 have now been downloaded
+and parsed for all 403 seats each. The importer checks candidate rank sequences,
+general + postal = total for every candidate, printed constituency totals,
+electors and NOTA presence. There are 5,256 rows in 2017 and 4,845 in 2022,
+including NOTA. Official winner counts match BJP 312/SP 47 in 2017 and BJP
+255/SP 111 in 2022. Source URLs are in `official_results.py` and each run's
+manifest; the source PDF hashes are:
+
+- 2017: `a3f66ba101d397528d41ac8e8c84f2e9594a86d5fb3c28398241f6f95295285a`
+- 2022: `ae648d06232ef1b58f614cf2f11b0adb0edd6128fb086682433676b77b0a89e4`
+
+Use `pdftotext -layout SOURCE.pdf SOURCE.txt`, then run:
+
+```sh
+python -m app.services.prediction.official_results --year 2022 --text SOURCE.txt --pdf SOURCE.pdf --output uploads/prediction/eci-up-2022.json
+```
+
+Repeat for 2017. Import refuses an existing output and never changes election
+tables. The two versioned source snapshots are required before model training.
+Party identity reconciliation uses exact names or exact votes plus a close
+name within the same AC/year. Unknown/ambiguous identities and conflicting
+duplicate booth votes stay unusable. Matching thresholds require manual QA.
+The observed audit found 374 (2017) and 612 (2022) class-label conflicts.
+Only 46,755 of 168,036 current-election booths had fully resolved identities.
+Raw coverage must not be described as fully validated booth coverage.
 
 ## Statistical corrections and release gaps
 
@@ -101,6 +133,12 @@ Historical winner comes from the actual winning candidate, not summed Others.
 Booths match only within canonical ACs, using bounded candidates, one-to-one
 assignment, ambiguity exclusion and explicit structural-change flags.
 Matching thresholds still require validation on labelled booth pairs.
+
+Official vote-weighted constituency shares replace unweighted booth means.
+Historical turnout, NOTA and normalized margin also come from ECI. Booth
+dispersion features require at least 98% resolved booth coverage in that seat;
+missing inputs have explicit missingness indicators. This is a conservative
+engineering threshold, not a validated coverage guarantee.
 
 The model uses 2017-only historical features for the 2022 hindcast and 2022-only
 features for 2027 scoring. District-held-out folds contain nested blend and
@@ -113,12 +151,21 @@ vote-share/margin values were removed. Those two columns now state unavailable;
 a separate validated vote-support model is still required.
 
 20,000 correlated Monte Carlo draws preserve one winner per seat and seat-total
-invariants, with a measured split-half diagnostic. Shock covariance remains an
+invariants, with measured split-half and independent-seed numerical diagnostics
+and seat-total covariance. Shock covariance remains an
 engineering prior, not an estimated covariance or validated interval model.
 
+Each new run stores immutable content-addressed features, a trained estimator
+and calibration bundle, library versions, module hashes and artifact hashes.
+Live acceptance checks replay all 403 statistical predictions from the saved
+bundle, test all nine pages and verify probability and seat-total invariants.
+Only trusted, internally produced joblib files may be loaded; never accept
+arbitrary uploaded model bundles. This is not yet a complete artifact registry
+with retention, RBAC and publication governance.
+
 The complete PRD is **not yet satisfied**: approved publication/RBAC workflow,
-model artifact registry, full scenario lab, SHAP attribution, boundary-mapped
+governed artifact registry, full scenario lab, SHAP attribution, boundary-mapped
 demographics, calibrated vote-support estimates, full map and report builder,
-independent-seed interval validation and release/load tests remain outstanding.
+interval coverage validation and release/load tests remain outstanding.
 No new run automatically publishes. These gaps must not be hidden by a
 “complete” or “production validated” label.

@@ -26,7 +26,7 @@ async def run(reuse_features=False):
 if __name__ == "__main__":
     import fcntl
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reuse-features", action="store_true", help="Explicitly reuse the completed v3 feature snapshot; do not ingest updated election data")
+    parser.add_argument("--reuse-features", action="store_true", help="Explicitly reuse the completed v4 feature snapshot; do not ingest updated election data")
     args = parser.parse_args()
     artifact_dir().mkdir(parents=True, exist_ok=True)
     with (artifact_dir() / "model.lock").open("w") as lock:

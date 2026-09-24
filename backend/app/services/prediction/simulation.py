@@ -34,7 +34,27 @@ def simulate(rows, draws=20000, seed=202709):
     delta = float(np.abs(totals[:split].mean(axis=0) - totals[split:].mean(axis=0)).max())
     majority = len(rows) // 2 + 1
     return {"draws": draws, "seed": seed, "parties": parties, "majority_threshold": majority,
+            'seat_total_covariance': np.cov(totals, rowvar=False).tolist(),
+            'shock_policy': {'version': 'engineering-prior-v1', 'state_sd': .045, 'region_sd': .025, 'local_sd': .06, 'covariance_fitted': False},
             "majority_frequency": {p: float((totals[:, i] >= majority).mean()) for i, p in enumerate(PARTIES)},
             "convergence": {"status": "split_half_diagnostic_only", "max_mean_seat_delta": delta},
             "limitations": ["Shock variances are engineering priors, not fitted residual covariance.",
                             "Independent-seed quantile convergence and covariance validation remain release requirements."]}
+
+
+def simulate_validated(rows, draws=20000, seed=202709):
+    """Independent-seed numerical check, not validation of shock assumptions."""
+    baseline = simulate(rows, draws, seed)
+    check = simulate([dict(row) for row in rows], draws, seed + 1)
+    mean_delta = max(abs(a['mean'] - b['mean']) for a, b in zip(baseline['parties'], check['parties']))
+    interval_delta = max(abs(a[key] - b[key]) for a, b in zip(baseline['parties'], check['parties']) for key in ('low', 'high'))
+    majority_delta = max(abs(baseline['majority_frequency'][p] - check['majority_frequency'][p]) for p in PARTIES)
+    baseline['convergence'].update(independent_seed=seed + 1, independent_draws=draws,
+                                   max_independent_mean_delta=mean_delta, max_independent_quantile_delta=interval_delta,
+                                   max_independent_majority_frequency_delta=majority_delta,
+                                   numerical_check='pass' if mean_delta <= .5 and interval_delta <= 2 and majority_delta <= .02 else 'warn',
+                                   thresholds={'mean_seats': .5, 'quantile_seats': 2, 'majority_frequency': .02})
+    baseline['convergence']['status'] = 'independent_seed_numerical_diagnostic'
+    baseline['limitations'] = ['Shock variances are engineering priors, not fitted residual covariance.',
+                               'Numerical convergence does not validate interval coverage or forecast accuracy.']
+    return baseline

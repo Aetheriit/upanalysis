@@ -1,21 +1,20 @@
 """Offline computation and durable, read-only serving of review snapshots."""
 import asyncio
-import hashlib
 import json
 import os
 import uuid
 from datetime import datetime, timezone
-
-from sqlalchemy import select
+from functools import lru_cache
 
 from app.models.prediction import Prediction, PredictionRun
 from app.services.prediction.atmosphere import load_atmosphere
 from app.services.prediction.evidence import artifact_dir, scan_info
-from app.services.prediction.feature_engine import build_constituency_features
+from app.services.prediction.feature_engine import build_constituency_features, FEATURE_SCHEMA_VERSION
 from app.services.prediction.fusion import fuse
 from app.services.prediction.parties import PARTY_MAPPING_VERSION
-from app.services.prediction.simulation import simulate
+from app.services.prediction.simulation import simulate_validated
 from app.services.prediction.statistical import train_and_predict
+from app.services.prediction.artifacts import write_features, write_model, code_manifest
 
 
 def save_artifact(name, value):
@@ -27,6 +26,13 @@ def save_artifact(name, value):
     os.replace(temp, destination)
 
 
+@lru_cache(maxsize=4)
+def _read_snapshot(path, mtime_ns, size):
+    # Cache is invalidated by atomic replacement; callers must not mutate runs.
+    with open(path, encoding='utf-8') as stream:
+        return json.load(stream)
+
+
 def _public_row(row, audit=None):
     probabilities = row["final_probabilities"]
     ordered = sorted(probabilities.values(), reverse=True)
@@ -36,7 +42,7 @@ def _public_row(row, audit=None):
         "predicted_party": row["final_predicted_party"], "winning_margin": None, "predicted_margin": None,
         "vote_share": None, "predicted_vote_share": None,
         "vote_estimate_status": "unavailable_separate_vote_share_model_required",
-        "change": "No Change" if not row["is_flip"] else f"{actual} to {row['final_predicted_party']}",
+        "change": ("No Change (IPT class; exact party unresolved)" if row['final_predicted_party'] == 'IPT' else "No Change") if not row["is_flip"] else f"{actual} to {row['final_predicted_party']}",
         "is_flip": row["is_flip"], "historical_winner_2022": actual,
         "historical_winner_class_2022": row["historical_winner_2022"],
         "confidence": row["final_confidence"], "confidence_label": row["final_confidence_label"],
@@ -89,21 +95,25 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
         if not path.exists():
             from fastapi import HTTPException
             raise HTTPException(404 if run_id else 503, "Prediction run not found" if run_id else "No review snapshot yet. A background run is required.")
-        return json.loads(await asyncio.to_thread(path.read_text, encoding="utf-8"))
+        metadata = path.stat()
+        return await asyncio.to_thread(_read_snapshot, str(path), metadata.st_mtime_ns, metadata.st_size)
+    run_id = str(uuid.uuid4())
+    started = datetime.now(timezone.utc).isoformat()
+    evidence = await asyncio.to_thread(scan_info)
+    # Select once at run start, never resolve a new snapshot after fitting.
+    evidence_id = evidence.get('snapshot_id') if evidence['status'] in {'completed', 'completed_with_errors'} else None
     if reuse_features:
-        snapshot = json.loads((artifact_dir() / "features-v3.json").read_text(encoding="utf-8"))
-        if snapshot.get("schema_version") != "booth-features-v3-canonical":
+        snapshot = json.loads((artifact_dir() / "features-v4.json").read_text(encoding="utf-8"))
+        if snapshot.get("schema_version") != FEATURE_SCHEMA_VERSION:
             raise ValueError("Cannot reuse incompatible feature schema")
     else:
         snapshot = await build_constituency_features(db)
     if {str(row["code"]) for row in snapshot["rows"]} != {str(i) for i in range(1, 404)}:
         raise ValueError("Feature snapshot must contain every canonical assembly code")
-    save_artifact("features-v3.json", snapshot)
-    digest = hashlib.sha256(json.dumps(snapshot, sort_keys=True, default=str).encode()).hexdigest()
+    save_artifact("features-v4.json", snapshot)
+    features_artifact = await asyncio.to_thread(write_features, snapshot)
     statistical = await asyncio.to_thread(train_and_predict, snapshot["rows"])
-    evidence = await asyncio.to_thread(scan_info)
-    # Pin a completed snapshot; never consume a corpus still being modified.
-    evidence_id = evidence.get("snapshot_id") if evidence["status"] in {"completed", "completed_with_errors"} else None
+    model_artifact = await asyncio.to_thread(write_model, run_id, statistical.bundle)
     atmosphere = await load_atmosphere(statistical.predictions, evidence_id) if evidence_id else {}
     fused = []
     for row in statistical.predictions:
@@ -111,23 +121,28 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
         result = fuse(row, atmo)
         result["atmo_scoring_status"] = atmo.get("scoring_status") if atmo else "api_not_configured_or_no_verified_evidence"
         fused.append(result)
-    simulation = await asyncio.to_thread(simulate, fused, int(os.getenv("PREDICTION_MC_DRAWS", "20000")), 202709)
+    simulation = await asyncio.to_thread(simulate_validated, fused, int(os.getenv("PREDICTION_MC_DRAWS", "20000")), 202709)
     audits = {str(audit["code"]): audit for audit in snapshot["audits"]}
     public = [_public_row(row, audits.get(str(row["code"]))) for row in fused]
     public.sort(key=lambda row: int(row["code"]))
-    run_id = str(uuid.uuid4())
     created = datetime.now(timezone.utc).isoformat()
     result = {"run_id": run_id, "status": "review", "forecast_year": 2027, "created_at": created,
               "model_version": statistical.model_version, "feature_schema_version": snapshot["schema_version"],
-              "manifest": {"run_id": run_id, "feature_snapshot_sha256": digest,
+              "manifest": {"run_id": run_id, "feature_snapshot_sha256": features_artifact['sha256'],
+                           'feature_artifact': features_artifact, 'model_artifact': model_artifact,
+                           'code': code_manifest(), 'started_at': started,
                            "party_mapping_version": PARTY_MAPPING_VERSION, "evidence_snapshot_id": evidence_id,
+                           'official_sources': snapshot.get('official_sources', {}),
                            "evidence_cutoff": evidence.get("cutoff") if evidence_id else None,
                            "seed": simulation["seed"], "draws": simulation["draws"], "created_at": created},
               "backtest": statistical.backtest, "simulation": simulation,
               "quality_flags": ["human_release_review_required", "vote_share_and_margin_model_unavailable",
                                 "demographic_model_inputs_unavailable", "shock_covariance_unvalidated"],
               "feature_audit": {"constituencies": len(public), "booths": sum(a["current"] for a in snapshot["audits"]),
-                                "matched_booths": sum(a["matched"] for a in snapshot["audits"])},
+                                "matched_booths": sum(a["matched"] for a in snapshot["audits"]),
+                                'party_resolved_booths': sum(a['party_resolved_booths_2022'] for a in snapshot['audits']),
+                                'candidate_party_conflicts_2017': sum(a['candidate_2017']['party_conflicts'] for a in snapshot['audits']),
+                                'candidate_party_conflicts_2022': sum(a['candidate_2022']['party_conflicts'] for a in snapshot['audits'])},
               "summary": {"parties": simulation["parties"], "total_seats": len(public),
                           "majority": simulation["majority_threshold"], "model": statistical.model_version,
                           "total_flips": sum(row["is_flip"] for row in public),

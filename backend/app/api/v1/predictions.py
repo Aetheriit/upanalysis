@@ -45,7 +45,10 @@ async def start_evidence_scan():
     current = await asyncio.to_thread(scan_info)
     if current["status"] == "running":
         raise HTTPException(409, "An evidence snapshot is already being collected")
-    snapshot_id, _manifest = await asyncio.to_thread(create_scan, await constituencies())
+    try:
+        snapshot_id, _manifest = await asyncio.to_thread(create_scan, await constituencies())
+    except ValueError as error:
+        raise HTTPException(409, str(error)) from error
     with (artifact_dir() / "evidence-job.log").open("ab") as log:
         subprocess.Popen([sys.executable, "-u", "-m", "app.services.prediction.evidence_worker", "--resume", snapshot_id], stdout=log, stderr=log, start_new_session=True)
     return {"snapshot_id": snapshot_id, "status": "running"}

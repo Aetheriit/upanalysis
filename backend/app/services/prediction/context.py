@@ -9,7 +9,13 @@ from app.services.prediction.evidence import connect, dump, normal, utcnow
 RELIGION_URL = "https://censusindia.gov.in/nada/index.php/catalog/11394/download/14507/DDW09C-01%20MDDS.XLS"
 PCA_URL = "https://censusindia.gov.in/nada/index.php/catalog/6191/download/9268/DDW_PCA0000_2011_Indiastatedist.xlsx"
 ALIASES = {"prayagraj": "allahabad", "ayodhya": "faizabad", "amroha": "jyotiba phule nagar",
-           "kasganj": "kanshiram nagar", "bhadohi": "sant ravidas nagar bhadohi"}
+           "kasganj": "kanshiram nagar", "bhadohi": "sant ravidas nagar bhadohi",
+           "barabanki": "bara banki", "raebareli": "rae bareli", "maharajganj": "mahrajganj",
+           "lakhimpur kheri": "kheri", "hathras": "mahamaya nagar"}
+ALIAS_REFERENCES = {
+    "lakhimpur kheri": "https://kheri.nic.in/about-district/",
+    "hathras": "https://informatics.nic.in/news/298",
+}
 REFERENCES = [
     {"title": "ECI official historical election reports", "url": "https://www.eci.gov.in/statistical-reports/",
      "status": "reference_portal_not_row_level_reconciliation"},
@@ -36,6 +42,8 @@ def context_for_seat(district):
     with connect() as db:
         record = db.execute("SELECT payload FROM context_sources WHERE name=?", (f"district:{key}",)).fetchone()
     return {"district": district, "status": "district_context_only" if record else "unavailable",
+            "lookup": {"census_name": key, "method": "name_alias_only_not_boundary_crosswalk" if key != normal(district) else "name_match_only",
+                       "alias_reference": ALIAS_REFERENCES.get(normal(district))},
             "demographics": json.loads(record[0]) if record else None, "references": REFERENCES,
             "ugc_context": UGC_CONTEXT,
             "limitations": ["2011 district boundaries and population, not 2027 constituency composition.",

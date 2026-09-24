@@ -93,6 +93,11 @@ def normal(value):
     return " ".join(re.findall(r"\w+", str(value).casefold()))
 
 
+def search_name(value):
+    """Remove imported reference markers, not geographic identity."""
+    return re.sub(r"\s*\[[a-zA-Z0-9]+\]", "", value).strip()
+
+
 def timestamp(value):
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -118,7 +123,7 @@ def freshness(items, now=None):
 
 def queries(seat, cutoff):
     # Do not infer an AC from district alone. Queries are retained verbatim.
-    place = f'"{seat["name"]}" "{seat["district"]}" Uttar Pradesh'
+    place = f'"{search_name(seat["name"])}" "{seat["district"]}" Uttar Pradesh'
     dates = f'after:2024-01-01 before:{cutoff[:10]}'
     return [
         ("political", "en", f'{place} (election OR BJP OR Samajwadi OR BSP OR Congress OR RLD OR alliance) {dates}'),
@@ -161,7 +166,7 @@ def parse_item(element, seat, cutoff, family):
     # Place name alone can refer to a city, district or parliament seat. Never
     # claim AC attribution from a query or a name mention alone.
     text = normal(title)
-    has_place = normal(seat["name"]) in text
+    has_place = normal(search_name(seat["name"])) in text
     has_district = normal(seat["district"]) in text
     ac_marker = any(marker in text for marker in ("assembly", "विधानसभा"))
     scope = "constituency" if has_place and ac_marker else "district" if has_district else "unknown"
@@ -241,9 +246,12 @@ def create_scan(seats):
         raise ValueError("Expected exactly 403 unique canonical UP assembly codes (1–403)")
     scan_id = str(uuid.uuid4())
     manifest = {"cutoff": utcnow(), "expected": 403, "provider": "google_news_public_rss",
-                "query_version": "up-ac-news-v1", "metadata_only": True,
+                "query_version": "up-ac-news-v2-clean-reference-markers", "metadata_only": True,
                 "constituencies": seats, "party_impact_provider_configured": bool(os.getenv("PREDICTION_ATMOSPHERE_API_URL"))}
     with connect() as db:
+        db.execute("BEGIN IMMEDIATE")
+        if db.execute("SELECT 1 FROM scans WHERE status='running' LIMIT 1").fetchone():
+            raise ValueError("An evidence scan is already running; resume it instead")
         db.execute("INSERT INTO scans VALUES (?,?,?,?,?)", (scan_id, "running", utcnow(), None, dump(manifest)))
     return scan_id, manifest
 
@@ -265,6 +273,11 @@ def scan_info(scan_id=None):
             "unique_urls": len({i["canonical_url_hash"] for r in records for i in r["items"]}),
             "freshness_counts": dict(Counter(freshness(item["items"]) for item in records)),
             "provider": manifest["provider"], "metadata_only": manifest["metadata_only"],
+            "parent_snapshot_id": manifest.get('parent_snapshot_id'),
+            "refreshed_codes": manifest.get('refreshed_codes', []),
+            "query_version": manifest['query_version'],
+            "query_time_range": {'first': min((q['at'] for item in records for q in item['queries']), default=None),
+                                 'last': max((q['at'] for item in records for q in item['queries']), default=None)},
             "content_sha256": manifest.get("content_sha256")}
 
 

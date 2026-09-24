@@ -12,9 +12,14 @@ from app.services.prediction.parties import PARTIES
 METRICS = ("turnout", "nota", "margin", "enp", "gender_ratio", "booth_count")
 
 
+def feature_keys(period):
+    return ([f"{p.lower()}_share_{period}" for p in PARTIES] + [f"{m}_{period}" for m in METRICS]
+            + [f'{p.lower()}_booth_dispersion_{period}' for p in PARTIES])
+
+
 def vectorize(row, period="2022"):
     features = row["features"]
-    keys = [f"{p.lower()}_share_{period}" for p in PARTIES] + [f"{m}_{period}" for m in METRICS]
+    keys = feature_keys(period)
     values = [float(features[key]) if features.get(key) is not None else float("nan") for key in keys]
     # Fixed-width missingness flags prevent silent missing=zero interpretation.
     return [value if math.isfinite(value) else 0 for value in values] + [int(not math.isfinite(value)) for value in values]
@@ -26,6 +31,7 @@ class StatisticalResult:
     backtest: dict
     feature_importance: dict
     model_version: str
+    bundle: dict
 
 
 def _fit(x, y):
@@ -128,7 +134,7 @@ def train_and_predict(rows):
     final_weights, temperature = _choose(raw, y)
     fitted = _fit(x, y)
     predictions = _scale(np.tensordot(final_weights, _predict(fitted, np.array([vectorize(row) for row in rows])), axes=(0, 0)), temperature)
-    version = "ensemble-v2-nested-grouped-hindcast"
+    version = "ensemble-v3-eci-reconciled-nested-hindcast"
     outputs = []
     for row, values in zip(rows, predictions):
         probabilities = {party: float(values[index]) for index, party in enumerate(PARTIES)}
@@ -138,12 +144,13 @@ def train_and_predict(rows):
                         "missing_features": row.get("missing_features", []),
                         "stat_predicted_party": leader, "stat_probabilities": probabilities,
                         "stat_confidence": probabilities[leader] * 100, "stat_model_version": version,
-                        "stat_key_factors": ["Historical single-cycle booth shares, turnout and competition.",
+                        "stat_key_factors": ["Official ECI constituency shares, turnout and competition; source-reconciled booth dispersion where coverage permits.",
                                              "2017–2022 booth deltas are context, not a trained 2027 swing estimate."],
                         "historical_winner_2022": row["summary_2022"]["winner"],
                         "historical_actual_winner_2022": row["summary_2022"].get("actual_winner"),
                         "historical_margin_2022": row["summary_2022"]["margin"]})
     metrics = {"status": "nested_grouped_hindcast", **_metrics(evaluated, y), "folds": 5,
+               'previous_winner_baseline_accuracy': round(float(np.mean([row['summary_2017']['winner'] == row['summary_2022']['winner'] for row in train]) * 100), 2),
                "group_key": "district", "feature_year": 2017, "target_year": 2022,
                "temperature": temperature, "weights": list(final_weights),
                "models": ["random_forest", "standardized_logistic", "xgboost"],
@@ -151,4 +158,17 @@ def train_and_predict(rows):
                                "Hyperparameter grid and calibration evaluated inside district-held-out folds.",
                                "Demographics excluded until sourced and time-bounded.",
                                "Vote-share and margin models are not fitted."]}
-    return StatisticalResult(outputs, metrics, {}, version)
+    bundle = {'models': fitted[0], 'classes': fitted[1], 'parties': PARTIES,
+              'weights': final_weights, 'temperature': temperature, 'model_version': version,
+              'training_feature_keys': feature_keys('2017'), 'scoring_feature_keys': feature_keys('2022'),
+              'missingness_policy': 'zero_imputation_plus_fixed_width_missing_indicators',
+              'hindcast_probabilities': evaluated, 'hindcast_targets': y,
+              'hindcast_codes': [str(row['code']) for row in train]}
+    return StatisticalResult(outputs, metrics, {}, version, bundle)
+
+
+def predict_bundle(bundle, rows):
+    """Score only a trusted, locally generated estimator bundle."""
+    import numpy as np
+    return _scale(np.tensordot(bundle['weights'], _predict((bundle['models'], bundle['classes']),
+                   np.array([vectorize(row) for row in rows])), axes=(0, 0)), bundle['temperature'])

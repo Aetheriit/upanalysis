@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Download, ExternalLink, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
@@ -18,17 +18,21 @@ type Prediction = {
   final: { probabilities: Record<Party, number>; weights: { statistical: number; atmosphere: number } };
   statistical: { key_factors: string[] };
   atmosphere: { scoring_status: string; sources_count: number };
-  booth_audit: { current?: number; matched?: number; ambiguous?: number };
+  booth_audit: { current?: number; matched?: number; ambiguous?: number; party_resolved_booths_2022?: number };
+  features?: Record<string, number | null>;
 };
 type StateResult = {
   run_id: string; status: string; created_at: string; quality_flags: string[];
-  manifest: { evidence_snapshot_id?: string; evidence_cutoff?: string };
+  manifest: { evidence_snapshot_id?: string; evidence_cutoff?: string; official_sources?: Record<string, {source_url: string; source_sha256: string}> };
+  feature_audit?: {booths: number; matched_booths: number; party_resolved_booths?: number};
   summary: { total_seats: number; majority: number; quality: string; model: string;
     parties: { party: Party; predicted: number; low: number; high: number }[] };
-  backtest: { status: string; accuracy?: number; log_loss?: number; brier?: number; limitations?: string[] };
+  backtest: { status: string; accuracy?: number; log_loss?: number; brier?: number; macro_f1?: number; previous_winner_baseline_accuracy?: number;
+    per_party?: Record<string, {precision: number; recall: number; support: number}>; limitations?: string[] };
 };
 type Scan = { snapshot_id?: string; status: string; expected: number; completed: number; seats_with_results?: number;
-  queries_ok?: number; queries_failed?: number; unique_urls?: number; cutoff?: string; freshness_counts?: Record<string, number> };
+  queries_ok?: number; queries_failed?: number; unique_urls?: number; cutoff?: string; freshness_counts?: Record<string, number>;
+  parent_snapshot_id?: string; refreshed_codes?: string[] };
 type Source = { id: string; url: string; headline: string; publisher: string; published_at: string; retrieved_at: string;
   geo_scope: string; issue_tags: string[]; cluster_id: string; duplicate_count: number; content_basis: string };
 type Link = { title: string; url: string };
@@ -50,12 +54,15 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 function EvidencePanel({ row, close }: { row: Prediction; close: () => void }) {
+  const panel = useRef<HTMLElement>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [error, setError] = useState("");
   const [issue, setIssue] = useState("");
   const [scope, setScope] = useState("");
   const [page, setPage] = useState(1);
   useEffect(() => {
+    panel.current?.focus({ preventScroll: true });
+    panel.current?.scrollIntoView({ block: "start" });
     const controller = new AbortController();
     get<Evidence>(`/evidence/${encodeURIComponent(row.code)}`, controller.signal).then(setEvidence).catch((error: Error) => {
       if (error.name !== "AbortError") setError(error.message);
@@ -65,11 +72,19 @@ function EvidencePanel({ row, close }: { row: Prediction; close: () => void }) {
   const tags = useMemo(() => [...new Set(evidence?.items.flatMap(item => item.issue_tags) || [])].sort(), [evidence]);
   const filtered = useMemo(() => evidence?.items.filter(item => (!issue || item.issue_tags.includes(issue)) && (!scope || item.geo_scope === scope)) || [], [evidence, issue, scope]);
   const demographic = evidence?.context?.demographics;
-  return <section aria-labelledby="seat-detail-title" className="space-y-5 rounded-xl border border-[var(--border-subtle)] p-5 bg-[var(--bg-card)]">
+  const percentage = (key: string) => row.features?.[key] == null ? "Unavailable" : `${(100 * row.features[key]!).toFixed(2)}%`;
+  return <section ref={panel} tabIndex={-1} aria-labelledby="seat-detail-title" className="space-y-5 scroll-mt-24 rounded-xl border border-[var(--border-subtle)] p-5 bg-[var(--bg-card)]">
     <div className="flex justify-between gap-3"><div><h2 id="seat-detail-title" className="text-xl font-semibold">{row.name} · AC {row.code}</h2><p className="text-sm text-[var(--text-secondary)]">{row.district} · 2022 winner: {row.historical_winner_2022} · {row.change}</p></div><button onClick={close} aria-label="Close constituency detail" className="p-2 self-start"><X size={20} /></button></div>
     <div className="grid grid-cols-2 md:grid-cols-6 gap-3">{PARTIES.map(party => <div key={party} className="p-3 rounded-lg bg-[var(--bg-app)]"><div className="text-xs">{party}</div><div className="font-semibold">{(100 * row.final.probabilities[party]).toFixed(1)}%</div><div className="text-xs text-[var(--text-tertiary)]">model win probability</div></div>)}</div>
     <p className="text-sm">Probability gap: {(row.probability_gap * 100).toFixed(1)} points. Atmosphere weight: {(row.final.weights.atmosphere * 100).toFixed(1)}%. Matched booths: {row.booth_audit.matched?.toLocaleString() ?? "—"} / {row.booth_audit.current?.toLocaleString() ?? "—"}.</p>
+    <p className="text-xs text-[var(--text-secondary)]">Booths with resolved candidate-party identities: {row.booth_audit.party_resolved_booths_2022?.toLocaleString() ?? "Not audited in this run"}. Matching a booth across elections does not validate its candidate labels. IPT is a grouped class; an unchanged IPT class does not establish the same minor party or independent candidate.</p>
     <p className="text-xs text-[var(--text-secondary)]">{row.statistical.key_factors.join(" ")} Search coverage is separate from scored evidence. Latest discovery results below may be newer than the model&apos;s pinned evidence snapshot.</p>
+    <details className="text-sm"><summary className="cursor-pointer font-medium">Historical election comparison — ECI 2017 and 2022</summary>
+      <div className="overflow-x-auto mt-3"><table className="w-full text-left"><caption className="text-left text-xs mb-2">Historical party share of candidate votes, excluding NOTA; these are not 2027 estimates.</caption><thead><tr><th scope="col" className="p-2">Party / metric</th><th scope="col" className="p-2">2017</th><th scope="col" className="p-2">2022</th></tr></thead><tbody>
+        {PARTIES.map(party => <tr key={party}><td className="p-2">{labelParty(party)}</td><td className="p-2">{percentage(`${party.toLowerCase()}_share_2017`)}</td><td className="p-2">{percentage(`${party.toLowerCase()}_share_2022`)}</td></tr>)}
+        {[['turnout', 'Turnout'], ['nota', 'NOTA / votes polled'], ['margin', 'Top-two candidate margin / candidate votes']].map(([key, label]) => <tr key={key}><td className="p-2">{label}</td><td className="p-2">{percentage(`${key}_2017`)}</td><td className="p-2">{percentage(`${key}_2022`)}</td></tr>)}
+      </tbody></table></div><p className="mt-2 text-xs text-[var(--text-secondary)]">IPT combines multiple minor parties and independents; its combined vote share is not one candidate&apos;s support. Demographic composition is not a voting preference.</p>
+    </details>
     {error && <p role="alert" className="text-rose-500">{error}</p>}
     {!evidence && !error && <p role="status" className="flex gap-2"><Loader2 className="animate-spin" size={18} /> Loading evidence…</p>}
     {evidence && <>
@@ -98,7 +113,9 @@ export default function PredictionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [evidenceError, setEvidenceError] = useState("");
-  const [selected, setSelected] = useState<Prediction | null>(null);
+  const [selected, setSelected] = useState<{row: Prediction; runId: string} | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -117,25 +134,57 @@ export default function PredictionPage() {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [page, search, party, refresh]);
   const pages = Math.max(1, Math.ceil(total / 50));
-  const exportPage = () => downloadCsv("up-2027-predictions-page.csv", rows.map(row => ({
+  const exportRows = (data: Prediction[], filename: string) => downloadCsv(filename, data.map(row => ({
     constituency_code: row.code, constituency_name: row.name, Winning_Party: row.predicted_party,
     Winning_margin: row.predicted_margin, Vote_share: row.predicted_vote_share, Change: row.change,
     win_probability: row.final.probabilities[row.predicted_party], run_id: state?.run_id, status: state?.status,
     evidence_snapshot_id: state?.manifest.evidence_snapshot_id, evidence_cutoff: state?.manifest.evidence_cutoff,
     atmosphere_weight: row.final.weights.atmosphere, caveat: "Model estimates; vote-share and margin model unavailable.",
   })));
+  const exportAll = async () => {
+    if (!state) return;
+    setExporting(true); setExportError("");
+    try {
+      const result = await get<{run_id: string; total: number; predictions: Prediction[]}>(`/list?page=1&page_size=403&run_id=${encodeURIComponent(state.run_id)}`);
+      if (result.run_id !== state.run_id || result.total !== 403 || new Set(result.predictions.map(row => row.code)).size !== 403) throw new Error("Export is incomplete; please refresh and try again.");
+      exportRows(result.predictions, `up-2027-all-403-${state.run_id}.csv`);
+    } catch (error) { setExportError(error instanceof Error ? error.message : "Export failed"); }
+    finally { setExporting(false); }
+  };
   return <div className="p-4 md:p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
-    <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<button disabled={!rows.length} onClick={exportPage} className="flex gap-2 items-center px-4 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button>} />
+    <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<div className="flex flex-wrap gap-2"><button disabled={!rows.length} onClick={() => exportRows(rows, "up-2027-predictions-page.csv")} className="flex gap-2 items-center px-3 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button><button disabled={!state || exporting} onClick={exportAll} className="px-3 py-2 rounded-lg border disabled:opacity-40">{exporting ? "Exporting…" : "Export all 403"}</button></div>} />
+    {exportError && <p role="alert" className="text-rose-500">{exportError}</p>}
     <div className="flex justify-between items-start gap-4 text-sm"><div>{state ? <><p className="font-semibold">Review snapshot — not an approved publication</p><p className="text-xs text-[var(--text-secondary)]">Run {state.run_id} · {date(state.created_at)} · {state.summary.quality}</p><p className="text-xs text-[var(--text-secondary)]">Model evidence cut-off: {date(state.manifest.evidence_cutoff)}</p></> : <p>2027 model workspace</p>}</div><button aria-label="Refresh prediction and evidence status" onClick={() => setRefresh(refresh + 1)} className="p-2 rounded-lg border"><RefreshCw size={18} /></button></div>
     {state && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">{state.summary.parties.map(item => <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div></PremiumCard>)}</div>}
     <PremiumCard className="p-5 space-y-2"><h2 className="font-semibold">Live evidence coverage</h2>{scan ? <><p>{scan.completed} / {scan.expected} constituencies searched · {scan.seats_with_results ?? 0} with results · {(scan.unique_urls ?? 0).toLocaleString()} unique links</p><p className="text-xs text-[var(--text-secondary)]">{scan.status} · {scan.queries_ok ?? 0} successful queries · {scan.queries_failed ?? 0} failed · cut-off {date(scan.cutoff)}</p></> : <p>{evidenceError || "Loading search coverage…"}</p>}<p className="text-xs text-[var(--text-secondary)]">Discovery coverage is not verified atmosphere coverage. News volume is not public opinion. Select a constituency to inspect sources, dates, geography and missing inputs.</p></PremiumCard>
     <div className="flex gap-2 text-sm p-4 rounded-lg bg-amber-500/10"><AlertTriangle size={20} className="shrink-0" /><p>Win probability is not vote share. Margin and vote-share estimates remain unavailable until a separately validated model exists. Seat ranges use provisional shock assumptions; demographic context is not used to assign party preferences.</p></div>
-    {selected && <EvidencePanel key={selected.code} row={selected} close={() => setSelected(null)} />}
+    {selected && selected.runId === state?.run_id && <EvidencePanel key={`${selected.runId}:${selected.row.code}`} row={selected.row} close={() => { const code = selected.row.code; setSelected(null); requestAnimationFrame(() => document.getElementById(`prediction-seat-${code}`)?.focus()); }} />}
     <PremiumCard padding="none" className="overflow-hidden"><div className="p-4 border-b border-[var(--border-subtle)] flex flex-wrap gap-3 justify-between"><div className="relative"><Search size={16} className="absolute left-3 top-3" /><input aria-label="Search constituencies" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Constituency or district…" className="pl-9 pr-3 py-2 rounded border bg-[var(--bg-app)]" /></div><select aria-label="Filter by leading party" value={party} onChange={event => { setParty(event.target.value); setPage(1); }} className="p-2 border rounded bg-[var(--bg-app)]"><option value="">All parties</option>{PARTIES.map(party => <option key={party} value={party}>{labelParty(party)}</option>)}</select></div>
       {error && <p role="alert" className="p-6 text-rose-500">{error}</p>}
-      {loading ? <div role="status" className="p-12 flex justify-center gap-3"><Loader2 className="animate-spin" /> Loading predictions…</div> : !error && <div className="overflow-x-auto"><table className="w-full text-left"><caption className="sr-only">2027 model predictions, 50 constituencies per page. Select a seat for evidence.</caption><thead className="bg-[var(--bg-app)]"><tr>{["Constituency", "Winning Party", "Winning Margin", "Vote Share", "Change"].map(label => <th scope="col" key={label} className="px-5 py-4 text-xs uppercase whitespace-nowrap">{label}</th>)}</tr></thead><tbody className="divide-y divide-[var(--border-subtle)]">{rows.map(row => <tr key={row.code}><td className="px-5 py-3"><button className="text-sm font-semibold underline underline-offset-4 text-left" onClick={() => setSelected(row)}>{row.name}</button><div className="text-xs text-[var(--text-tertiary)]">AC {row.code} · {row.district}</div></td><td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div></td><td className="px-5 py-3 text-sm">{row.predicted_margin == null ? "Unavailable" : row.predicted_margin.toLocaleString()}</td><td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}</td><td className="px-5 py-3 text-sm">{row.change}</td></tr>)}</tbody></table>{!rows.length && <p className="p-6">No constituencies match these filters.</p>}</div>}
+      {loading ? <div role="status" className="p-12 flex justify-center gap-3"><Loader2 className="animate-spin" /> Loading predictions…</div> : !error && <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <caption className="sr-only">2027 model predictions, 50 constituencies per page. Select a seat for evidence.</caption>
+          <thead className="bg-[var(--bg-app)]"><tr>{["Constituency", "Winning Party", "Winning Margin", "Vote Share", "Change"].map(label => <th scope="col" key={label} className="px-5 py-4 text-xs uppercase whitespace-nowrap">{label}</th>)}</tr></thead>
+          <tbody className="divide-y divide-[var(--border-subtle)]">{rows.map(row => <tr key={row.code}>
+            <td className="px-5 py-3"><button id={`prediction-seat-${row.code}`} className="text-sm font-semibold underline underline-offset-4 text-left" onClick={() => state && setSelected({row, runId: state.run_id})}>{row.name}</button><div className="text-xs text-[var(--text-tertiary)]">AC {row.code} · {row.district}</div></td>
+            <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div></td>
+            <td className="px-5 py-3 text-sm">{row.predicted_margin == null ? "Unavailable" : row.predicted_margin.toLocaleString()}</td>
+            <td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}</td>
+            <td className="px-5 py-3 text-sm">{row.change}</td>
+          </tr>)}</tbody>
+        </table>{!rows.length && <p className="p-6">No constituencies match these filters.</p>}
+      </div>}
       <div className="p-4 border-t border-[var(--border-subtle)] flex flex-wrap justify-between items-center gap-3 text-sm"><span>Showing {total ? (page - 1) * 50 + 1 : 0}–{Math.min(page * 50, total)} of {total}</span><div className="flex items-center gap-3"><button aria-label="Previous constituency page" disabled={page === 1 || loading} onClick={() => setPage(page - 1)} className="p-2 border rounded disabled:opacity-30"><ChevronLeft size={16} /></button><span>Page {page} of {pages}</span><button aria-label="Next constituency page" disabled={page >= pages || loading} onClick={() => setPage(page + 1)} className="p-2 border rounded disabled:opacity-30"><ChevronRight size={16} /></button></div></div>
     </PremiumCard>
-    {state && <details className="text-sm p-5 border rounded-xl"><summary className="font-semibold cursor-pointer">Model quality &amp; limitations</summary><p className="mt-3">{state.backtest.status} · winner accuracy {state.backtest.accuracy?.toFixed(1) ?? "—"}% · log loss {state.backtest.log_loss?.toFixed(3) ?? "—"} · Brier {state.backtest.brier?.toFixed(3) ?? "—"}</p><p className="mt-2">{state.backtest.limitations?.join(" ")}</p><p className="mt-2 text-xs">Release flags: {state.quality_flags.join(", ")}. Predictions are conditional model outputs, not election facts.</p></details>}
+    {state && <details className="text-sm p-5 border rounded-xl">
+      <summary className="font-semibold cursor-pointer">Model quality &amp; limitations</summary>
+      <p className="mt-3">{state.backtest.status} · winner accuracy {state.backtest.accuracy?.toFixed(1) ?? "—"}% · log loss {state.backtest.log_loss?.toFixed(3) ?? "—"} · Brier {state.backtest.brier?.toFixed(3) ?? "—"}</p>
+      <p className="mt-2">2017-winner persistence baseline: {state.backtest.previous_winner_baseline_accuracy?.toFixed(1) ?? "Not measured in this run"}% · Macro F1: {state.backtest.macro_f1?.toFixed(3) ?? "—"}. Overall accuracy does not imply accuracy for rare parties.</p>
+      {state.backtest.per_party && <div className="overflow-x-auto mt-3"><table className="w-full text-left"><caption className="text-left font-medium mb-2">District-held-out 2022 hindcast, not 2027 validation</caption><thead><tr>{["Party", "Actual seats", "Precision", "Recall"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead><tbody>{Object.entries(state.backtest.per_party).map(([party, metric]) => <tr key={party}><td className="p-2">{party}</td><td className="p-2">{metric.support}</td><td className="p-2">{(100 * metric.precision).toFixed(1)}%</td><td className="p-2">{(100 * metric.recall).toFixed(1)}%</td></tr>)}</tbody></table></div>}
+      <p className="mt-3">{state.feature_audit?.booths.toLocaleString()} current-cycle booths · {state.feature_audit?.matched_booths.toLocaleString()} matched across cycles · {state.feature_audit?.party_resolved_booths?.toLocaleString() ?? "Not measured"} with resolved party identities.</p>
+      <div className="mt-3 space-y-2">{Object.entries(state.manifest.official_sources || {}).map(([year, source]) => <div key={year}><a href={source.source_url} target="_blank" rel="noopener noreferrer" className="underline">ECI official {year} detailed results</a><p className="text-xs break-all">Source SHA-256: {source.source_sha256}</p></div>)}</div>
+      <p className="mt-2">{state.backtest.limitations?.join(" ")}</p>
+      <p className="mt-2 text-xs">Release flags: {state.quality_flags.join(", ")}. Predictions are conditional model outputs, not election facts.</p>
+    </details>}
   </div>;
 }

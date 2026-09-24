@@ -14,7 +14,7 @@ from sqlalchemy import select
 from app.core.database import async_session
 from app.models.constituency import Constituency
 from app.models.election import Election
-from app.services.prediction.evidence import connect, create_scan, dump, scan_info, scan_seat, utcnow
+from app.services.prediction.evidence import artifact_dir, connect, create_scan, dump, scan_info, scan_seat, utcnow
 
 
 async def constituencies():
@@ -27,9 +27,28 @@ async def constituencies():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--resume")
+    parser.add_argument("--derive-from", help="Create a new immutable snapshot from a completed corpus")
+    parser.add_argument("--refresh-code", action="append", help="Re-search this AC in the derived snapshot")
     parser.add_argument("--workers", type=int, default=2, choices=(1, 2, 3))
     args = parser.parse_args()
-    if args.resume:
+    if args.resume and args.derive_from:
+        raise ValueError("Resume and derive-from are mutually exclusive")
+    if args.derive_from:
+        with connect() as db:
+            parent = db.execute("SELECT manifest,status FROM scans WHERE id=?", (args.derive_from,)).fetchone()
+            prior_rows = db.execute("SELECT code,payload FROM seat_evidence WHERE snapshot_id=?", (args.derive_from,)).fetchall()
+        if not parent or parent[1] not in {"completed", "completed_with_errors"} or not args.refresh_code:
+            raise ValueError("A completed parent and at least one refresh-code are required")
+        if any(code not in {str(i) for i in range(1, 404)} for code in args.refresh_code):
+            raise ValueError("Invalid refresh constituency code")
+        scan_id, manifest = create_scan(json.loads(parent[0])["constituencies"])
+        manifest.update(parent_snapshot_id=args.derive_from, refreshed_codes=args.refresh_code,
+                        inherited_query_version=json.loads(parent[0])["query_version"])
+        with connect() as db:
+            db.execute("UPDATE scans SET manifest=? WHERE id=?", (dump(manifest), scan_id))
+            db.executemany("INSERT INTO seat_evidence VALUES (?,?,?)",
+                           [(scan_id, code, payload) for code, payload in prior_rows if code not in args.refresh_code])
+    elif args.resume:
         with connect() as db:
             record = db.execute("SELECT manifest,status FROM scans WHERE id=?", (args.resume,)).fetchone()
         if not record or record[1] not in {"running", "interrupted"}:
@@ -59,4 +78,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import fcntl
+    artifact_dir().mkdir(parents=True, exist_ok=True)
+    with (artifact_dir() / "evidence.lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        main()
