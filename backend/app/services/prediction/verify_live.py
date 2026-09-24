@@ -36,7 +36,22 @@ def main():
         values = row["final"]["probabilities"]
         assert all(math.isfinite(value) and 0 <= value <= 1 for value in values.values())
         assert abs(sum(values.values()) - 1) < 1e-5
-        assert row["predicted_vote_share"] is None and row["predicted_margin"] is None
+        vote = row['vote_estimate']
+        assert vote and vote['model_version'].startswith('vote-support-')
+        assert abs(sum(vote['party_shares_pct'].values()) - 100) < 1e-5
+        assert all(math.isfinite(value) and 0 <= value <= 100 for value in vote['party_shares_pct'].values())
+        assert row['predicted_vote_share'] == vote['table_vote_share']
+        assert row['predicted_margin'] == vote['table_margin']
+        assert 0 <= vote['contest_margin_votes'] <= vote['predicted_valid_votes']
+        if row['margin_estimate_status'].startswith('withheld_'):
+            assert row['predicted_margin'] is None
+        if row['predicted_margin'] is not None:
+            assert vote['share_leader'] == row['predicted_party'] != 'IPT'
+            support = vote['party_shares_pct']
+            runner = max((p for p in support if p != row['predicted_party']), key=support.get)
+            assert runner != 'IPT'
+            expected_margin = round((support[row['predicted_party']] - support[runner]) / 100 * vote['predicted_valid_votes'])
+            assert row['predicted_margin'] == expected_margin
         assert row["final"]["weights"]["atmosphere"] == 0
         assert row["final"]["weights"]["statistical"] == 1
     assert sum(party["predicted"] for party in state["summary"]["parties"]) == 403
@@ -60,6 +75,7 @@ def main():
         assert error.code == 404
     from app.services.prediction.evidence import artifact_dir
     from app.services.prediction.statistical import predict_bundle
+    from app.services.prediction.vote_support import predict_vote_support, public_estimate
     import joblib
     import numpy as np
     artifacts = state['manifest']
@@ -76,18 +92,34 @@ def main():
     stored = {str(row['code']): row for row in all_rows}
     for row, vector in zip(feature_snapshot['rows'], replay):
         np.testing.assert_allclose(vector, list(stored[str(row['code'])]['statistical']['probabilities'].values()), atol=1e-12)
+    vote_bundle = bundle['vote_support']
+    vote_replay = predict_vote_support(vote_bundle, feature_snapshot['rows'])
+    for row, values in zip(feature_snapshot['rows'], vote_replay):
+        public = stored[str(row['code'])]
+        expected = public_estimate(values, row['summary_2022']['total'], public['predicted_party'],
+                                   public['final']['weights']['atmosphere'], vote_bundle['backtest'])
+        assert expected == public['vote_estimate']
+    held_codes = []
+    for fold in vote_bundle['fold_audit']:
+        assert not set(fold['train_districts']) & set(fold['held_out_districts'])
+        held_codes.extend(fold['held_out_codes'])
+    assert len(held_codes) == 403 and len(set(held_codes)) == 403
     assert state['simulation']['convergence']['status'] == 'independent_seed_numerical_diagnostic'
     with urlopen(base + '/export.csv?' + urlencode({'run_id': run_id}), timeout=15) as response:
         assert 'attachment;' in response.headers['Content-Disposition']
         exported = list(csv.DictReader(io.StringIO(response.read().decode('utf-8-sig'))))
     assert len(exported) == 403 and len({row['constituency_code'] for row in exported}) == 403
-    assert all(row['run_id'] == run_id and row['Vote_share'] == '' for row in exported)
+    assert all(row['run_id'] == run_id for row in exported)
+    for row in exported:
+        reference = stored[row['constituency_code']]
+        for column, key in (('Vote_share', 'predicted_vote_share'), ('Winning_margin', 'predicted_margin')):
+            assert row[column] == (str(reference[key]) if reference[key] is not None else '')
     # Exercise warm snapshot-cache reads separately from evidence scans.
     for _ in range(5):
         get('/list?page=1&page_size=50&run_id=' + run_id)
     print(json.dumps({"status": "passed", "run_id": run_id, "constituencies": len(all_rows),
                       "pages": 9, "page_size": 50, "probability_invariants": "passed",
-                      "simulation_seat_total": 403, "missing_vote_estimates_explicit": True,
+                      "simulation_seat_total": 403, "vote_estimate_gates_and_replay": 'passed_403_seats',
                       "unconfigured_atmosphere_bypassed": True, "evidence_snapshot_id": evidence["snapshot_id"],
                       "queries": evidence["queries_ok"], "max_local_api_ms": max(item['ms'] for item in timings),
                       'model_artifact_replay': 'passed_403_seats', 'historical_eci_winner_counts': dict(historical),

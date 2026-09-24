@@ -15,6 +15,7 @@ from app.services.prediction.parties import PARTY_MAPPING_VERSION
 from app.services.prediction.simulation import simulate_validated
 from app.services.prediction.statistical import train_and_predict
 from app.services.prediction.artifacts import write_features, write_model, code_manifest
+from app.services.prediction.vote_support import train_vote_support, predict_vote_support, public_estimate
 
 
 def save_artifact(name, value):
@@ -37,11 +38,13 @@ def _public_row(row, audit=None):
     probabilities = row["final_probabilities"]
     ordered = sorted(probabilities.values(), reverse=True)
     actual = row.get("historical_actual_winner_2022") or row["historical_winner_2022"]
+    vote = row.get('vote_estimate', {})
     return {
         "code": row["code"], "name": row["name"], "district": row["district"], "region": row["region"],
-        "predicted_party": row["final_predicted_party"], "winning_margin": None, "predicted_margin": None,
-        "vote_share": None, "predicted_vote_share": None,
-        "vote_estimate_status": "unavailable_separate_vote_share_model_required",
+        "predicted_party": row["final_predicted_party"], "winning_margin": vote.get('table_margin'), "predicted_margin": vote.get('table_margin'),
+        "vote_share": vote.get('table_vote_share'), "predicted_vote_share": vote.get('table_vote_share'),
+        "vote_estimate_status": vote.get('share_status', 'unavailable_separate_vote_share_model_required'),
+        'margin_estimate_status': vote.get('margin_status', 'unavailable'), 'vote_estimate': vote or None,
         "change": ("No Change (IPT class; exact party unresolved)" if row['final_predicted_party'] == 'IPT' else "No Change") if not row["is_flip"] else f"{actual} to {row['final_predicted_party']}",
         "is_flip": row["is_flip"], "historical_winner_2022": actual,
         "historical_winner_class_2022": row["historical_winner_2022"],
@@ -113,13 +116,19 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
     save_artifact("features-v4.json", snapshot)
     features_artifact = await asyncio.to_thread(write_features, snapshot)
     statistical = await asyncio.to_thread(train_and_predict, snapshot["rows"])
+    vote_bundle = await asyncio.to_thread(train_vote_support, snapshot['rows'])
+    statistical.bundle['vote_support'] = vote_bundle
+    statistical.backtest['vote_support'] = vote_bundle['backtest']
+    vote_predictions = await asyncio.to_thread(predict_vote_support, vote_bundle, snapshot['rows'])
     model_artifact = await asyncio.to_thread(write_model, run_id, statistical.bundle)
     atmosphere = await load_atmosphere(statistical.predictions, evidence_id) if evidence_id else {}
     fused = []
-    for row in statistical.predictions:
+    for row, feature_row, vote_values in zip(statistical.predictions, snapshot['rows'], vote_predictions):
         atmo = atmosphere.get(str(row["code"]))
         result = fuse(row, atmo)
         result["atmo_scoring_status"] = atmo.get("scoring_status") if atmo else "api_not_configured_or_no_verified_evidence"
+        result['vote_estimate'] = public_estimate(vote_values, feature_row['summary_2022']['total'],
+                                                result['final_predicted_party'], result['atmo_weight_used'], vote_bundle['backtest'])
         fused.append(result)
     simulation = await asyncio.to_thread(simulate_validated, fused, int(os.getenv("PREDICTION_MC_DRAWS", "20000")), 202709)
     audits = {str(audit["code"]): audit for audit in snapshot["audits"]}
@@ -136,7 +145,8 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False):
                            "evidence_cutoff": evidence.get("cutoff") if evidence_id else None,
                            "seed": simulation["seed"], "draws": simulation["draws"], "created_at": created},
               "backtest": statistical.backtest, "simulation": simulation,
-              "quality_flags": ["human_release_review_required", "vote_share_and_margin_model_unavailable",
+              "quality_flags": ["human_release_review_required", "vote_support_single_transition_review_only",
+                                'vote_support_intervals_not_future_calibrated',
                                 "demographic_model_inputs_unavailable", "shock_covariance_unvalidated"],
               "feature_audit": {"constituencies": len(public), "booths": sum(a["current"] for a in snapshot["audits"]),
                                 "matched_booths": sum(a["matched"] for a in snapshot["audits"]),

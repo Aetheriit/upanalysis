@@ -10,6 +10,18 @@ import { downloadCsv, downloadJson } from "@/lib/export";
 
 const PARTIES = ["BJP", "SP", "BSP", "RLD", "INC", "IPT"] as const;
 type Party = typeof PARTIES[number];
+type VoteEstimate = {
+  model_version: string; party_shares_pct: Record<Party, number>; share_leader: Party;
+  share_winner_disagreement: boolean; predicted_valid_votes: number; contest_margin_votes: number;
+  contest_margin_pct_points: number; share_implied_margin_votes: number; share_status: string; margin_status: string; limitations: string[];
+  historical_error_bands: {party_shares_pct: Record<Party, [number, number]>; contest_margin_votes: [number, number]; share_implied_margin_votes: [number, number]; valid_votes: [number, number]};
+};
+type VoteQuality = {
+  model_version: string; share_mae_pp: number; share_rmse_pp: number; margin_votes_mae: number; valid_votes_mae: number;
+  per_party_mae_pp: Record<Party, number>; share_implied_margin_votes_mae: number;
+  persistence_baseline: {share_mae_pp: number; margin_votes_mae: number; valid_votes_mae: number; per_party_mae_pp: Record<Party, number>};
+  beats_or_matches_persistence: {shares: boolean; margin: boolean; share_implied_margin: boolean; valid_votes: boolean}; limitations: string[];
+};
 type Prediction = {
   code: string; name: string; district: string; predicted_party: Party;
   predicted_margin: number | null; predicted_vote_share: number | null;
@@ -20,6 +32,7 @@ type Prediction = {
   atmosphere: { scoring_status: string; sources_count: number };
   booth_audit: { current?: number; matched?: number; ambiguous?: number; party_resolved_booths_2022?: number };
   features?: Record<string, number | null>;
+  vote_estimate?: VoteEstimate | null; vote_estimate_status?: string; margin_estimate_status?: string;
 };
 type StateResult = {
   run_id: string; status: string; created_at: string; quality_flags: string[];
@@ -28,7 +41,7 @@ type StateResult = {
   summary: { total_seats: number; majority: number; quality: string; model: string;
     parties: { party: Party; predicted: number; low: number; high: number }[] };
   backtest: { status: string; accuracy?: number; log_loss?: number; brier?: number; macro_f1?: number; previous_winner_baseline_accuracy?: number;
-    per_party?: Record<string, {precision: number; recall: number; support: number}>; limitations?: string[] };
+    per_party?: Record<string, {precision: number; recall: number; support: number}>; limitations?: string[]; vote_support?: VoteQuality };
 };
 type Scan = { snapshot_id?: string; status: string; expected: number; completed: number; seats_with_results?: number;
   queries_ok?: number; queries_failed?: number; unique_urls?: number; cutoff?: string; freshness_counts?: Record<string, number>;
@@ -47,6 +60,28 @@ const labelParty = (party: string) => party === "IPT" ? "Others / Independent (I
 const date = (value?: string) => value ? new Date(value).toLocaleString("en-IN") : "Unavailable";
 const color = (party: string) => getPartyColor(party === "IPT" ? "Others" : party);
 const endpoint = (path: string) => externalApi ? `${externalApi}${path}` : apiUrl(`/api/v1/predictions${path}`);
+const marginReason = (status?: string) => ({
+  withheld_failed_hindcast_gate: "Historical error gate not passed",
+  withheld_ipt_candidate_unresolved: "IPT candidate unresolved",
+  withheld_ipt_opponent_unresolved: "IPT opponent unresolved",
+  withheld_support_winner_disagreement: "Models disagree on leader",
+  withheld_atmosphere_not_in_vote_model: "News adjustment not in vote model",
+}[status || ""] || "Separate vote model not available");
+
+function VoteSupportPanel({ row }: {row: Prediction}) {
+  const vote = row.vote_estimate;
+  if (!vote) return null;
+  return <details className="text-sm rounded-lg border border-[var(--border-subtle)] p-4">
+    <summary className="cursor-pointer font-medium">2027 vote-support estimates — separate review model</summary>
+    <p className="mt-3 text-xs text-[var(--text-secondary)]">Party share of valid candidate votes, excluding NOTA. These are not the win probabilities shown above. IPT pools multiple minor parties and independents.</p>
+    {vote.share_winner_disagreement && <p className="mt-3 text-amber-700 dark:text-amber-300">The mean vote-share leader ({vote.share_leader}) differs from the win-probability leader ({row.predicted_party}). Neither model overrides the other; the headline winning margin is withheld.</p>}
+    <div className="overflow-x-auto mt-3"><table className="w-full text-left"><caption className="text-left text-xs mb-2">Error bands use the 90th percentile of absolute historical held-out errors. They do not guarantee 90% coverage in 2027 and are not simultaneous party intervals.</caption><thead><tr>{["Party", "Estimated share", "Historical-error band"].map(label => <th scope="col" className="p-2" key={label}>{label}</th>)}</tr></thead><tbody>{PARTIES.map(party => <tr key={party}><td className="p-2">{labelParty(party)}</td><td className="p-2">{vote.party_shares_pct[party].toFixed(1)}%</td><td className="p-2">{vote.historical_error_bands.party_shares_pct[party].map(value => value.toFixed(1)).join("–")}%</td></tr>)}</tbody></table></div>
+    <p className="mt-3">Estimated valid candidate votes: {vote.predicted_valid_votes.toLocaleString()}. Top-two party-class share gap implies {vote.share_implied_margin_votes?.toLocaleString() ?? "—"} votes, with historical-error band {vote.historical_error_bands.share_implied_margin_votes?.map(value => value.toLocaleString()).join("–") ?? "—"}. The main table uses this value only when historical checks pass, the leader agrees and neither top class is pooled IPT.</p>
+    <p className="mt-3">Separate diagnostic: estimated top-two candidate contest margin {vote.contest_margin_votes.toLocaleString()} votes ({vote.contest_margin_pct_points.toFixed(1)} points). This independently fitted estimate can differ from the party-share gap and is not used in the main table.</p>
+    <p className="mt-2">Contest-margin historical-error band: {vote.historical_error_bands.contest_margin_votes.map(value => value.toLocaleString()).join("–")} votes. This margin model estimates the size of a contest, not a margin conditional on a named winner.</p>
+    <p className="mt-2 text-xs text-[var(--text-secondary)]">{vote.limitations.join(" ")} Model: {vote.model_version}. Share status: {vote.share_status}. Margin status: {vote.margin_status}.</p>
+  </details>;
+}
 
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint(path), { cache: "no-store", signal });
@@ -80,6 +115,7 @@ function EvidencePanel({ row, close }: { row: Prediction; close: () => void }) {
     <p className="text-sm">Probability gap: {(row.probability_gap * 100).toFixed(1)} points. Atmosphere weight: {(row.final.weights.atmosphere * 100).toFixed(1)}%. Matched booths: {row.booth_audit.matched?.toLocaleString() ?? "—"} / {row.booth_audit.current?.toLocaleString() ?? "—"}.</p>
     <p className="text-xs text-[var(--text-secondary)]">Booths with resolved candidate-party identities: {row.booth_audit.party_resolved_booths_2022?.toLocaleString() ?? "Not audited in this run"}. Matching a booth across elections does not validate its candidate labels. IPT is a grouped class; an unchanged IPT class does not establish the same minor party or independent candidate.</p>
     <p className="text-xs text-[var(--text-secondary)]">{row.statistical.key_factors.join(" ")} Search coverage is separate from scored evidence. Latest discovery results below may be newer than the model&apos;s pinned evidence snapshot.</p>
+    <VoteSupportPanel row={row} />
     <details className="text-sm"><summary className="cursor-pointer font-medium">Historical election comparison — ECI 2017 and 2022</summary>
       <div className="overflow-x-auto mt-3"><table className="w-full text-left"><caption className="text-left text-xs mb-2">Historical party share of candidate votes, excluding NOTA; these are not 2027 estimates.</caption><thead><tr><th scope="col" className="p-2">Party / metric</th><th scope="col" className="p-2">2017</th><th scope="col" className="p-2">2022</th></tr></thead><tbody>
         {PARTIES.map(party => <tr key={party}><td className="p-2">{labelParty(party)}</td><td className="p-2">{percentage(`${party.toLowerCase()}_share_2017`)}</td><td className="p-2">{percentage(`${party.toLowerCase()}_share_2022`)}</td></tr>)}
@@ -138,14 +174,17 @@ export default function PredictionPage() {
     Winning_margin: row.predicted_margin, Vote_share: row.predicted_vote_share, Change: row.change,
     win_probability: row.final.probabilities[row.predicted_party], run_id: state?.run_id, status: state?.status,
     evidence_snapshot_id: state?.manifest.evidence_snapshot_id, evidence_cutoff: state?.manifest.evidence_cutoff,
-    atmosphere_weight: row.final.weights.atmosphere, caveat: "Model estimates; vote-share and margin model unavailable.",
+    atmosphere_weight: row.final.weights.atmosphere, vote_estimate_status: row.vote_estimate_status,
+    margin_estimate_status: row.margin_estimate_status, vote_support_model: row.vote_estimate?.model_version,
+    caveat: "Review estimates. Win probability is not vote share. Winning margin is implied by estimated shares and valid votes; historical error bands are not calibrated future intervals. IPT vote share is pooled, not one candidate.",
   })));
   return <div className="p-4 md:p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
     <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<div className="flex flex-wrap gap-2"><button disabled={!rows.length} onClick={() => exportRows(rows, "up-2027-predictions-page.csv")} className="flex gap-2 items-center px-3 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button>{state ? <a href={endpoint(`/export.csv?run_id=${encodeURIComponent(state.run_id)}`)} className="px-3 py-2 rounded-lg border">Export all 403</a> : <button disabled className="px-3 py-2 rounded-lg border opacity-40">Export all 403</button>}</div>} />
     <div className="flex justify-between items-start gap-4 text-sm"><div>{state ? <><p className="font-semibold">Review snapshot — not an approved publication</p><p className="text-xs text-[var(--text-secondary)]">Run {state.run_id} · {date(state.created_at)} · {state.summary.quality}</p><p className="text-xs text-[var(--text-secondary)]">Model evidence cut-off: {date(state.manifest.evidence_cutoff)}</p></> : <p>2027 model workspace</p>}</div><button aria-label="Refresh prediction and evidence status" onClick={() => setRefresh(refresh + 1)} className="p-2 rounded-lg border"><RefreshCw size={18} /></button></div>
     {state && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">{state.summary.parties.map(item => <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div></PremiumCard>)}</div>}
     <PremiumCard className="p-5 space-y-2"><h2 className="font-semibold">Live evidence coverage</h2>{scan ? <><p>{scan.completed} / {scan.expected} constituencies searched · {scan.seats_with_results ?? 0} with results · {(scan.unique_urls ?? 0).toLocaleString()} unique links</p><p className="text-xs text-[var(--text-secondary)]">{scan.status} · {scan.queries_ok ?? 0} successful queries · {scan.queries_failed ?? 0} failed · cut-off {date(scan.cutoff)}</p></> : <p>{evidenceError || "Loading search coverage…"}</p>}<p className="text-xs text-[var(--text-secondary)]">Discovery coverage is not verified atmosphere coverage. News volume is not public opinion. Select a constituency to inspect sources, dates, geography and missing inputs.</p></PremiumCard>
-    <div className="flex gap-2 text-sm p-4 rounded-lg bg-amber-500/10"><AlertTriangle size={20} className="shrink-0" /><p>Win probability is not vote share. Margin and vote-share estimates remain unavailable until a separately validated model exists. Seat ranges use provisional shock assumptions; demographic context is not used to assign party preferences.</p></div>
+    <div className="flex gap-2 text-sm p-4 rounded-lg bg-amber-500/10"><AlertTriangle size={20} className="shrink-0" /><p>Win probability is not vote share. {state?.backtest.vote_support ? "Vote estimates come from a separate provisional model. Table margins are derived from its shares and estimated votes, and withheld when checks fail or models disagree. Historical errors are available in each seat; its error bands are not calibrated 2027 intervals." : "Vote-share and margin estimates are unavailable in this archived run."} Seat ranges use provisional shock assumptions; demographic context is not used to assign party preferences.</p></div>
+    {state?.backtest.vote_support?.beats_or_matches_persistence.share_implied_margin === false && <p className="text-sm p-4 rounded-lg border border-amber-500/40">Margin validation warning: share-derived margins did not beat the prior-election baseline. All headline winning margins in this run are withheld; inspect Model quality for the measured errors.</p>}
     {selected && selected.runId === state?.run_id && <EvidencePanel key={`${selected.runId}:${selected.row.code}`} row={selected.row} close={() => { const code = selected.row.code; setSelected(null); requestAnimationFrame(() => document.getElementById(`prediction-seat-${code}`)?.focus()); }} />}
     <PremiumCard padding="none" className="overflow-hidden"><div className="p-4 border-b border-[var(--border-subtle)] flex flex-wrap gap-3 justify-between"><div className="relative"><Search size={16} className="absolute left-3 top-3" /><input aria-label="Search constituencies" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Constituency or district…" className="pl-9 pr-3 py-2 rounded border bg-[var(--bg-app)]" /></div><select aria-label="Filter by leading party" value={party} onChange={event => { setParty(event.target.value); setPage(1); }} className="p-2 border rounded bg-[var(--bg-app)]"><option value="">All parties</option>{PARTIES.map(party => <option key={party} value={party}>{labelParty(party)}</option>)}</select></div>
       {error && <p role="alert" className="p-6 text-rose-500">{error}</p>}
@@ -156,8 +195,8 @@ export default function PredictionPage() {
           <tbody className="divide-y divide-[var(--border-subtle)]">{rows.map(row => <tr key={row.code}>
             <td className="px-5 py-3"><button id={`prediction-seat-${row.code}`} className="text-sm font-semibold underline underline-offset-4 text-left" onClick={() => state && setSelected({row, runId: state.run_id})}>{row.name}</button><div className="text-xs text-[var(--text-tertiary)]">AC {row.code} · {row.district}</div></td>
             <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div></td>
-            <td className="px-5 py-3 text-sm">{row.predicted_margin == null ? "Unavailable" : row.predicted_margin.toLocaleString()}</td>
-            <td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}</td>
+            <td className="px-5 py-3 text-sm">{row.predicted_margin == null ? (row.vote_estimate ? "Withheld" : "Unavailable") : `${row.predicted_margin.toLocaleString()} votes`}<div className="text-xs text-[var(--text-secondary)]">{row.predicted_margin == null ? marginReason(row.margin_estimate_status) : "Implied by vote estimates"}</div></td>
+            <td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}{row.predicted_vote_share != null && <div className="text-xs text-[var(--text-secondary)]">{row.predicted_party === "IPT" ? "Pooled IPT share" : "Estimated party share"}</div>}</td>
             <td className="px-5 py-3 text-sm">{row.change}</td>
           </tr>)}</tbody>
         </table>{!rows.length && <p className="p-6">No constituencies match these filters.</p>}
@@ -169,6 +208,16 @@ export default function PredictionPage() {
       <p className="mt-3">{state.backtest.status} · winner accuracy {state.backtest.accuracy?.toFixed(1) ?? "—"}% · log loss {state.backtest.log_loss?.toFixed(3) ?? "—"} · Brier {state.backtest.brier?.toFixed(3) ?? "—"}</p>
       <p className="mt-2">2017-winner persistence baseline: {state.backtest.previous_winner_baseline_accuracy?.toFixed(1) ?? "Not measured in this run"}% · Macro F1: {state.backtest.macro_f1?.toFixed(3) ?? "—"}. Overall accuracy does not imply accuracy for rare parties.</p>
       {state.backtest.per_party && <div className="overflow-x-auto mt-3"><table className="w-full text-left"><caption className="text-left font-medium mb-2">District-held-out 2022 hindcast, not 2027 validation</caption><thead><tr>{["Party", "Actual seats", "Precision", "Recall"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead><tbody>{Object.entries(state.backtest.per_party).map(([party, metric]) => <tr key={party}><td className="p-2">{party}</td><td className="p-2">{metric.support}</td><td className="p-2">{(100 * metric.precision).toFixed(1)}%</td><td className="p-2">{(100 * metric.recall).toFixed(1)}%</td></tr>)}</tbody></table></div>}
+      {state.backtest.vote_support && <div className="mt-5 space-y-3 border-t border-[var(--border-subtle)] pt-4"><h3 className="font-semibold">Separate vote-support model — historical error checks</h3>
+        <p>Five district-held-out folds, with blend selection inside three inner folds. Mean absolute error (MAE) below compares 2017-only predictions with 2022 ECI results, not future election accuracy.</p>
+        <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr>{["Metric", "Model MAE", "Carry-forward MAE", "Historical gate"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead><tbody>
+          <tr><td className="p-2">Party vote share</td><td className="p-2">{state.backtest.vote_support.share_mae_pp.toFixed(2)} pp</td><td className="p-2">{state.backtest.vote_support.persistence_baseline.share_mae_pp.toFixed(2)} pp</td><td className="p-2">{state.backtest.vote_support.beats_or_matches_persistence.shares ? "Pass" : "Fail — withheld"}</td></tr>
+          <tr><td className="p-2">Contest margin</td><td className="p-2">{Math.round(state.backtest.vote_support.margin_votes_mae).toLocaleString()} votes</td><td className="p-2">{Math.round(state.backtest.vote_support.persistence_baseline.margin_votes_mae).toLocaleString()} votes</td><td className="p-2">{state.backtest.vote_support.beats_or_matches_persistence.margin ? "Pass" : "Fail — withheld"}</td></tr>
+          <tr><td className="p-2">Share-implied margin (table)</td><td className="p-2">{state.backtest.vote_support.share_implied_margin_votes_mae == null ? "Not measured" : `${Math.round(state.backtest.vote_support.share_implied_margin_votes_mae).toLocaleString()} votes`}</td><td className="p-2">{Math.round(state.backtest.vote_support.persistence_baseline.margin_votes_mae).toLocaleString()} votes</td><td className="p-2">{state.backtest.vote_support.beats_or_matches_persistence.share_implied_margin ? "Pass" : "Fail — withheld"}</td></tr>
+          <tr><td className="p-2">Valid candidate votes</td><td className="p-2">{Math.round(state.backtest.vote_support.valid_votes_mae).toLocaleString()} votes</td><td className="p-2">{Math.round(state.backtest.vote_support.persistence_baseline.valid_votes_mae).toLocaleString()} votes</td><td className="p-2">{state.backtest.vote_support.beats_or_matches_persistence.valid_votes ? "Pass" : "Fail — margin withheld"}</td></tr>
+        </tbody></table></div>
+        <p className="text-xs">Party share MAE (model / carry-forward): {PARTIES.map(party => `${party} ${state.backtest.vote_support!.per_party_mae_pp[party].toFixed(2)} / ${state.backtest.vote_support!.persistence_baseline.per_party_mae_pp[party].toFixed(2)} pp`).join(" · ")}. Lower is better; an aggregate improvement does not mean every party improved. Passing these gates does not approve publication or establish future-cycle calibration.</p>
+      </div>}
       <p className="mt-3">{state.feature_audit?.booths.toLocaleString()} current-cycle booths · {state.feature_audit?.matched_booths.toLocaleString()} matched across cycles · {state.feature_audit?.party_resolved_booths?.toLocaleString() ?? "Not measured"} with resolved party identities.</p>
       <div className="mt-3 space-y-2">{Object.entries(state.manifest.official_sources || {}).map(([year, source]) => <div key={year}><a href={source.source_url} target="_blank" rel="noopener noreferrer" className="underline">ECI official {year} detailed results</a><p className="text-xs break-all">Source SHA-256: {source.source_sha256}</p></div>)}</div>
       <p className="mt-2">{state.backtest.limitations?.join(" ")}</p>

@@ -21,6 +21,7 @@ python -u -m app.services.prediction.evidence_worker --resume SNAPSHOT_UUID
 # Supplement selected seats while preserving the parent corpus:
 python -m app.services.prediction.evidence_worker --derive-from SNAPSHOT_UUID --refresh-code 58
 python -m unittest app.services.prediction.test_evidence -v
+python -m unittest app.services.prediction.test_vote_support -v
 python -u -m app.services.prediction.run_worker
 # Explicit model-only rerun from the completed ECI-reconciled v4 features:
 python -u -m app.services.prediction.run_worker --reuse-features
@@ -147,9 +148,46 @@ temperature selection; logistic scaling is fitted on training folds only.
 One historical transition is not independent future-cycle validation.
 2017–2022 booth deltas are context, not trained extrapolation.
 
-Win probability is **not** vote share. The former code's probability-derived
-vote-share/margin values were removed. Those two columns now state unavailable;
-a separate validated vote-support model is still required.
+Win probability is **not** vote share. A separate review-only vote-support
+bundle now estimates six party-class shares, top-two candidate contest margin
+rate and growth in valid candidate votes. Targets come from the ECI overlay,
+not winner probabilities. Independent random-forest and standardized ridge
+heads are compared with previous-election persistence. Blend selection happens
+inside three inner district folds; five outer folds measure historical error.
+The IPT reference share is dropped from linear inputs. The fitted bundle,
+out-of-fold predictions/targets and district assignments are persisted with
+the winner model. Live verification replays both bundles for all 403 seats.
+
+The main table's margin is the predicted top-two share gap times estimated
+valid candidate votes, **not** the independent contest-margin regression. This
+keeps displayed shares and margins mathematically consistent. A separate
+historical error gate compares the implied margin with carrying forward the
+actual prior candidate margin. Margins are withheld if that gate fails, the
+vote-share and win-probability leaders disagree, a top class is pooled IPT, or
+atmosphere adjustments are absent from the vote-support model. The independent
+contest-margin estimate remains explicitly labelled as a diagnostic in seat
+details. It is not conditional on a named winner.
+
+Shares sum to 100% of candidate votes, excluding NOTA. IPT's pooled share is
+not one candidate's support. The growth factor is bounded to 0.5–2 for numerical
+safety, not as a learned turnout constraint. No candidate list, alliance
+allocation or future electorate has been confirmed. The model does not infer
+support from caste/religion, headlines or protests. Historical-error bands use
+90th-percentile absolute outer-fold errors; these are **not calibrated future
+prediction intervals** or simultaneous coverage guarantees. Aggregate error
+improvements do not imply each party improved. These outputs remain review
+estimates, not validated production forecasts.
+
+The first coherent-margin review (`b05f818c-5c88-46ad-89b8-0422e1d7b2e6`)
+has share MAE 5.885 percentage points versus 7.890 for persistence. Per-party
+improvements are mixed: BJP, RLD and IPT share MAE did not improve. The separate
+contest-margin diagnostic has MAE 14,063 votes, but the share-implied table
+margin has MAE 16,111 versus 15,499 for the actual-margin persistence baseline.
+**The table margin gate failed, so all headline margins are withheld.** No
+threshold was relaxed to fill the column. Valid-vote total MAE is 6,347 versus
+13,928 for persistence. These are nested historical hindcast errors, not an
+independent future-cycle accuracy claim. Thirty-five unit tests and all-403
+artifact replay/invariant checks accompany this implementation.
 
 20,000 correlated Monte Carlo draws preserve one winner per seat and seat-total
 invariants, with measured split-half and independent-seed numerical diagnostics
@@ -166,7 +204,7 @@ with retention, RBAC and publication governance.
 
 The complete PRD is **not yet satisfied**: approved publication/RBAC workflow,
 governed artifact registry, full scenario lab, SHAP attribution, boundary-mapped
-demographics, calibrated vote-support estimates, full map and report builder,
+demographics, independent future-cycle vote-support calibration, full map and report builder,
 interval coverage validation and release/load tests remain outstanding.
 No new run automatically publishes. These gaps must not be hidden by a
 “complete” or “production validated” label.

@@ -134,7 +134,7 @@ def train_and_predict(rows):
     final_weights, temperature = _choose(raw, y)
     fitted = _fit(x, y)
     predictions = _scale(np.tensordot(final_weights, _predict(fitted, np.array([vectorize(row) for row in rows])), axes=(0, 0)), temperature)
-    version = "ensemble-v3-eci-reconciled-nested-hindcast"
+    version = "ensemble-v4-eci-hindcast-with-separate-vote-support"
     outputs = []
     for row, values in zip(rows, predictions):
         probabilities = {party: float(values[index]) for index, party in enumerate(PARTIES)}
@@ -157,7 +157,7 @@ def train_and_predict(rows):
                "limitations": ["One historical transition; no independent future-cycle validation.",
                                "Hyperparameter grid and calibration evaluated inside district-held-out folds.",
                                "Demographics excluded until sourced and time-bounded.",
-                               "Vote-share and margin models are not fitted."]}
+                               "Separate vote-support estimates have their own hindcast and limitations."]}
     bundle = {'models': fitted[0], 'classes': fitted[1], 'parties': PARTIES,
               'weights': final_weights, 'temperature': temperature, 'model_version': version,
               'training_feature_keys': feature_keys('2017'), 'scoring_feature_keys': feature_keys('2022'),

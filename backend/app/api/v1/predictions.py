@@ -101,7 +101,10 @@ async def export_predictions_csv(run_id: str, db: AsyncSession = Depends(get_db)
     columns = ['constituency_code', 'constituency_name', 'district', 'Winning_Party', 'Winning_margin',
                'Vote_share', 'Change', 'historical_winner_2022', 'confidence', 'run_id', 'status',
                'model_version', 'evidence_snapshot_id', 'evidence_cutoff', 'atmosphere_weight',
-               'vote_estimate_status', *[f'{party}_win_probability' for party in PARTIES], 'caveat']
+               'vote_estimate_status', 'margin_estimate_status', 'vote_support_model',
+               *[f'{party}_win_probability' for party in PARTIES],
+               *[f'{party}_vote_share_pct' for party in PARTIES],
+               'contest_margin_votes', 'margin_historical_error_low', 'margin_historical_error_high', 'caveat']
     writer = csv.DictWriter(output, fieldnames=columns)
     writer.writeheader()
     for row in result['predictions']:
@@ -114,8 +117,14 @@ async def export_predictions_csv(run_id: str, db: AsyncSession = Depends(get_db)
                   'evidence_cutoff': result['manifest'].get('evidence_cutoff'),
                   'atmosphere_weight': row['final']['weights']['atmosphere'],
                   'vote_estimate_status': row['vote_estimate_status'],
+                  'margin_estimate_status': row.get('margin_estimate_status'),
+                  'vote_support_model': (row.get('vote_estimate') or {}).get('model_version'),
                   **{f'{party}_win_probability': row['final']['probabilities'][party] for party in PARTIES},
-                  'caveat': 'Review model estimate, not an election fact. Win probability is not vote share; unscored news has no influence.'}
+                  **{f'{party}_vote_share_pct': (row.get('vote_estimate') or {}).get('party_shares_pct', {}).get(party) for party in PARTIES},
+                  'contest_margin_votes': (row.get('vote_estimate') or {}).get('contest_margin_votes'),
+                  'margin_historical_error_low': (row.get('vote_estimate') or {}).get('historical_error_bands', {}).get('share_implied_margin_votes', [None, None])[0],
+                  'margin_historical_error_high': (row.get('vote_estimate') or {}).get('historical_error_bands', {}).get('share_implied_margin_votes', [None, None])[1],
+                  'caveat': 'Review estimates, not election facts. Win probability is not vote share. Winning_margin is implied by estimated shares and votes, withheld for incompatible leaders or pooled IPT candidates. Contest margin is a separate diagnostic. Historical error bands are not calibrated future intervals. Unscored news has no influence.'}
         writer.writerow({key: "'" + value if isinstance(value, str) and value.lstrip().startswith(('=', '+', '-', '@', '\t', '\r')) else value
                          for key, value in values.items()})
     return Response(content=('\ufeff' + output.getvalue()).encode('utf-8'), media_type='text/csv',
