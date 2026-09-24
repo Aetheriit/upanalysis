@@ -18,17 +18,19 @@ BASE_FEATURES = (
 
 def _feature_value(row: dict[str, Any], party: str, period: str, metric: str) -> float:
     features = row["features"]
+    value: float
     if metric == "share":
-        return float(features.get(f"{party.lower()}_share_{period}", 0))
-    if metric == "swing":
-        return float(features.get(f"{party.lower()}_swing", 0)) if period == "2022" else 0.0
-    if metric == "swing_std":
-        return float(features.get(f"{party.lower()}_swing_std", 0)) if period == "2022" else 0.0
-    if metric == "turnout": return float(features.get(f"turnout_{period}", 0))
-    if metric == "nota": return float(features.get(f"nota_{period}", 0))
-    if metric == "margin": return float(features.get(f"margin_{period}", 0)) / 100000
-    if metric == "enp": return float(features.get(f"enp_{period}", 0))
-    return float(features.get(metric, 0))
+        value = float(features.get(f"{party.lower()}_share_{period}", 0))
+    elif metric == "swing":
+        value = float(features.get(f"{party.lower()}_swing", 0)) if period == "2022" else 0.0
+    elif metric == "swing_std":
+        value = float(features.get(f"{party.lower()}_swing_std", 0)) if period == "2022" else 0.0
+    elif metric == "turnout": value = float(features.get(f"turnout_{period}", 0))
+    elif metric == "nota": value = float(features.get(f"nota_{period}", 0))
+    elif metric == "margin": value = float(features.get(f"margin_{period}", 0)) / 100000
+    elif metric == "enp": value = float(features.get(f"enp_{period}", 0))
+    else: value = float(features.get(metric, 0))
+    return value if math.isfinite(value) else 0.0
 
 
 def vectorize(row: dict[str, Any], period: str = "2022") -> list[float]:
