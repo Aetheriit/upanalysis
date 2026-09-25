@@ -72,7 +72,7 @@ class ResearchTests(unittest.TestCase):
         self.assertIsNone(result['atmosphere'])
 
     def test_no_key_bypasses_without_a_request(self):
-        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}), patch.object(jobs, 'update'), patch.object(research_worker, 'research_seat') as request:
+        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}), patch.object(jobs, 'status', return_value={}), patch.object(jobs, 'update'), patch.object(research_worker, 'research_seat') as request:
             result, manifest = research_worker.collect('test', [], None)
         request.assert_not_called()
         self.assertEqual(result, {})
@@ -119,8 +119,48 @@ class JobTests(unittest.TestCase):
         self.assertEqual(request.call_count, 1)
         self.assertEqual(jobs.status()['failed'], 1)
 
+    def test_resume_skips_checkpoint_and_uncertain_inflight_charge(self):
+        job, _ = jobs.reserve(str(uuid.uuid4()), True)
+        jobs.checkpoint(job['job_id'], {'code': '1', 'status': 'completed', 'events': [], 'sources': []})
+        jobs.update(job['job_id'], status='interrupted', current_request_code='2', cutoff='2026-09-24T00:00:00Z')
+        resumed, created = jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
+        self.assertTrue(created)
+        self.assertEqual(len(jobs.corpus(resumed['job_id'])), 1)
+        rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
+        def response(row, evidence, cutoff):
+            return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
+        with patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response) as request:
+            _, manifest = research_worker.collect(resumed['job_id'], rows, None)
+        self.assertEqual(request.call_count, 401)
+        self.assertEqual(manifest['completed'], 403)
+        self.assertEqual(manifest['failed'], 1)
+        self.assertEqual(manifest['cutoff'], '2026-09-24T00:00:00Z')
+        self.assertEqual(jobs.research(resumed['job_id'], '2')['error_code'], 'interrupted_request_outcome_unknown_not_retried')
+        self.assertEqual(len(jobs.corpus(job['job_id'])), 1)
+
+    def test_resume_requires_dynamic_and_valid_parent(self):
+        with self.assertRaises(ValueError):
+            jobs.reserve(str(uuid.uuid4()), True, str(uuid.uuid4()))
+        job, _ = jobs.reserve(str(uuid.uuid4()), False)
+        jobs.update(job['job_id'], status='failed')
+        with self.assertRaises(ValueError):
+            jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
+
 
 class RunApiTests(unittest.IsolatedAsyncioTestCase):
+    async def test_legacy_forecast_endpoints_read_the_same_saved_model(self):
+        from app.api.v1.analytics import get_forecast_predict, get_forecast_backtest
+        saved = {'run_id': 'saved', 'simulation': {'parties': [], 'draws': 10000},
+                 'model_version': 'tested', 'manifest': {}, 'summary': {'quality': 'statistical-only'},
+                 'backtest': {'accuracy': 72, 'feature_year': 2017, 'target_year': 2022, 'sample_size': 403}}
+        with patch('app.services.prediction.pipeline.run_pipeline', AsyncMock(return_value=saved)) as read:
+            forecast = await get_forecast_predict(None)
+            backtest = await get_forecast_backtest(None)
+        self.assertEqual(forecast['run_id'], backtest['run_id'])
+        self.assertEqual(forecast['iterations'], 10000)
+        self.assertEqual(backtest['validation']['winner_accuracy'], 72)
+        self.assertTrue(all(call.kwargs == {} for call in read.call_args_list))
+
     async def test_gets_never_call_provider_or_spawn(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'PREDICTION_ARTIFACT_DIR': directory, 'OPENAI_API_KEY': 'unit-test-only'}), patch.object(research, '_post') as post, patch.object(api.subprocess, 'Popen') as spawn, patch.object(api, 'run_pipeline', AsyncMock(return_value={'run_id': 'saved', 'manifest': {}})):
             status = await api.model_job_status()

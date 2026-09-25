@@ -14,8 +14,9 @@ from app.services.prediction.evidence import get_seat_evidence, safe_url, timest
 from app.services.prediction.parties import PARTIES
 
 
-def score_events(payload, evidence, now=None):
+def score_events(payload, evidence, now=None, observed_at=None):
     now = now or datetime.now(timezone.utc)
+    observed_at = observed_at or now
     if not isinstance(payload, dict) or str(payload.get("code")) != str(evidence["code"]):
         raise ValueError("Constituency code mismatch")
     items = {item["id"]: item for item in evidence["items"]}
@@ -28,10 +29,10 @@ def score_events(payload, evidence, now=None):
         sources = [items[ref] for ref in refs if ref in items]
         if not sources or len(sources) != len(refs):
             continue
-        if not safe_url(event.get("checked_source_url", "")) or not event.get("source_checked_at"):
+        if safe_url(event.get("checked_source_url", "")) not in {source['url'] for source in sources} or not event.get("source_checked_at"):
             continue
         checked = timestamp(event["source_checked_at"])
-        if not checked or checked > now:
+        if not checked or checked > observed_at:
             continue
         clusters = {source["cluster_id"] for source in sources}
         if clusters & used_clusters:
@@ -40,10 +41,13 @@ def score_events(payload, evidence, now=None):
         importance = event.get("event_importance", 0)
         if any(not isinstance(v, (int, float)) or not math.isfinite(v) or not 0 <= v <= 1 for v in (confidence, importance)):
             continue
-        ages = [(now - timestamp(source["published_at"])).total_seconds() / 86400 for source in sources]
-        if min(ages) < 0 or min(ages) > 90:
+        dates = [timestamp(source.get('published_at', '')) for source in sources]
+        if any(date is None for date in dates):
             continue
-        recency = math.exp(-min(ages) / 30)
+        ages = [(now - date).total_seconds() / 86400 for date in dates]
+        if min(ages) < 0 or max(ages) > 90:
+            continue
+        recency = math.exp(-max(ages) / 30)
         geo = 1.0 if event["geo_scope"] == "constituency" else 0.35
         weight = 0.6 * recency * geo * confidence * importance
         accepted = {}
@@ -51,7 +55,7 @@ def score_events(payload, evidence, now=None):
             if party not in PARTIES or not isinstance(impact, dict):
                 continue
             value, rationale = impact.get("direction"), impact.get("rationale", "")
-            if isinstance(value, (int, float)) and math.isfinite(value) and -1 <= value <= 1 and isinstance(rationale, str) and 20 <= len(rationale) <= 800:
+            if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and -1 <= value <= 1 and value != 0 and isinstance(rationale, str) and 20 <= len(rationale) <= 800:
                 accepted[party] = {"direction": value, "rationale": rationale}
         if not accepted:
             continue
@@ -65,16 +69,17 @@ def score_events(payload, evidence, now=None):
                        "interpretation": "provider_interpretation_pending_release_review", "weight": weight})
     # Publisher domains do not prove independence; use a conservative cap.
     quality = min(len(used_clusters) / 5, 1) * min(len(publishers) / 3, 1) * (sum(qualities) / len(qualities) if qualities else 0) * 0.5
-    if not events:
+    if not events or max(scores.values()) - min(scores.values()) < 1e-12:
         return None
     exp = {party: math.exp(value - max(scores.values())) for party, value in scores.items()}
     probabilities = {party: value / sum(exp.values()) for party, value in exp.items()}
     leading = max(probabilities, key=probabilities.get)
     return {"predicted_party": leading, "probabilities": probabilities, "confidence": 100 * probabilities[leading],
+            'log_evidence': scores, 'signal_kind': 'relative_likelihood_not_independent_poll',
             "quality": quality, "sources_count": len(used_clusters), "events": events, "issues": [],
             "snapshot_id": evidence["snapshot_id"], "scoring_status": "scored",
             "quality_components": {"unique_clusters": len(used_clusters), "publisher_domains": len(publishers),
-                                   "independence": "unverified_conservative_cap", "policy_version": "atmo-v2"}}
+                                   "independence": "unverified_conservative_cap", "policy_version": "atmo-v3-neutral-invariant"}}
 
 
 def _request(endpoint, row, evidence):

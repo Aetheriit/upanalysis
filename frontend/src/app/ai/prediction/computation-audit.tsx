@@ -1,0 +1,30 @@
+"use client";
+
+export type FusionAudit = {
+  version: string; scored_seats: number; changed_probability_seats: number; changed_leaders: number;
+  max_probability_change_pp: number;
+  expected_seats_before_shocks: { party: string; static: number; combined: number; change: number }[];
+};
+export type SimulationAudit = {
+  draws: number; seed?: number; max_mean_mc_se?: number;
+  convergence?: { status: string; max_mean_seat_delta?: number; within_diagnostic_tolerances?: boolean };
+  evidence_sensitivity?: { parties: { party: string; static: number; combined: number; change: number; change_mc_se: number }[] };
+};
+
+export function ComputationAudit({ audit, simulation }: { audit?: FusionAudit; simulation?: SimulationAudit }) {
+  const effects = simulation?.evidence_sensitivity?.parties;
+  return <section className="rounded-xl border border-[var(--border-subtle)] p-5 space-y-3" aria-label="Calculation audit">
+    <h2 className="font-semibold">What actually entered this calculation</h2>
+    <p className="text-sm">{simulation ? `${simulation.draws.toLocaleString()} completed election simulations` : "Simulation count unavailable in this archived snapshot"}
+      {audit && ` · ${audit.scored_seats} / 403 seats with scored web evidence · ${audit.changed_leaders} leaders changed by evidence`}.</p>
+    {!audit?.scored_seats && <p className="text-sm text-amber-700 dark:text-amber-300">This saved forecast has no eligible directional web evidence in its calculation. Discovery links and AI background facts do not count as electoral signals. Use Run with web research enabled to collect and evaluate fresh evidence; unverified or neutral findings will not force a change.</p>}
+    {audit && <p className="text-xs text-[var(--text-secondary)]">Probabilities changed in {audit.changed_probability_seats} seats; largest change {audit.max_probability_change_pp.toFixed(4)} percentage points. Neutral evidence leaves the historical model unchanged. Method: {audit.version}.</p>}
+    {effects && <details><summary className="cursor-pointer text-sm font-medium">Static versus combined — measured web contribution</summary>
+      <div className="overflow-x-auto mt-3"><table className="w-full text-sm text-left"><caption className="text-left text-xs mb-2 text-[var(--text-secondary)]">Expected seats integrated over the same shocks, without drawing another election. These fractional expectations isolate the web contribution; the headline cards use sampled seat counts.</caption>
+        <thead><tr>{["Party", "Static expectation", "Combined expectation", "Web change", "Change MC error (±1 SE)"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead>
+        <tbody>{effects.map(row => <tr key={row.party}><th scope="row" className="p-2 font-medium">{row.party}</th><td className="p-2">{row.static.toFixed(3)}</td><td className="p-2">{row.combined.toFixed(3)}</td><td className="p-2">{row.change > 0 ? "+" : ""}{row.change.toFixed(4)}</td><td className="p-2">{row.change_mc_se.toFixed(5)}</td></tr>)}</tbody>
+      </table></div></details>}
+    {simulation?.max_mean_mc_se != null && <p className="text-xs text-[var(--text-secondary)]">Largest seat-mean Monte Carlo standard error: ±{simulation.max_mean_mc_se.toFixed(3)} seats. Four independent streams; seed {simulation.seed}. This measures simulation noise, not election forecast accuracy.</p>}
+    {simulation?.convergence?.within_diagnostic_tolerances === false && <p className="text-sm text-amber-700 dark:text-amber-300">Independent-stream numerical checks exceeded the diagnostic tolerance. Interpret seat ranges cautiously; no extra draws were silently added.</p>}
+  </section>;
+}

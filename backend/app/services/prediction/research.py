@@ -83,7 +83,11 @@ def request_body(row, evidence, cutoff):
             'Never infer voting preferences from religion, caste or individual attributes. No voter-level profiling. '
             'Do not output a predicted winner or fabricated polling, vote share or election margin. '
             'Events within 90 days of cutoff may carry cautious party-impact interpretations with source-supported rationale; '
-            'protests and headline volume alone cannot establish electoral effect. Leave impacts empty if unmeasured. '
+            'Signed impact values are cautious qualitative interpretations, never measured vote swings. '
+            'A documented local defection, alliance change or candidate development can support an impact '
+            'only when the cited reporting identifies the affected party, local geography and direction; explain the uncertainty. '
+            'Protests, headline volume and population composition alone cannot establish electoral effect. '
+            'Leave impacts empty when the party link or direction is unsupported; never manufacture impacts to fill the schema. '
             'Older historical facts may be returned with the actual year and caveat; do not label them current. '
             'For legal claims distinguish proposals, notified regulations, court stays and current orders; quote no long passages. '
             'Any UGC claim must be checked against primary text, not accepted from headlines. '
@@ -182,8 +186,11 @@ def parse_response(response, row, cutoff):
                        'extraction_confidence': event['extraction_confidence'],
                        'party_impacts': {impact['party']: {k: impact[k] for k in ('direction', 'rationale')} for impact in event['party_impacts']},
                        'review_status': 'ai_interpretation_not_human_verified'})
+    # Publication cut-off and retrieval time are distinct. The response may
+    # arrive hours after the run started; do not give later seats a newer cut-off.
     evidence = {'code': str(row['code']), 'snapshot_id': None, 'items': cluster_items(evidence_items)}
-    atmosphere = score_events({'code': str(row['code']), 'events': events}, evidence)
+    atmosphere = score_events({'code': str(row['code']), 'events': events}, evidence,
+                              now=cutoff_date, observed_at=timestamp(checked))
     if atmosphere:
         atmosphere['quality'] *= .5  # AI extraction has not received human review.
         atmosphere['scoring_status'] = 'openai_source_linked_review'
@@ -191,7 +198,8 @@ def parse_response(response, row, cutoff):
     return {'code': str(row['code']), 'status': 'completed', 'model': MODEL, 'cutoff': cutoff,
             'retrieved_at': checked, 'response_id': response.get('id'),
             'summary': result['summary'] if facts or events else 'No cited findings passed validation; unresolved fields remain explicit.',
-            'facts': facts, 'events': events, 'sources': [{'url': url, 'title': title} for url, title in sources.items()],
+            'facts': facts, 'events': events, 'evidence_items': evidence['items'],
+            'sources': [{'url': url, 'title': title} for url, title in sources.items()],
             'missing_data': result['missing_data'], 'rejected_claims': rejected,
             'atmosphere': atmosphere, 'usage': {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'total_tokens')},
             'review_status': 'AI synthesis with retrieved source links; not human-verified facts or polling.'}

@@ -9,9 +9,9 @@ from functools import lru_cache
 from app.models.prediction import Prediction, PredictionRun
 from app.services.prediction.evidence import artifact_dir, scan_info
 from app.services.prediction.feature_engine import build_constituency_features, FEATURE_SCHEMA_VERSION
-from app.services.prediction.fusion import fuse
+from app.services.prediction.fusion import fuse, fusion_audit
 from app.services.prediction.parties import PARTY_MAPPING_VERSION
-from app.services.prediction.simulation import simulate_validated
+from app.services.prediction.simulation import simulate_validated, fit_shock_policy, DEFAULT_DRAWS
 from app.services.prediction.statistical import train_and_predict
 from app.services.prediction.artifacts import write_features, write_model, code_manifest
 from app.services.prediction.vote_support import train_vote_support, predict_vote_support, public_estimate
@@ -56,8 +56,11 @@ def _public_row(row, audit=None):
                        "sources_count": row["atmo_sources_count"], "quality": row["atmo_quality"],
                        "scoring_status": row.get("atmo_scoring_status", "not_scored")},
         "final": {"predicted_party": row["final_predicted_party"], "probabilities": probabilities,
+                  'probability_change_pp': row['explanation']['probability_change_pp'],
                   "weights": {"statistical": row["stat_weight_used"], "atmosphere": row["atmo_weight_used"]}},
         "uncertainty": {"seat_win_probability": row.get("seat_win_probability"),
+                        'simulated_probabilities': row.get('simulated_probabilities'),
+                        'seat_probability_mc_se': row.get('seat_probability_mc_se'),
                         "quality_flags": row["explanation"].get("quality_flags", [])},
         "explanation": row["explanation"], "booth_audit": audit or {}, "features": row.get("features", {}),
         "missing_features": row.get("missing_features", []),
@@ -85,7 +88,7 @@ async def _persist(db, result, rows):
     await db.commit()
 
 
-async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmosphere_override=None, research_manifest=None):
+async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmosphere_override=None, research_manifest=None, job_id=None):
     if not force:
         if run_id:
             try:
@@ -117,6 +120,8 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmos
     statistical = await asyncio.to_thread(train_and_predict, snapshot["rows"])
     vote_bundle = await asyncio.to_thread(train_vote_support, snapshot['rows'])
     statistical.bundle['vote_support'] = vote_bundle
+    shock_policy = fit_shock_policy(statistical.bundle, snapshot['rows'])
+    statistical.bundle['shock_policy'] = shock_policy
     statistical.backtest['vote_support'] = vote_bundle['backtest']
     vote_predictions = await asyncio.to_thread(predict_vote_support, vote_bundle, snapshot['rows'])
     model_artifact = await asyncio.to_thread(write_model, run_id, statistical.bundle)
@@ -131,8 +136,11 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmos
         result['vote_estimate'] = public_estimate(vote_values, feature_row['summary_2022']['total'],
                                                 result['final_predicted_party'], result['atmo_weight_used'], vote_bundle['backtest'])
         fused.append(result)
-    # Product contract: each explicit Run executes exactly 1,000 draws.
-    simulation = await asyncio.to_thread(simulate_validated, fused, 1000, 202709)
+    # Product contract: exactly 10,000 completed primary election draws.
+    if job_id:
+        from app.services.prediction import jobs
+        await asyncio.to_thread(jobs.update, job_id, phase='simulation_10000_draws')
+    simulation = await asyncio.to_thread(simulate_validated, fused, DEFAULT_DRAWS, 202709, shock_policy)
     audits = {str(audit["code"]): audit for audit in snapshot["audits"]}
     public = [_public_row(row, audits.get(str(row["code"]))) for row in fused]
     public.sort(key=lambda row: int(row["code"]))
@@ -142,9 +150,11 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmos
               "manifest": {"run_id": run_id, "feature_snapshot_sha256": features_artifact['sha256'],
                            'feature_artifact': features_artifact, 'model_artifact': model_artifact,
                            'code': code_manifest(), 'started_at': started, 'research': research_manifest,
+                           'fusion_audit': fusion_audit(fused),
                            "party_mapping_version": PARTY_MAPPING_VERSION, "evidence_snapshot_id": evidence_id,
                            'official_sources': snapshot.get('official_sources', {}),
-                           "evidence_cutoff": evidence.get("cutoff") if evidence_id else None,
+                           "evidence_cutoff": research_manifest.get('cutoff') if research_manifest else None,
+                           'discovery_cutoff': evidence.get('cutoff') if evidence_id else None,
                            "seed": simulation["seed"], "draws": simulation["draws"], "created_at": created},
               "backtest": statistical.backtest, "simulation": simulation,
               "quality_flags": ["human_release_review_required", "vote_support_single_transition_review_only",

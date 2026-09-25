@@ -5,13 +5,14 @@ import { Loader2, Play } from "lucide-react";
 
 type Job = { job_id?: string; status: string; phase?: string; completed?: number; expected?: number;
   researched?: number; failed?: number; current_name?: string; error_code?: string; run_id?: string;
-  provider_configured?: boolean; provider_model?: string; run_access_configured?: boolean };
+  provider_configured?: boolean; provider_model?: string; run_access_configured?: boolean; dynamic_research?: boolean };
 
 export function RunControls({ endpoint, onComplete }: { endpoint: (path: string) => string; onComplete: () => void }) {
   const [job, setJob] = useState<Job | null>(null);
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState("");
   const [dynamic, setDynamic] = useState(true);
+  const [resume, setResume] = useState(true);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +59,8 @@ export function RunControls({ endpoint, onComplete }: { endpoint: (path: string)
     try {
       const response = await fetch(endpoint("/run"), { method: "POST", cache: "no-store",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
-        body: JSON.stringify({ request_id: requestId.current, dynamic_research: dynamic, confirm_api_usage: consent }) });
+        body: JSON.stringify({ request_id: requestId.current, dynamic_research: dynamic, confirm_api_usage: consent,
+          resume_job_id: dynamic && resume && job?.dynamic_research && job.job_id && ["interrupted", "failed"].includes(job.status) ? job.job_id : null }) });
       if (!response.ok) {
         const detail = await response.json().catch(() => ({}));
         throw new Error(typeof detail.detail === "string" ? detail.detail : `Run request failed (${response.status})`);
@@ -79,7 +81,8 @@ export function RunControls({ endpoint, onComplete }: { endpoint: (path: string)
     {!job?.run_access_configured && job && <p className="text-xs">An operator run-access token must be configured on the server before starting jobs.</p>}
     {open && <form onSubmit={event => { event.preventDefault(); void run(); }} className="space-y-3 border-t pt-3">
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={dynamic} onChange={event => { setDynamic(event.target.checked); requestId.current = null; }} />Research all 403 constituencies using OpenAI web search</label>
-      <p className="text-xs">One request per constituency, up to four web-search tool calls per request. This can take a long time and incurs API charges. The job continues after closing this page; previous results stay visible until the new run completes. Missing or conflicting facts remain labelled.</p>
+      {dynamic && job?.dynamic_research && job.job_id && ["interrupted", "failed"].includes(job.status) && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={resume} onChange={event => { setResume(event.target.checked); requestId.current = null; }} />Resume saved research checkpoints. Completed requests are not repeated; any request interrupted mid-flight is marked unresolved to avoid a possible duplicate charge.</label>}
+      <p className="text-xs">Each completed Run produces 10,000 real election simulations. With research enabled: one request per constituency, up to four web-search tool calls per request, with API charges. With research disabled: reuse the latest completed research, recheck freshness, and make no API calls. If no eligible saved evidence exists, use the historical model only. Previous results stay visible until completion.</p>
       {dynamic && job?.provider_configured && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />I authorize paid API research for this run.</label>}
       <label className="block text-sm">Operator run-access token (not your OpenAI API key)<input aria-label="Operator run-access token" type="password" autoComplete="off" value={token} onChange={event => setToken(event.target.value)} className="block mt-1 w-full max-w-lg rounded border p-2 bg-[var(--bg-app)]" /></label>
       <p className="text-xs text-[var(--text-secondary)]">The access token is held only in memory and cleared on submission. The OpenAI key never reaches this page.</p>

@@ -12,23 +12,25 @@ from app.services.prediction.pipeline import run_pipeline, save_artifact
 async def run(reuse_features=False, job_id=None):
     save_artifact("model-job.json", {"status": "running", "started_at": utcnow()})
     try:
-        atmosphere, research_manifest = {}, None
+        from app.services.prediction.research_worker import collect, reuse_completed
+        atmosphere, research_manifest = await asyncio.to_thread(reuse_completed)
         if job_id:
             from app.services.prediction import jobs
             from app.services.prediction.evidence import scan_info
-            from app.services.prediction.research_worker import collect
             jobs.update(job_id, status='running', phase='preparing', pid=os.getpid())
             job = jobs.status(job_id)
             if job['dynamic_research']:
                 features = json.loads((artifact_dir() / 'features-v4.json').read_text())
                 evidence = scan_info()
-                atmosphere, research_manifest = await asyncio.to_thread(collect, job_id, features['rows'], evidence.get('snapshot_id'))
+                fresh, manifest = await asyncio.to_thread(collect, job_id, features['rows'], evidence.get('snapshot_id'))
+                if manifest['status'] == 'bypassed_not_configured' and research_manifest:
+                    research_manifest['refresh_status'] = 'bypassed_not_configured_using_saved'
+                else:
+                    atmosphere, research_manifest = fresh, manifest
             jobs.update(job_id, phase='model_training')
-        if job_id:
-            jobs.update(job_id, phase='simulation_1000_draws')
         async with async_session() as db:
             result = await run_pipeline(db, force=True, reuse_features=reuse_features, atmosphere_override=atmosphere,
-                                        research_manifest=research_manifest)
+                                        research_manifest=research_manifest, job_id=job_id)
         status = {"status": "review", "run_id": result["run_id"], "completed_at": utcnow()}
         save_artifact("model-job.json", status)
         if job_id:

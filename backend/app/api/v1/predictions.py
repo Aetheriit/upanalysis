@@ -175,6 +175,7 @@ class RunRequest(BaseModel):
     request_id: uuid.UUID
     dynamic_research: bool
     confirm_api_usage: bool
+    resume_job_id: uuid.UUID | None = None
 
 
 @router.post("/run", dependencies=[Depends(require_prediction_admin)], status_code=202)
@@ -186,7 +187,8 @@ async def trigger_prediction_pipeline(request: RunRequest):
     if not (artifact_dir() / 'features-v4.json').exists():
         raise HTTPException(503, 'Official static feature snapshot must be prepared first')
     try:
-        job, created = await asyncio.to_thread(jobs.reserve, str(request.request_id), request.dynamic_research)
+        job, created = await asyncio.to_thread(jobs.reserve, str(request.request_id), request.dynamic_research,
+                                              str(request.resume_job_id) if request.resume_job_id else None)
     except ValueError as error:
         raise HTTPException(409, str(error)) from None
     if created:

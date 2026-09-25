@@ -9,6 +9,7 @@ import { getPartyColor } from "@/lib/party-colors";
 import { downloadCsv, downloadJson } from "@/lib/export";
 import { RunControls } from "./run-controls";
 import { ResearchPanel } from "./research-panel";
+import { ComputationAudit, type FusionAudit, type SimulationAudit } from "./computation-audit";
 
 const PARTIES = ["BJP", "SP", "BSP", "RLD", "INC", "IPT"] as const;
 type Party = typeof PARTIES[number];
@@ -30,7 +31,7 @@ type Prediction = {
   predicted_margin: number | null; predicted_vote_share: number | null;
   change: string; is_flip: boolean; confidence: number; confidence_label: string;
   probability_gap: number; historical_winner_2022: string;
-  final: { probabilities: Record<Party, number>; weights: { statistical: number; atmosphere: number } };
+  final: { probabilities: Record<Party, number>; weights: { statistical: number; atmosphere: number }; probability_change_pp?: Record<Party, number> };
   statistical: { key_factors: string[] };
   atmosphere: { scoring_status: string; sources_count: number };
   booth_audit: { current?: number; matched?: number; ambiguous?: number; party_resolved_booths_2022?: number };
@@ -39,7 +40,8 @@ type Prediction = {
 };
 type StateResult = {
   run_id: string; status: string; created_at: string; quality_flags: string[];
-  manifest: { evidence_snapshot_id?: string; evidence_cutoff?: string; official_sources?: Record<string, {source_url: string; source_sha256: string}> };
+  manifest: { evidence_snapshot_id?: string; evidence_cutoff?: string; fusion_audit?: FusionAudit; official_sources?: Record<string, {source_url: string; source_sha256: string}> };
+  simulation?: SimulationAudit;
   feature_audit?: {booths: number; matched_booths: number; party_resolved_booths?: number};
   summary: { total_seats: number; majority: number; quality: string; model: string;
     parties: { party: Party; predicted: number; low: number; high: number }[] };
@@ -116,7 +118,8 @@ function EvidencePanel({ row, runId, close }: { row: Prediction; runId: string; 
   return <section ref={panel} tabIndex={-1} aria-labelledby="seat-detail-title" className="space-y-5 scroll-mt-24 rounded-xl border border-[var(--border-subtle)] p-5 bg-[var(--bg-card)]">
     <div className="flex justify-between gap-3"><div><h2 id="seat-detail-title" className="text-xl font-semibold">{row.name} · AC {row.code}</h2><p className="text-sm text-[var(--text-secondary)]">{row.district} · 2022 winner: {row.historical_winner_2022} · {row.change}</p></div><button onClick={close} aria-label="Close constituency detail" className="p-2 self-start"><X size={20} /></button></div>
     <div className="grid grid-cols-2 md:grid-cols-6 gap-3">{PARTIES.map(party => <div key={party} className="p-3 rounded-lg bg-[var(--bg-app)]"><div className="text-xs">{party}</div><div className="font-semibold">{(100 * row.final.probabilities[party]).toFixed(1)}%</div><div className="text-xs text-[var(--text-tertiary)]">model win probability</div></div>)}</div>
-    <p className="text-sm">Probability gap: {(row.probability_gap * 100).toFixed(1)} points. Atmosphere weight: {(row.final.weights.atmosphere * 100).toFixed(1)}%. Matched booths: {row.booth_audit.matched?.toLocaleString() ?? "—"} / {row.booth_audit.current?.toLocaleString() ?? "—"}.</p>
+    <p className="text-sm">Probability gap: {(row.probability_gap * 100).toFixed(1)} points. Atmosphere weight: {(row.final.weights.atmosphere * 100).toFixed(4)}%. Matched booths: {row.booth_audit.matched?.toLocaleString() ?? "—"} / {row.booth_audit.current?.toLocaleString() ?? "—"}.</p>
+    {row.final.probability_change_pp && <p className="text-xs">Web contribution to win probability (percentage points): {PARTIES.map(p => `${p} ${row.final.probability_change_pp![p] >= 0 ? "+" : ""}${row.final.probability_change_pp![p].toFixed(4)}`).join(" · ")}. Status: {row.atmosphere.scoring_status}.</p>}
     <p className="text-xs text-[var(--text-secondary)]">Booths with resolved candidate-party identities: {row.booth_audit.party_resolved_booths_2022?.toLocaleString() ?? "Not audited in this run"}. Matching a booth across elections does not validate its candidate labels. IPT is a grouped class; an unchanged IPT class does not establish the same minor party or independent candidate.</p>
     <p className="text-xs text-[var(--text-secondary)]">{row.statistical.key_factors.join(" ")} Search coverage is separate from scored evidence. Latest discovery results below may be newer than the model&apos;s pinned evidence snapshot.</p>
     <VoteSupportPanel row={row} />
@@ -192,6 +195,7 @@ export default function PredictionPage() {
     <PageHeader title="2027 Prediction Engine" description="Historical booth analysis and traceable public evidence across 403 Uttar Pradesh assembly seats." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Prediction" }]} action={<div className="flex flex-wrap gap-2"><button disabled={!rows.length} onClick={() => exportRows(rows, "up-2027-predictions-page.csv")} className="flex gap-2 items-center px-3 py-2 rounded-lg border disabled:opacity-40"><Download size={16} /> Export page</button>{state ? <a href={endpoint(`/export.csv?run_id=${encodeURIComponent(state.run_id)}`)} className="px-3 py-2 rounded-lg border">Export all 403</a> : <button disabled className="px-3 py-2 rounded-lg border opacity-40">Export all 403</button>}</div>} />
     <div className="flex justify-between items-start gap-4 text-sm"><div>{state ? <><p className="font-semibold">Review snapshot — not an approved publication</p><p className="text-xs text-[var(--text-secondary)]">Run {state.run_id} · {date(state.created_at)} · {state.summary.quality}</p><p className="text-xs text-[var(--text-secondary)]">Model evidence cut-off: {date(state.manifest.evidence_cutoff)}</p></> : <p>2027 model workspace</p>}</div><button aria-label="Refresh prediction and evidence status" onClick={() => setRefresh(refresh + 1)} className="p-2 rounded-lg border"><RefreshCw size={18} /></button></div>
     <RunControls endpoint={endpoint} onComplete={() => setRefresh(value => value + 1)} />
+    {state && <ComputationAudit audit={state.manifest.fusion_audit} simulation={state.simulation} />}
     {state && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">{state.summary.parties.map(item => <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div></PremiumCard>)}</div>}
     <PremiumCard className="p-5 space-y-2"><h2 className="font-semibold">Live evidence coverage</h2>{scan ? <><p>{scan.completed} / {scan.expected} constituencies searched · {scan.seats_with_results ?? 0} with results · {(scan.unique_urls ?? 0).toLocaleString()} unique links</p><p className="text-xs text-[var(--text-secondary)]">{scan.status} · {scan.queries_ok ?? 0} successful queries · {scan.queries_failed ?? 0} failed · cut-off {date(scan.cutoff)}</p></> : <p>{evidenceError || "Loading search coverage…"}</p>}<p className="text-xs text-[var(--text-secondary)]">Discovery coverage is not verified atmosphere coverage. News volume is not public opinion. Select a constituency to inspect sources, dates, geography and missing inputs.</p></PremiumCard>
     <div className="flex gap-2 text-sm p-4 rounded-lg bg-amber-500/10"><AlertTriangle size={20} className="shrink-0" /><p>Win probability is not vote share. {state?.backtest.vote_support ? "Vote estimates come from a separate provisional model. A contest-size margin estimates the gap between the top two candidates independently of the predicted winning party; it need not match the estimated party-share gap. Historical error ranges are available in each seat, not calibrated 2027 intervals." : "Vote-share and margin estimates are unavailable in this archived run."} Seat ranges use provisional shock assumptions; demographic context is not used to assign party preferences.</p></div>

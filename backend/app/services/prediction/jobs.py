@@ -41,7 +41,7 @@ def _alive(job):
         return False
 
 
-def reserve(request_id, dynamic):
+def reserve(request_id, dynamic, resume_job_id=None):
     request_id = str(uuid.UUID(request_id))
     with connect() as db:
         db.execute('BEGIN IMMEDIATE')
@@ -58,7 +58,18 @@ def reserve(request_id, dynamic):
         job = {'job_id': str(uuid.uuid4()), 'request_id': request_id, 'status': 'queued', 'phase': 'queued',
                'created_at': utcnow(), 'dynamic_research': dynamic, 'model': 'gpt-6-luna',
                'expected': 403, 'completed': 0, 'researched': 0, 'failed': 0, 'pid': None}
+        if resume_job_id:
+            source = db.execute('SELECT payload FROM jobs WHERE id=?', (str(uuid.UUID(resume_job_id)),)).fetchone()
+            previous = json.loads(source[0]) if source else None
+            if not dynamic or not previous or not previous.get('dynamic_research') or previous['status'] not in {'failed', 'interrupted'}:
+                raise ValueError('Only failed or interrupted research can be resumed')
+            job.update(parent_job_id=previous['job_id'], cutoff=previous.get('cutoff'),
+                       resume_inflight_code=previous.get('current_request_code'),
+                       resume_unknown_inflight=previous.get('phase') == 'web_research' and 'current_request_code' not in previous)
         db.execute('INSERT INTO jobs VALUES (?,?,?)', (job['job_id'], request_id, dump(job)))
+        if resume_job_id:
+            db.execute('INSERT INTO research SELECT ?, code, payload FROM research WHERE job_id=?',
+                       (job['job_id'], resume_job_id))
     return job, True
 
 
@@ -98,3 +109,13 @@ def research(job_id, code):
 def corpus(job_id):
     with connect() as db:
         return [json.loads(row[0]) for row in db.execute('SELECT payload FROM research WHERE job_id=? ORDER BY CAST(code AS INTEGER)', (job_id,))]
+
+
+def latest_research_manifest():
+    """Only a completed research batch; a pending/failed retry cannot erase it."""
+    with connect() as db:
+        for (payload,) in db.execute('SELECT payload FROM jobs ORDER BY rowid DESC'):
+            manifest = json.loads(payload).get('research_manifest')
+            if manifest and manifest.get('status') in {'completed', 'completed_with_errors'} and manifest.get('completed', 0) > manifest.get('failed', 0):
+                return manifest
+    return None

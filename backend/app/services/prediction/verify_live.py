@@ -61,7 +61,8 @@ def main():
         if not state['manifest'].get('research'):
             assert atmosphere == 0
     assert sum(party["predicted"] for party in state["summary"]["parties"]) == 403
-    assert state["simulation"]["draws"] == 1000
+    assert state["simulation"]["draws"] == 10000
+    assert state['manifest']['fusion_audit']['scored_seats'] == sum(row['final']['weights']['atmosphere'] > 0 for row in all_rows)
     assert state["status"] == "review"
     historical = Counter(row['historical_winner_class_2022'] for row in all_rows)
     assert historical == {'BJP': 255, 'SP': 111, 'IPT': 26, 'RLD': 8, 'INC': 2, 'BSP': 1}
@@ -111,7 +112,16 @@ def main():
         assert not set(fold['train_districts']) & set(fold['held_out_districts'])
         held_codes.extend(fold['held_out_codes'])
     assert len(held_codes) == 403 and len(set(held_codes)) == 403
-    assert state['simulation']['convergence']['status'] == 'independent_seed_numerical_diagnostic'
+    assert state['simulation']['convergence']['status'] == 'independent_stream_numerical_diagnostic'
+    assert sum(part['draws'] for part in state['simulation']['convergence']['replicates']) == 10000
+    assert all(sum(histogram) == 10000 for histogram in state['simulation']['draw_histograms'].values())
+    from app.services.prediction.simulation import simulate_validated
+    replay_rows = [{'region': row['region'], 'stat_probabilities': stored[str(row['code'])]['statistical']['probabilities'],
+                    'final_probabilities': stored[str(row['code'])]['final']['probabilities'],
+                    'final_predicted_party': stored[str(row['code'])]['predicted_party']} for row in feature_snapshot['rows']]
+    simulation_replay = simulate_validated(replay_rows, state['simulation']['draws'], state['simulation']['seed'], bundle['shock_policy'])
+    assert simulation_replay['draw_digest_sha256'] == state['simulation']['draw_digest_sha256']
+    assert simulation_replay['parties'] == state['simulation']['parties']
     with urlopen(base + '/export.csv?' + urlencode({'run_id': run_id}), timeout=15) as response:
         assert 'attachment;' in response.headers['Content-Disposition']
         exported = list(csv.DictReader(io.StringIO(response.read().decode('utf-8-sig'))))
@@ -131,6 +141,7 @@ def main():
                       'populated_margin_rows': sum(row['predicted_margin'] is not None for row in all_rows),
                       "queries": evidence["queries_ok"], "max_local_api_ms": max(item['ms'] for item in timings),
                       'model_artifact_replay': 'passed_403_seats', 'historical_eci_winner_counts': dict(historical),
+                      'simulation_replay': 'passed_10000_draws_exact_digest',
                       'csv_export_rows': len(exported),
                       'warm_list_ms': [item['ms'] for item in timings[-5:]],
                       "checks_do_not_certify_model_accuracy": True}))

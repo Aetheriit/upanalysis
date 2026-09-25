@@ -1,6 +1,6 @@
 # Prediction evidence layer
 
-Only `/ai/prediction` is changed. Forecasting is independent.
+Prediction and Forecasting share the same explicitly requested, immutable run.
 
 ## Data and search
 
@@ -44,6 +44,11 @@ an authenticated POST with a UUID `request_id`, `dynamic_research` and
 research. Duplicate request IDs replay the same job; only one job may be active.
 Progress and per-seat results persist in `jobs.sqlite3`. Failed runs retain the
 last review snapshot, and interrupted work is not automatically retried.
+The Run form can explicitly resume an interrupted/failed research batch via
+`resume_job_id`. Completed checkpoints are copied into a new lineage-linked
+job; no completed or failed request is repeated. An uncheckpointed in-flight
+request is marked unresolved rather than risking a duplicate charge. The
+original publication cut-off is retained. Resume still requires paid consent.
 
 Set `OPENAI_API_KEY` and `PREDICTION_ADMIN_TOKEN` in the root-only VPS `.env`,
 then recreate the backend. The form asks for the **operator run-access token**,
@@ -107,7 +112,13 @@ The example is schema documentation, not evidence of a real event. Unknown or
 mismatched AC codes, missing citations, unsupported metadata and non-finite
 scores are rejected. Scores are interpretations pending release review.
 Deduplicated impacts are recency/geography weighted then softmax-normalized.
-Fusion uses a log-opinion pool with lambda at most `0.35 * evidence_quality`.
+Fusion v3 uses a **prior-anchored** log-opinion pool with lambda at most
+`0.35 * evidence_quality`. A softmax of event scores is relative evidence,
+not an independent representative poll. Set `P_atmo = normalize(P_stat * exp(z))`,
+then `P_final = softmax(log(P_stat) + lambda*z)`. This refines TRD section 9's
+pooling policy: the previous uniform-centered atmosphere flattened historical
+probabilities even for neutral news. Zero/equal scores now leave the prior
+unchanged. Log-evidence spread is capped at six before quality weighting.
 Zero quality means exactly zero atmosphere influence. Source-independence
 uncertainty conservatively caps quality. A headline/protest/group composition
 alone never assigns a winner. A configured provider's assertions still require
@@ -229,10 +240,48 @@ to the same historical checks. Valid-vote total MAE is 6,347 versus
 independent future-cycle accuracy claim. Thirty-five unit tests and all-403
 artifact replay/invariant checks accompany this implementation.
 
-20,000 correlated Monte Carlo draws preserve one winner per seat and seat-total
-invariants, with measured split-half and independent-seed numerical diagnostics
-and seat-total covariance. Shock covariance remains an
-engineering prior, not an estimated covariance or validated interval model.
+Every completed Run now executes **exactly 10,000** correlated Monte Carlo
+elections (user override of the TRD's 20k–100k engineering target), one winner
+per seat per draw. Four independent PCG64/SeedSequence streams each execute
+2,500 draws; increasing-prefix checks and inter-stream means/quantiles are
+reported without silently exceeding the budget. Mean standard errors, majority
+standard errors, party histograms, seat-total covariance and a SHA-256 digest
+of the actual integer draw totals are saved. Replaying the saved model and seed
+must reproduce the draw digest exactly. Worst-case binomial Monte Carlo SE at
+10,000 draws is 0.5 percentage points, **not forecast error**.
+
+Cross-party shock correlation shape uses Ledoit-Wolf shrinkage of district
+means of nested held-out categorical residuals. State/region/local log-score
+standard deviations remain .045/.025/.06 engineering priors: a single election
+transition cannot identify statewide future-cycle shock variance. Shape
+estimation is not presented as a fully fitted/validated covariance model.
+See [the estimator documentation](https://scikit-learn.org/stable/modules/generated/sklearn.covariance.LedoitWolf.html).
+The calibrated RF/logistic/XGBoost winner ensemble is unchanged; this upgrade
+does not claim a new measured accuracy improvement from simulation count alone.
+
+Each draw also integrates conditional seat probabilities for static and fused
+models using the identical shocks (Rao-Blackwellized paired comparison). This
+uses no additional winner draws. The UI exposes the measured web contribution,
+its Monte Carlo SE, scored-seat counts, changed leaders and per-seat probability
+deltas. Discovery URLs alone never label a model “web included”. The legacy
+Forecasting predict/backtest endpoints now read the same saved run, without
+their former unrelated momentum/BSP-decay calculations or GET-time simulation.
+
+Run with research disabled reuses the most recent completed, hash-verified
+research batch and rescores publication-age gates. It does not discard research
+or call OpenAI. Failed/pending batches cannot overwrite that batch. No-key
+bypass also retains eligible saved research. Legacy checkpoints without raw
+source-item provenance are identified as unreplayable, not silently rescored.
+Fresh research fixes one publication cut-off before requests, and separately
+records response retrieval timestamps. GET never changes either snapshot.
+
+The initial September 25 audit found **no OpenAI research jobs or checkpoints on
+the VPS**, despite the completed RSS discovery corpus. A subsequent user-started
+research job overlapped deployment and was interrupted after two checkpoints;
+these were preserved and explicit checkpoint-based resume was added.
+A static review recalculation
+cannot turn those links into verified directional evidence. An explicitly
+authorized Run with research enabled is still required for fresh paid research.
 
 Each new run stores immutable content-addressed features, a trained estimator
 and calibration bundle, library versions, module hashes and artifact hashes.

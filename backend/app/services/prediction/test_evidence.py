@@ -175,14 +175,14 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(sum(party["predicted"] for party in result["parties"]), 3)
         self.assertEqual(result, simulate(rows))
 
-    def test_one_thousand_draw_simulation_preserves_main_draw(self):
+    def test_ten_thousand_draw_simulation_preserves_main_draw(self):
         from app.services.prediction.simulation import simulate, simulate_validated
         rows = [{'region': 'a', 'final_probabilities': dict.fromkeys(PARTIES, 1/6), 'final_predicted_party': 'BJP'} for _ in range(3)]
         baseline = simulate(rows)
         result = simulate_validated(rows)
         self.assertEqual(result['parties'], baseline['parties'])
-        self.assertEqual(result['draws'], 1000)
-        self.assertEqual(result['convergence']['draws_used_once'], 1000)
+        self.assertEqual(result['draws'], 10000)
+        self.assertEqual(result['convergence']['draws_used_once'], 10000)
 
     def test_immutable_feature_artifact_roundtrip(self):
         from app.services.prediction.artifacts import write_features
