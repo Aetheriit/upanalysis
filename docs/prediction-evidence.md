@@ -305,7 +305,14 @@ deltas. Discovery URLs alone never label a model “web included”. The legacy
 Forecasting predict/backtest endpoints now read the same saved run, without
 their former unrelated momentum/BSP-decay calculations or GET-time simulation.
 
-Run with research disabled reuses the most recent completed, hash-verified
+The Prediction Run button always requests stored-corpus analysis plus current
+web research. A new run is the default; resuming interrupted checkpoints is an
+explicit option. After the first valid response, up to eight constituency
+requests run concurrently. Every in-flight seat is recorded before submission,
+and completed requests are checkpointed individually. Authentication, access,
+model or quota failures stop new submissions and drain already submitted work.
+
+The API's research-disabled mode reuses the most recent completed, hash-verified
 research batch and rescores publication-age gates. It does not discard research
 or call OpenAI. Failed/pending batches cannot overwrite that batch. No-key
 bypass also retains eligible saved research. Legacy checkpoints without raw

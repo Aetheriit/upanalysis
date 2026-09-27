@@ -3,6 +3,7 @@ import json
 import os
 import sqlite3
 import tempfile
+import threading
 import unittest
 import uuid
 from copy import deepcopy
@@ -145,6 +146,60 @@ class JobTests(unittest.TestCase):
         jobs.update(job['job_id'], status='failed')
         with self.assertRaises(ValueError):
             jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
+
+    def test_parallel_window_is_bounded_and_each_seat_is_checkpointed_once(self):
+        job, _ = jobs.reserve(str(uuid.uuid4()), True)
+        rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
+        barrier, lock = threading.Barrier(3), threading.Lock()
+        active, maximum, seen = 0, 0, set()
+        def response(row, evidence, cutoff):
+            nonlocal active, maximum
+            with lock:
+                active += 1
+                maximum = max(maximum, active)
+                self.assertNotIn(row['code'], seen)
+                seen.add(row['code'])
+            if row['code'] in {'2', '3', '4'}:
+                barrier.wait(timeout=10)
+            with lock:
+                active -= 1
+            return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
+        with patch.dict(os.environ, {'PREDICTION_RESEARCH_CONCURRENCY': '3'}), patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response):
+            _, manifest = research_worker.collect(job['job_id'], rows, None)
+        self.assertEqual(maximum, 3)
+        self.assertEqual(len(seen), 403)
+        self.assertEqual(manifest['failed'], 0)
+        self.assertEqual(len(jobs.corpus(job['job_id'])), 403)
+        self.assertEqual(jobs.status()['inflight_codes'], [])
+
+    def test_parallel_provider_failure_drains_paid_requests_and_stops_scheduling(self):
+        job, _ = jobs.reserve(str(uuid.uuid4()), True)
+        rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
+        def response(row, evidence, cutoff):
+            if row['code'] == '2':
+                raise research.ResearchError('openai_rate_or_quota_limit')
+            return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
+        with patch.dict(os.environ, {'PREDICTION_RESEARCH_CONCURRENCY': '3'}), patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response) as request:
+            with self.assertRaisesRegex(research.ResearchError, 'openai_rate_or_quota_limit'):
+                research_worker.collect(job['job_id'], rows, None)
+        self.assertEqual(request.call_count, 4)
+        self.assertEqual(len(jobs.corpus(job['job_id'])), 4)
+        self.assertEqual(jobs.status()['inflight_codes'], [])
+
+    def test_resume_preserves_all_uncertain_parallel_requests(self):
+        job, _ = jobs.reserve(str(uuid.uuid4()), True)
+        jobs.checkpoint(job['job_id'], {'code': '1', 'status': 'completed', 'events': [], 'sources': []})
+        jobs.update(job['job_id'], status='interrupted', current_request_code=None, inflight_codes=['2', '3'])
+        resumed, _ = jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
+        rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
+        def response(row, evidence, cutoff):
+            return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
+        with patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response) as request:
+            _, manifest = research_worker.collect(resumed['job_id'], rows, None)
+        self.assertEqual(request.call_count, 400)
+        self.assertEqual(manifest['completed'], 403)
+        self.assertEqual(manifest['failed'], 2)
+        self.assertEqual({call.args[0]['code'] for call in request.call_args_list}, {str(i) for i in range(4, 404)})
 
 
 class RunApiTests(unittest.IsolatedAsyncioTestCase):

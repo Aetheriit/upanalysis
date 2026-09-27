@@ -66,6 +66,7 @@ def reserve(request_id, dynamic, resume_job_id=None):
             job.update(parent_job_id=previous['job_id'], cutoff=previous.get('cutoff'),
                        evidence_snapshot_id=previous.get('evidence_snapshot_id'),
                        resume_inflight_code=previous.get('current_request_code'),
+                       resume_inflight_codes=previous.get('inflight_codes', []),
                        resume_unknown_inflight=previous.get('phase') == 'web_research' and 'current_request_code' not in previous)
         db.execute('INSERT INTO jobs VALUES (?,?,?)', (job['job_id'], request_id, dump(job)))
         if resume_job_id:
