@@ -26,6 +26,15 @@ def save_artifact(name, value):
     os.replace(temp, destination)
 
 
+def evidence_for_run(research_manifest):
+    """Keep the forecast attached to the corpus actually used by research."""
+    pinned_id = (research_manifest or {}).get('evidence_snapshot_id')
+    evidence = scan_info(pinned_id)
+    if pinned_id and evidence.get('snapshot_id') != pinned_id:
+        raise ValueError('Research evidence snapshot is unavailable')
+    return evidence
+
+
 @lru_cache(maxsize=4)
 def _read_snapshot(path, mtime_ns, size):
     # Cache is invalidated by atomic replacement; callers must not mutate runs.
@@ -104,7 +113,7 @@ async def run_pipeline(db, force=False, run_id=None, reuse_features=False, atmos
         return await asyncio.to_thread(_read_snapshot, str(path), metadata.st_mtime_ns, metadata.st_size)
     run_id = str(uuid.uuid4())
     started = datetime.now(timezone.utc).isoformat()
-    evidence = await asyncio.to_thread(scan_info)
+    evidence = await asyncio.to_thread(evidence_for_run, research_manifest)
     # Select once at run start, never resolve a new snapshot after fitting.
     evidence_id = evidence.get('snapshot_id') if evidence['status'] in {'completed', 'completed_with_errors'} else None
     if reuse_features:

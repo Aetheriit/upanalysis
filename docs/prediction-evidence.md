@@ -60,7 +60,7 @@ the statistical model still runs. There is no scheduled or startup research.
 All new provider calls use exactly `gpt-6-luna` through the Responses API,
 with web search and strict structured output. There is no fallback model.
 Each of 403 seats receives at most one generation request, bounded to four
-tool calls and 5,500 output tokens. This is potentially substantial paid work;
+tool calls and 12,000 output tokens. This is potentially substantial paid work;
 the UI requires confirmation. Actual usage is persisted, not a promised price
 ceiling. Authentication/access/model/quota failures stop the job; timeouts are
 not automatically retried because they may already have been billed.
@@ -74,6 +74,44 @@ schema checks and URLs do not constitute human verification or polling.
 An extra quality discount applies to AI extraction. No party preference is
 inferred from caste/religion. Missing, conflicting and unverifiable data stay
 explicit instead of being invented by AI.
+
+### Analysis of the stored source corpus
+
+The former eight-headline limit has been removed. Every valid stored source
+for a constituency now reaches the analyst, with ID, title, URL, publisher,
+date, duplicate cluster and geographic hint. The same request receives official
+2017/2022 winners, party shares, margin and vote totals. These historical values
+provide context for interpreting new developments; the separately trained
+ensemble remains the calibrated statistical prior.
+
+The analyst's task is to derive party-impact interpretations from reported
+facts. The article does not need to state an electoral conclusion. Each event
+separates `reported_facts` from `electoral_reasoning` and records party-specific
+direction/rationale, citations and links back to the stored discovery IDs.
+Incumbent accountability, local economic or service grievances, party
+organisation, candidates, alliances and defections are valid analytical
+mechanisms. A political claim of certain victory does not itself establish a
+positive signal. Statewide events retain state scope and a .10 geography
+factor, compared with .35 for district and 1.0 for constituency events.
+
+Every supplied source ID is classified as event evidence, historical context,
+duplicate, irrelevant or unresolved. Only an accepted event with retrieved
+article citations can count a discovery link as used evidence. Missing,
+conflicting or invented ID assignments cannot inflate coverage. Counts of
+submitted records, assessed records, event-linked records and cited article
+URLs remain separate, deduplicated across constituencies, and persisted in
+the research manifest. Passing an RSS record to the model is not a claim that
+its full article was retrieved. Original articles are investigated using the
+Responses web-search tool; tool-returned source URLs and opened pages are
+checked against event citations.
+
+At the September 25 audit the 23,919 unique links included 7,945 published
+within 90 days and 15,974 older records. Older records can supply background;
+the model investigates current reporting to establish continuing developments.
+Current events feed the existing bounded fusion and 10,000 simulations.
+Historical calibration of the ensemble does not establish empirical
+calibration of new news-effect coefficients; fitting those coefficients would
+require comparable evidence from before historical election cut-offs.
 
 GET `/research/{code}?run_id=UUID` reads the research pinned to that model run.
 CLI model-only runs do not call OpenAI, even when the key is configured.

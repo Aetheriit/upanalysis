@@ -23,7 +23,7 @@ def score_events(payload, evidence, now=None, observed_at=None):
     scores = dict.fromkeys(PARTIES, 0.0)
     used_clusters, publishers, events, qualities = set(), set(), [], []
     for event in payload.get("events", [])[:30]:
-        if event.get("verification_status") != "source_checked" or event.get("geo_scope") not in {"constituency", "district"}:
+        if event.get("verification_status") != "source_checked" or event.get("geo_scope") not in {"constituency", "district", "state"}:
             continue
         refs = event.get("citation_ids", [])
         sources = [items[ref] for ref in refs if ref in items]
@@ -48,7 +48,7 @@ def score_events(payload, evidence, now=None, observed_at=None):
         if min(ages) < 0 or max(ages) > 90:
             continue
         recency = math.exp(-max(ages) / 30)
-        geo = 1.0 if event["geo_scope"] == "constituency" else 0.35
+        geo = {'constituency': 1.0, 'district': .35, 'state': .10}[event['geo_scope']]
         weight = 0.6 * recency * geo * confidence * importance
         accepted = {}
         for party, impact in event.get("party_impacts", {}).items():
@@ -65,6 +65,8 @@ def score_events(payload, evidence, now=None, observed_at=None):
         publishers.update(source.get("publisher_url") or source["publisher"] for source in sources)
         qualities.append(recency * geo * confidence)
         events.append({"summary": str(event.get("summary", ""))[:600], "citation_ids": refs,
+                       'reported_facts': event.get('reported_facts'), 'electoral_reasoning': event.get('electoral_reasoning'),
+                       'source_urls': event.get('source_urls', []), 'discovery_ids': event.get('discovery_ids', []),
                        "geo_scope": event["geo_scope"], "party_impacts": accepted,
                        "interpretation": "provider_interpretation_pending_release_review", "weight": weight})
     # Publisher domains do not prove independence; use a conservative cap.
@@ -79,7 +81,7 @@ def score_events(payload, evidence, now=None, observed_at=None):
             "quality": quality, "sources_count": len(used_clusters), "events": events, "issues": [],
             "snapshot_id": evidence["snapshot_id"], "scoring_status": "scored",
             "quality_components": {"unique_clusters": len(used_clusters), "publisher_domains": len(publishers),
-                                   "independence": "unverified_conservative_cap", "policy_version": "atmo-v3-neutral-invariant"}}
+                                   "independence": "unverified_conservative_cap", "policy_version": "atmo-v4-corpus-inference"}}
 
 
 def _request(endpoint, row, evidence):
