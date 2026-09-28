@@ -1,0 +1,108 @@
+{
+  "version": "offline-source-review-2026-09-28-v1",
+  "checked_at": "2026-09-28T03:17:00+00:00",
+  "reviewer": "assistant source inspection; not human approval",
+  "policy": "Directions are conservative organisational/service-accountability hypotheses, not measured vote transfers. Existing recency, geography, quality and fusion caps remain unchanged. No caste or religion preference inference. No paid provider was used for this review.",
+  "events": [
+    {
+      "id": "gunnaur-rajesh-yadav-rld",
+      "discovery_ids": ["0710ab04f0b078c58e71b18c"],
+      "codes": ["111"], "districts": [], "geo_scope": "constituency",
+      "date": "2026-07-08", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://www.jagran.com/uttar-pradesh/sambhal-city-samajwadi-party-ex-mla-rajesh-yadav-joins-rld-gunnaur-sambhal-40299374.html", "title": "Jagran: Rajesh Yadav joins RLD", "published_at": "2026-07-08T13:59:00Z"}],
+      "facts": "Former Gunnaur legislator Rajesh Yadav joined RLD after his association with SP.",
+      "reasoning": "A named local organiser changing affiliation may modestly weaken SP organisation and strengthen RLD. Supporters are not assumed to transfer their votes; no caste-based electoral inference is used.",
+      "impacts": {"SP": -0.25, "RLD": 0.25}, "confidence": 0.8, "importance": 0.6
+    },
+    {
+      "id": "ghosi-ajay-jaiswal-bsp",
+      "discovery_ids": ["c6973e83a47563cfc28b649f"],
+      "codes": ["354"], "districts": [], "geo_scope": "constituency",
+      "date": "2026-09-21", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://www.aajtak.in/amp/elections/assembly-chunav/story/bsp-names-ajay-jaiswal-as-its-candidate-from-ghosi-he-had-joined-party-after-leaving-bjp-lclam-strc-2648735-2026-09-21", "title": "AajTak: Ghosi BSP announcement", "published_at": "2026-09-21T05:20:00Z"}],
+      "facts": "BSP announced Ajay Jaiswal for Ghosi after he left BJP. This is a party announcement, not a final ECI nomination.",
+      "reasoning": "Recruitment of an established organiser supports a modest BSP organisational gain and BJP loss in Ghosi. Neither a guaranteed candidacy nor a particular vote transfer is assumed.",
+      "impacts": {"BJP": -0.25, "BSP": 0.25}, "confidence": 0.8, "importance": 0.6
+    },
+    {
+      "id": "meerut-kapil-mukhiya-asp",
+      "discovery_ids": ["d9efa64bdc1c03ec82c5fbad"],
+      "codes": [], "districts": ["Meerut"], "geo_scope": "district",
+      "date": "2026-09-16", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://www.livehindustan.com/national/story-kapil-mukhiya-resigns-from-bjp-to-join-azad-samaj-party-amid-election-speculations-201789502181305.amp.html", "title": "Hindustan: Kapil Mukhiya joins ASP", "published_at": "2026-09-15T19:56:00Z"}],
+      "facts": "Meerut block chief Kapil Mukhiya left BJP and joined Azad Samaj Party. Meerut South candidacy was discussed, not confirmed.",
+      "reasoning": "The organisational loss is a limited district-level BJP headwind; ASP is in the pooled IPT class. Discovery in Meerut city does not prove a city-seat effect. No automatic gain is assigned to SP or BSP.",
+      "impacts": {"BJP": -0.2, "IPT": 0.2}, "confidence": 0.8, "importance": 0.5
+    },
+    {
+      "id": "banda-mayank-dwivedi-sp",
+      "discovery_ids": ["9635f9417625dde56eb6e5ea"],
+      "codes": [], "districts": ["Banda"], "geo_scope": "district",
+      "date": "2026-09-19", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://www.thestatesman.com/bhubaneswar/bjp-will-indulge-in-conspiracies-to-win-2027-assembly-polls-akhilesh-yadav-1503640553.html", "title": "The Statesman: new SP entrants", "published_at": "2026-09-19T14:54:00Z"}, {"url": "https://www.indiatoday.in/india/story/bsp-bundelkhand-setback-mayank-dwivedi-joins-sp-2998451-2026-09-19", "title": "India Today: Dwivedi party change", "published_at": "2026-09-19T13:59:00Z"}],
+      "facts": "Banda politician Mayank Dwivedi moved from BSP to SP.",
+      "reasoning": "A named organiser changing party supports a small SP-versus-BSP organisational tilt in his home district. No seat nomination, historical vote count or caste voting behaviour is inferred.",
+      "impacts": {"BSP": -0.25, "SP": 0.25}, "confidence": 0.8, "importance": 0.6
+    },
+    {
+      "id": "kanpur-dehat-junaid-sp",
+      "discovery_ids": ["3eb84cead0165a4eb5fbcc4a"],
+      "codes": [], "districts": ["Kanpur Dehat"], "geo_scope": "district",
+      "date": "2026-09-19", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://www.thestatesman.com/bhubaneswar/bjp-will-indulge-in-conspiracies-to-win-2027-assembly-polls-akhilesh-yadav-1503640553.html", "title": "The Statesman: Junaid joins SP", "published_at": "2026-09-19T14:54:00Z"}],
+      "facts": "The report identifies Kanpur Dehat leader Junaid as joining SP.",
+      "reasoning": "The verified affiliation supports a small district-level SP organisational gain. The original headline's stronger expulsion narrative and a precise assembly-seat attribution are not treated as verified.",
+      "impacts": {"SP": 0.15}, "confidence": 0.65, "importance": 0.4
+    },
+    {
+      "id": "raniganj-ram-shiromani-sp",
+      "discovery_ids": ["a53269c8d4bc07a505707100"],
+      "codes": ["250"], "districts": [], "geo_scope": "constituency",
+      "date": "2026-08-31", "issue_tags": ["party_change"],
+      "sources": [{"url": "https://khulasaindia.com/political-maneuvering-has-begun-ahead-of-the-assembly-elections-in-a-major-setback-for-the-bjp-former-mla-ram-shiromani-shukla-has-switched-sides-along-with-his-supporters-lured-by-the-prospect-of-a/", "title": "Khulasa India: Raniganj party change", "published_at": "2026-08-31T00:00:00Z"}],
+      "facts": "Local reporting records former legislator Ram Shiromani Shukla moving from BJP to SP, with links to Raniganj.",
+      "reasoning": "An organisational shift may assist SP and weaken BJP locally. Repeated past affiliation changes and a single inspected local report warrant a smaller coefficient; the report's promotional language is excluded.",
+      "impacts": {"BJP": -0.15, "SP": 0.15}, "confidence": 0.6, "importance": 0.45
+    },
+    {
+      "id": "up-school-service-protests",
+      "discovery_ids": ["9023353d90e9379044e57ff9", "a440e1f1127fa63077622934", "5898a98799f1aa5adc578971", "2dbe06dec8327692dc49e122", "f7dac0b56ea83410a38a2cd8"],
+      "codes": [], "districts": ["Lucknow", "Unnao", "Hamirpur", "Kannauj", "Fatehpur"], "geo_scope": "district",
+      "date": "2026-08-22", "issue_tags": ["education", "protest"],
+      "sources": [{"url": "https://indianexpress.com/article/cities/lucknow/from-lucknow-to-kannauj-how-ups-gen-alpha-is-making-school-complaints-public-10840978/", "title": "Indian Express: school grievances and government response", "published_at": "2026-08-22T10:27:00Z"}],
+      "facts": "Students protested school facilities in five districts. Some demands received repairs or supplies; the government ordered inspections.",
+      "reasoning": "Public-service grievances can create accountability pressure on the BJP-led state government. Documented remedial action moderates the negative direction. Student participation is not a voter survey, and no opposition vote transfer is assumed.",
+      "impacts": {"BJP": -0.12}, "confidence": 0.75, "importance": 0.5
+    },
+    {
+      "id": "west-up-farmer-grievances",
+      "discovery_ids": ["3a9311cde51dcdd789a7496f"],
+      "codes": [], "districts": ["Bulandshahr", "Hapur", "Baghpat", "Meerut", "Bareilly"], "geo_scope": "district",
+      "date": "2026-07-21", "issue_tags": ["agriculture", "protest"],
+      "sources": [{"url": "https://timesofindia.indiatimes.com/city/meerut/mass-farmer-protests-in-west-up-over-trade-deals-student-crackdown/articleshow/132542856.cms", "title": "Times of India: western UP farmer demonstrations", "published_at": "2026-07-21T17:14:00Z"}],
+      "facts": "Farmer organisations demonstrated in five named districts over payments, fertiliser availability, trade proposals and treatment of student protesters.",
+      "reasoning": "These demands identify government-policy accountability concerns, supporting a limited BJP headwind in the reported districts. Crowd size is not a vote estimate; no party gains are assigned from farmer, caste or religious identity.",
+      "impacts": {"BJP": -0.15}, "confidence": 0.7, "importance": 0.5
+    },
+    {
+      "id": "farrukhabad-flood-relief",
+      "discovery_ids": ["04a21cd43a71244c3025c1f2", "66c9027e55edbcc5e27ec254", "e62c12273760015d33e333e2"],
+      "codes": [], "districts": ["Farrukhabad"], "geo_scope": "district",
+      "date": "2026-09-03", "issue_tags": ["infrastructure"],
+      "sources": [{"url": "https://www.amarujala.com/uttar-pradesh/kanpur/cm-yogi-reaches-farrukhabad-relief-material-to-be-distributed-to-1-000-flood-affected-people-2026-09-03", "title": "Amar Ujala: Farrukhabad flood relief", "published_at": "2026-09-03T07:06:00Z"}],
+      "facts": "The chief minister distributed relief kits and housing assistance in flood-hit Farrukhabad; substantial damage remained.",
+      "reasoning": "Delivered assistance may modestly benefit the governing BJP's service-delivery reputation. Continuing damage limits the positive interpretation; the flood itself is not automatically blamed on any party. Syndicated relief reports count as one event.",
+      "impacts": {"BJP": 0.12}, "confidence": 0.75, "importance": 0.45
+    },
+    {
+      "id": "behat-mixed-mla-report",
+      "discovery_ids": ["2413df36bbd2a7065c206fd3"],
+      "codes": ["1"], "districts": [], "geo_scope": "constituency",
+      "date": "2026-07-29", "issue_tags": ["infrastructure"],
+      "sources": [{"url": "https://www.jagran.com/uttar-pradesh/saharanpur-behat-mla-umar-ali-khans-report-card-development-unmet-needs-40322928.html", "title": "Jagran: Behat MLA report card", "published_at": "2026-07-29T11:57:00Z"}],
+      "facts": "Behat's SP legislator received mixed assessments: roads and bridges were credited, while transport, water and health-service gaps remained.",
+      "reasoning": "The mixed report supports only a small accountability headwind for the named incumbent's party. Positive resident comments and completed works prevent treating the article as uniformly adverse. No automatic BJP gain is assumed.",
+      "impacts": {"SP": -0.08}, "confidence": 0.7, "importance": 0.4
+    }
+  ]
+}

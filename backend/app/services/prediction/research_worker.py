@@ -139,7 +139,9 @@ def reuse_completed(cutoff=None):
                                       'items': record['evidence_items']}, now=now)
         if scored:
             scored['quality'] *= .5
-            scored['scoring_status'] = 'cached_openai_source_linked_review'
+            scored['scoring_status'] = ('cached_offline_source_inspected_review'
+                                        if record.get('analysis_mode') == 'offline_no_provider_calls'
+                                        else 'cached_openai_source_linked_review')
             atmosphere[str(record['code'])] = scored
     return atmosphere, {**manifest, 'reused': True, 'scoring_cutoff': cutoff,
                         'scored_seats': len(atmosphere), 'unreplayable_legacy_seats': unavailable}

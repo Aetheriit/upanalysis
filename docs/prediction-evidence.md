@@ -356,3 +356,38 @@ demographics, independent future-cycle vote-support calibration, full map and re
 interval coverage validation and release/load tests remain outstanding.
 No new run automatically publishes. These gaps must not be hidden by a
 “complete” or “production validated” label.
+
+### API-free saved-corpus review (September 28)
+
+`python -m app.services.prediction.offline_worker` performs a read-only dry run
+against the saved corpus. An explicitly authorized `--apply` checkpoints all
+403 seat analyses and runs the existing historical-model pipeline and exactly
+10,000 election simulations. It strips provider credentials, does not refresh
+discovery, and never calls an LLM or search provider. Reloading the website
+still reads saved results only. Future saved-data Runs rescore the completed
+review with current publication-age gates, without calling OpenAI.
+
+The versioned `offline_reviews.json` records separately inspected publisher
+reports, discovery IDs, publication/inspection dates, explicit geography,
+reported facts, electoral reasoning and declared impact assumptions. These
+coefficients are not fitted causal vote-transfer estimates. The ordinary
+recency, geography, source-quality and non-human-review discounts are retained.
+District reports can affect multiple seats, but remain district-scoped and do
+not become independent constituency confirmations. Duplicate citations of one
+event do not multiply its influence. No caste/religion-to-party preferences
+are inferred. The registry is included in code-provenance hashes.
+
+Every stored record receives a traceable metadata decision. The initial corpus
+contains 23,919 unique links, **RSS metadata rather than stored full articles**.
+The offline manifest deliberately distinguishes complete metadata screening
+from partial article review. Old articles and exact headline/date duplicates
+are classified separately; unresolved articles receive no directional score.
+The UI reports cited articles, reviewed events, unresolved records, affected
+seats and paired static/combined expected-seat differences. The first reviewed
+registry has 10 events; it is not a claim to have read all 23,919 articles.
+
+News changes the winner-probability model and resulting seat distribution, not
+the independently hindcast vote-support or contest-size regression. These
+should not be relabelled as news-adjusted vote shares or winning margins without
+an independently justified vote model. Integer headline seat totals may stay
+the same while the explicitly displayed fractional expectations change.

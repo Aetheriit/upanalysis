@@ -35,6 +35,7 @@ def write_model(run_id, bundle):
 
 def code_manifest():
     directory = Path(__file__).parent
-    files = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(directory.glob('*.py'))}
+    sources = list(directory.glob('*.py')) + list(directory.glob('offline_reviews.json'))
+    files = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(sources)}
     digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
     return {'sha256': digest, 'module_sha256': files}

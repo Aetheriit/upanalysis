@@ -68,6 +68,7 @@ def audit_review(evidence, review, events):
 
 def corpus_summary(records):
     submitted, assessed, used, cited = set(), set(), set(), set()
+    screened, inspected, historical, duplicate = set(), set(), set(), set()
     for record in records:
         audit = record.get('corpus_analysis') or {}
         submitted.update(audit.get('submitted_ids', []))
@@ -76,8 +77,17 @@ def corpus_summary(records):
             assessed.update(groups.get(group, []))
         used.update(groups.get('event_evidence', []))
         cited.update(url for event in record.get('events', []) for url in event.get('source_urls', []))
+        if audit.get('screening_method'):
+            screened.update(audit.get('submitted_ids', []))
+            inspected.update(audit.get('article_reviewed_ids', []))
+        historical.update(groups.get('historical_context', []))
+        duplicate.update(groups.get('duplicate', []))
     return {'version': VERSION, 'unique_links_submitted': len(submitted),
             'unique_links_assessed': len(assessed), 'unique_links_used_in_events': len(used),
             'unique_articles_cited': len(cited),
+            'unique_links_metadata_screened': len(screened),
+            'unique_links_source_reviewed': len(inspected),
+            'unique_links_historical_context': len(historical),
+            'unique_links_duplicate': len(duplicate),
             'unique_links_unresolved': len(submitted - assessed),
             'constituencies_with_corpus_analysis': sum(bool(record.get('corpus_analysis')) for record in records)}
