@@ -39,23 +39,32 @@ does not establish publisher independence or catch all syndication.
 ## Run-button-only OpenAI research
 
 The Prediction Run form is the only web-app trigger for paid research. It sends
-an authenticated POST with a UUID `request_id`, `dynamic_research` and
-`confirm_api_usage`. No GET, page reload, filter change or status poll starts
+an authenticated POST with a UUID `request_id`, `dynamic_research`,
+`confirm_api_usage` and the operator Run token. No GET,
+page reload, filter change or status poll starts
 research. Duplicate request IDs replay the same job; only one job may be active.
 Progress and per-seat results persist in `jobs.sqlite3`. Failed runs retain the
 last review snapshot, and interrupted work is not automatically retried.
 The Run form can explicitly resume an interrupted/failed research batch via
 `resume_job_id`. Completed checkpoints are copied into a new lineage-linked
-job; no completed or failed request is repeated. An uncheckpointed in-flight
+job; completed responses and ambiguous failures are not repeated. Definite
+provider rejections can be retried on explicit resume. An uncheckpointed in-flight
 request is marked unresolved rather than risking a duplicate charge. The
-original publication cut-off is retained. Resume still requires paid consent.
+original publication cut-off is retained. Resume still requires an operator
+token and paid consent.
 
-Set `OPENAI_API_KEY` and `PREDICTION_ADMIN_TOKEN` in the root-only VPS `.env`,
-then recreate the backend. The form asks for the **operator run-access token**,
-not the OpenAI key. It holds that token only in memory and clears it on submit.
-Never put the OpenAI key in public settings, `NEXT_PUBLIC_*`, git or frontend
-code. Rotate keys disclosed in chat. Without a key, research is bypassed and
-the statistical model still runs. There is no scheduled or startup research.
+Set `PREDICTION_ADMIN_TOKEN` and `OPENAI_API_KEY` in the root-only VPS `.env`.
+The frontend asks only for the operator Run token, never the OpenAI API key.
+Paid research requires explicit confirmation for the authenticated Run. Only
+then may the backend pass the server key through a private stdin pipe to that
+worker. The worker and transport cannot fall back to an ambient server key.
+The key is never sent to the frontend or written to job records, argv, worker
+environment or logs. The operator-token field clears on submission and is
+not stored in browser storage. Never put keys in `NEXT_PUBLIC_*`, git or
+frontend source. Rotate credentials disclosed in chat.
+There is no scheduled, startup or assistant-initiated paid research. A request
+without paid consent is rejected before creating a research job. Saved-data
+analysis/replay needs no OpenAI credentials and its worker receives none.
 
 All new provider calls use exactly `gpt-6-luna` through the Responses API,
 with web search and strict structured output. There is no fallback model.
@@ -305,10 +314,15 @@ deltas. Discovery URLs alone never label a model “web included”. The legacy
 Forecasting predict/backtest endpoints now read the same saved run, without
 their former unrelated momentum/BSP-decay calculations or GET-time simulation.
 
-The Prediction Run button always requests stored-corpus analysis plus current
-web research. A new run is the default; resuming interrupted checkpoints is an
-explicit option. After the first valid response, up to eight constituency
-requests run concurrently. Every in-flight seat is recorded before submission,
+The Prediction Run button opens a confirmation form. Only after
+enabling paid research, entering the operator Run token and confirming may it
+request stored-corpus analysis plus current web research. A new research run
+is the default within that opt-in mode; resuming interrupted checkpoints is an
+explicit option. After the first valid response, two constituency requests run
+concurrently by default (administrator-configurable up to eight). Temporary
+rate rejections honor Retry-After with bounded backoff; quota and billing errors
+stop the run. Explicit resume retries definite provider rejections and retains
+successful responses. Every in-flight seat is recorded before submission,
 and completed requests are checkpointed individually. Authentication, access,
 model or quota failures stop new submissions and drain already submitted work.
 

@@ -63,14 +63,14 @@ async def start_evidence_scan():
 @router.get("/run/status")
 async def model_job_status():
     from app.services.prediction import jobs
-    from app.services.prediction.research import configured, MODEL
+    from app.services.prediction.research import MODEL
     current = await asyncio.to_thread(jobs.status)
     if current['status'] != 'not_started':
-        return {**current, 'provider_configured': configured(), 'provider_model': MODEL,
+        return {**current, 'provider_configured': bool(os.getenv('OPENAI_API_KEY', '').strip()), 'provider_model': MODEL,
                 'run_access_configured': bool(os.getenv('PREDICTION_ADMIN_TOKEN'))}
     path = artifact_dir() / "model-job.json"
     return {**(json.loads(path.read_text()) if path.exists() else {'status': 'not_started'}),
-            'provider_configured': configured(), 'provider_model': MODEL,
+            'provider_configured': bool(os.getenv('OPENAI_API_KEY', '').strip()), 'provider_model': MODEL,
             'run_access_configured': bool(os.getenv('PREDICTION_ADMIN_TOKEN'))}
 
 
@@ -181,9 +181,15 @@ class RunRequest(BaseModel):
 @router.post("/run", dependencies=[Depends(require_prediction_admin)], status_code=202)
 async def trigger_prediction_pipeline(request: RunRequest):
     from app.services.prediction import jobs
-    from app.services.prediction.research import configured
-    if request.dynamic_research and configured() and not request.confirm_api_usage:
-        raise HTTPException(400, 'Confirm OpenAI API usage before starting research')
+    run_key = ''
+    if request.dynamic_research:
+        if not request.confirm_api_usage:
+            raise HTTPException(400, 'Confirm OpenAI API usage for this Run')
+        run_key = os.getenv('OPENAI_API_KEY', '').strip()
+        if not run_key:
+            raise HTTPException(400, 'OpenAI is not configured on the server; use a saved-data Run')
+    elif request.confirm_api_usage:
+        raise HTTPException(400, 'Stored-data runs do not use paid API consent')
     if not (artifact_dir() / 'features-v4.json').exists():
         raise HTTPException(503, 'Official static feature snapshot must be prepared first')
     try:
@@ -193,11 +199,21 @@ async def trigger_prediction_pipeline(request: RunRequest):
         raise HTTPException(409, str(error)) from None
     if created:
         try:
+            # A private pipe keeps the key out of argv, environment, job records
+            # and logs. Only this authenticated, explicitly confirmed Run
+            # grants the worker access to the server-side credential.
+            command = [sys.executable, '-u', '-m', 'app.services.prediction.run_worker',
+                       '--reuse-features', '--job-id', job['job_id']]
+            environment = {key: value for key, value in os.environ.items() if key != 'OPENAI_API_KEY'}
+            if request.dynamic_research:
+                command.append('--api-key-stdin')
             with (artifact_dir() / 'model-job.log').open('ab') as log:
-                process = subprocess.Popen([sys.executable, '-u', '-m', 'app.services.prediction.run_worker',
-                                            '--reuse-features', '--job-id', job['job_id']],
-                                           stdout=log, stderr=log, start_new_session=True)
+                process = subprocess.Popen(command, stdin=subprocess.PIPE if request.dynamic_research else subprocess.DEVNULL,
+                                           stdout=log, stderr=log, start_new_session=True, env=environment)
             await asyncio.to_thread(jobs.update, job['job_id'], pid=process.pid)
+            if request.dynamic_research:
+                process.stdin.write(run_key.encode())
+                process.stdin.close()
         except Exception:
             await asyncio.to_thread(jobs.update, job['job_id'], status='failed', error_code='worker_start_failed')
             raise HTTPException(503, 'Prediction worker could not start') from None

@@ -1,7 +1,8 @@
 """Explicit-run OpenAI web research. No import/GET/page-load network activity."""
 import hashlib
 import json
-import os
+import random
+import time
 from datetime import datetime, timezone
 from typing import Literal
 from urllib.error import HTTPError, URLError
@@ -79,8 +80,9 @@ class ResearchError(Exception):
     """Sanitized error code only; never include request/response bodies or keys."""
 
 
-def configured():
-    return bool(os.getenv('OPENAI_API_KEY', '').strip())
+def configured(api_key=None):
+    """Only a key explicitly supplied for this run enables paid research."""
+    return bool(api_key and api_key.strip())
 
 
 def request_body(row, evidence, cutoff):
@@ -139,24 +141,54 @@ def request_body(row, evidence, cutoff):
     }
 
 
-def _post(body):
-    key = os.getenv('OPENAI_API_KEY', '').strip()
+def _post(body, api_key=None):
+    key = (api_key or '').strip()
     if not key:
-        raise ResearchError('openai_not_configured')
+        raise ResearchError('run_api_key_required')
     request = Request(API_URL, data=json.dumps(body).encode(), method='POST',
                       headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
-    try:
-        with urlopen(request, timeout=150) as response:
-            content = response.read(2_000_001)
-        if len(content) > 2_000_000:
-            raise ResearchError('oversized_response')
-        return json.loads(content)
-    except HTTPError as error:
-        raise ResearchError({401: 'openai_authentication_failed', 403: 'openai_access_denied',
-                             404: 'gpt_6_luna_unavailable', 429: 'openai_rate_or_quota_limit'}.get(error.code, f'openai_http_{error.code}')) from None
-    except (URLError, TimeoutError, OSError):
-        # Do not retry automatically: a timed-out request may already be billed.
-        raise ResearchError('openai_network_or_timeout') from None
+    waited = 0
+    for attempt in range(4):
+        try:
+            with urlopen(request, timeout=150) as response:
+                content = response.read(2_000_001)
+                limits = {name: response.headers.get(name) for name in (
+                    'x-ratelimit-limit-requests', 'x-ratelimit-limit-tokens',
+                    'x-ratelimit-limit-project-tokens', 'x-ratelimit-remaining-tokens')}
+            if len(content) > 2_000_000:
+                raise ResearchError('oversized_response')
+            result = json.loads(content)
+            result['_rate_limits'] = limits
+            return result
+        except HTTPError as error:
+            if error.code == 429:
+                try:
+                    detail = json.loads(error.read(20000)).get('error', {})
+                except (ValueError, TypeError):
+                    detail = {}
+                code = detail.get('code')
+                if code in {'insufficient_quota', 'organization_spend_limit_exceeded',
+                            'project_spend_limit_exceeded', 'organization_usage_limit_exceeded',
+                            'billing_hard_limit_reached'} or detail.get('type') == 'insufficient_quota':
+                    raise ResearchError('openai_quota_exhausted') from None
+                if code in {'rate_limit_exceeded', 'slow_down'} or detail.get('type') == 'rate_limit_error':
+                    try:
+                        delay = float(error.headers.get('Retry-After', 30 * 2 ** attempt))
+                    except (ValueError, TypeError):
+                        delay = 30 * 2 ** attempt
+                    if not 0 <= delay <= 120 or attempt == 3 or waited + delay > 240:
+                        raise ResearchError('openai_rate_limited') from None
+                    delay += random.uniform(0, 3)
+                    waited += delay
+                    time.sleep(delay)
+                    continue
+                raise ResearchError('openai_rate_or_quota_limit') from None
+            raise ResearchError({401: 'openai_authentication_failed', 403: 'openai_access_denied',
+                                 404: 'gpt_6_luna_unavailable'}.get(error.code, f'openai_http_{error.code}')) from None
+        except (URLError, TimeoutError, OSError):
+            # Only explicit temporary rejections are retried. A timed-out
+            # request may already be billed and needs a separate decision.
+            raise ResearchError('openai_network_or_timeout') from None
 
 
 def parse_response(response, row, cutoff, evidence_input=None):
@@ -252,8 +284,9 @@ def parse_response(response, row, cutoff, evidence_input=None):
             'missing_data': result['missing_data'], 'rejected_claims': rejected,
             'corpus_analysis': audit_review(evidence_input, result.get('source_review'), events) if evidence_input is not None else None,
             'atmosphere': atmosphere, 'usage': {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'total_tokens')},
+            'provider_rate_limits': response.get('_rate_limits', {}),
             'review_status': 'AI synthesis with retrieved source links; not human-verified facts or polling.'}
 
 
-def research_seat(row, evidence, cutoff):
-    return parse_response(_post(request_body(row, evidence, cutoff)), row, cutoff, evidence)
+def research_seat(row, evidence, cutoff, api_key=None):
+    return parse_response(_post(request_body(row, evidence, cutoff), api_key), row, cutoff, evidence)

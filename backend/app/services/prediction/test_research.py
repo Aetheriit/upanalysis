@@ -1,5 +1,6 @@
 """Offline acceptance tests: no billable API requests in this suite."""
 import json
+import io
 import os
 import sqlite3
 import tempfile
@@ -9,7 +10,8 @@ import uuid
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+from urllib.error import HTTPError
 
 from fastapi import HTTPException
 from app.services.prediction import jobs, research, research_worker
@@ -73,11 +75,54 @@ class ResearchTests(unittest.TestCase):
         self.assertIsNone(result['atmosphere'])
 
     def test_no_key_bypasses_without_a_request(self):
-        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}), patch.object(jobs, 'status', return_value={}), patch.object(jobs, 'update'), patch.object(research_worker, 'research_seat') as request:
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'saved-key-must-not-be-used'}), patch.object(jobs, 'status', return_value={}), patch.object(jobs, 'update'), patch.object(research_worker, 'research_seat') as request:
             result, manifest = research_worker.collect('test', [], None)
         request.assert_not_called()
         self.assertEqual(result, {})
         self.assertEqual(manifest['status'], 'bypassed_not_configured')
+
+    def test_transport_never_falls_back_to_server_key(self):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'saved-key-must-not-be-used'}), patch.object(research, 'urlopen') as post:
+            self.assertFalse(research.configured())
+            with self.assertRaisesRegex(research.ResearchError, 'run_api_key_required'):
+                research._post({})
+            post.assert_not_called()
+
+    def test_temporary_rate_rejection_obeys_retry_after(self):
+        error = HTTPError(research.API_URL, 429, 'rate limit', {'Retry-After': '7'},
+                          io.BytesIO(json.dumps({'error': {'code': 'rate_limit_exceeded'}}).encode()))
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{"status":"completed"}'
+        response.headers = {}
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-only'}), patch.object(research, 'urlopen', side_effect=[error, response]) as post, patch.object(research.time, 'sleep') as sleep, patch.object(research.random, 'uniform', return_value=0):
+            result = research._post({}, api_key='explicit-test-key')
+        self.assertEqual(result['status'], 'completed')
+        self.assertEqual(post.call_count, 2)
+        sleep.assert_called_once_with(7)
+
+    def test_quota_rejection_is_not_retried(self):
+        error = HTTPError(research.API_URL, 429, 'quota', {},
+                          io.BytesIO(json.dumps({'error': {'code': 'project_spend_limit_exceeded', 'type': 'insufficient_quota'}}).encode()))
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-only'}), patch.object(research, 'urlopen', side_effect=error) as post, patch.object(research.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(research.ResearchError, 'openai_quota_exhausted'):
+                research._post({}, api_key='explicit-test-key')
+        self.assertEqual(post.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_long_server_delay_is_not_shortened(self):
+        error = HTTPError(research.API_URL, 429, 'rate limit', {'Retry-After': '600'},
+                          io.BytesIO(json.dumps({'error': {'code': 'slow_down'}}).encode()))
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-only'}), patch.object(research, 'urlopen', side_effect=error), patch.object(research.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(research.ResearchError, 'openai_rate_limited'):
+                research._post({}, api_key='explicit-test-key')
+        sleep.assert_not_called()
+
+    def test_ambiguous_timeout_is_not_retried(self):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-only'}), patch.object(research, 'urlopen', side_effect=TimeoutError) as post:
+            with self.assertRaisesRegex(research.ResearchError, 'openai_network_or_timeout'):
+                research._post({}, api_key='explicit-test-key')
+        self.assertEqual(post.call_count, 1)
 
 
 class JobTests(unittest.TestCase):
@@ -128,7 +173,7 @@ class JobTests(unittest.TestCase):
         self.assertTrue(created)
         self.assertEqual(len(jobs.corpus(resumed['job_id'])), 1)
         rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
-        def response(row, evidence, cutoff):
+        def response(row, evidence, cutoff, api_key=None):
             return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
         with patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response) as request:
             _, manifest = research_worker.collect(resumed['job_id'], rows, None)
@@ -152,7 +197,7 @@ class JobTests(unittest.TestCase):
         rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
         barrier, lock = threading.Barrier(3), threading.Lock()
         active, maximum, seen = 0, 0, set()
-        def response(row, evidence, cutoff):
+        def response(row, evidence, cutoff, api_key=None):
             nonlocal active, maximum
             with lock:
                 active += 1
@@ -175,7 +220,7 @@ class JobTests(unittest.TestCase):
     def test_parallel_provider_failure_drains_paid_requests_and_stops_scheduling(self):
         job, _ = jobs.reserve(str(uuid.uuid4()), True)
         rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
-        def response(row, evidence, cutoff):
+        def response(row, evidence, cutoff, api_key=None):
             if row['code'] == '2':
                 raise research.ResearchError('openai_rate_or_quota_limit')
             return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
@@ -192,7 +237,7 @@ class JobTests(unittest.TestCase):
         jobs.update(job['job_id'], status='interrupted', current_request_code=None, inflight_codes=['2', '3'])
         resumed, _ = jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
         rows = [{'code': str(i), 'name': 'Test', 'district': 'Test'} for i in range(1, 404)]
-        def response(row, evidence, cutoff):
+        def response(row, evidence, cutoff, api_key=None):
             return {'code': row['code'], 'status': 'completed', 'events': [], 'sources': []}
         with patch.object(research_worker, 'configured', return_value=True), patch.object(research_worker, 'get_seat_evidence', return_value={}), patch.object(research_worker, 'research_seat', side_effect=response) as request:
             _, manifest = research_worker.collect(resumed['job_id'], rows, None)
@@ -200,6 +245,15 @@ class JobTests(unittest.TestCase):
         self.assertEqual(manifest['completed'], 403)
         self.assertEqual(manifest['failed'], 2)
         self.assertEqual({call.args[0]['code'] for call in request.call_args_list}, {str(i) for i in range(4, 404)})
+
+    def test_resume_retries_rejections_but_retains_success_and_unknown_outcomes(self):
+        job, _ = jobs.reserve(str(uuid.uuid4()), True)
+        for code, error in (('1', None), ('2', 'openai_rate_or_quota_limit'), ('3', 'openai_network_or_timeout')):
+            jobs.checkpoint(job['job_id'], {'code': code, 'status': 'failed' if error else 'completed', 'error_code': error})
+        jobs.update(job['job_id'], status='failed')
+        resumed, _ = jobs.reserve(str(uuid.uuid4()), True, job['job_id'])
+        self.assertEqual({row['code'] for row in jobs.corpus(resumed['job_id'])}, {'1', '3'})
+        self.assertEqual(len(jobs.corpus(job['job_id'])), 3)
 
 
 class RunApiTests(unittest.IsolatedAsyncioTestCase):
@@ -244,6 +298,60 @@ class RunApiTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(first['job_id'], second['job_id'])
             self.assertTrue(second['idempotent_replay'])
             self.assertEqual(spawn.call_count, 1)
+
+    async def test_server_key_without_explicit_consent_cannot_start_research(self):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': 'saved-key-must-not-be-used'}), patch.object(api.subprocess, 'Popen') as spawn, patch.object(jobs, 'reserve') as reserve:
+            request = api.RunRequest(request_id=uuid.uuid4(), dynamic_research=True, confirm_api_usage=False)
+            with self.assertRaises(HTTPException) as error:
+                await api.trigger_prediction_pipeline(request)
+            self.assertEqual(error.exception.status_code, 400)
+            spawn.assert_not_called()
+            reserve.assert_not_called()
+
+    async def test_server_key_is_only_passed_to_explicitly_authorized_worker(self):
+        process = SimpleNamespace(pid=os.getpid(), stdin=MagicMock())
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'PREDICTION_ARTIFACT_DIR': directory, 'OPENAI_API_KEY': 'server-test-key'}), patch.object(api.subprocess, 'Popen', return_value=process) as spawn:
+            Path(directory, 'features-v4.json').touch()
+            request = api.RunRequest(request_id=uuid.uuid4(), dynamic_research=True, confirm_api_usage=False)
+            with self.assertRaises(HTTPException):
+                await api.trigger_prediction_pipeline(request)
+            spawn.assert_not_called()
+            request.confirm_api_usage = True
+            first = await api.trigger_prediction_pipeline(request)
+            second = await api.trigger_prediction_pipeline(request)
+            self.assertEqual(first['job_id'], second['job_id'])
+            self.assertEqual(spawn.call_count, 1)
+            self.assertIn('--api-key-stdin', spawn.call_args.args[0])
+            self.assertNotIn('server-test-key', repr(spawn.call_args))
+            self.assertNotIn('OPENAI_API_KEY', spawn.call_args.kwargs['env'])
+            process.stdin.write.assert_called_once_with(b'server-test-key')
+            process.stdin.close.assert_called_once()
+            self.assertNotIn('server-test-key', repr(request))
+            self.assertNotIn('server-test-key', json.dumps(jobs.status()))
+            self.assertNotIn(b'server-test-key', Path(directory, 'jobs.sqlite3').read_bytes())
+
+    async def test_stored_data_request_rejects_paid_consent(self):
+        with patch.object(api.subprocess, 'Popen') as spawn:
+            with self.assertRaises(HTTPException) as error:
+                await api.trigger_prediction_pipeline(api.RunRequest(request_id=uuid.uuid4(), dynamic_research=False, confirm_api_usage=True))
+            self.assertEqual(error.exception.status_code, 400)
+            spawn.assert_not_called()
+
+    async def test_stored_data_worker_never_receives_server_key(self):
+        process = SimpleNamespace(pid=os.getpid())
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'PREDICTION_ARTIFACT_DIR': directory, 'OPENAI_API_KEY': 'server-test-key'}), patch.object(api.subprocess, 'Popen', return_value=process) as spawn:
+            Path(directory, 'features-v4.json').touch()
+            await api.trigger_prediction_pipeline(api.RunRequest(request_id=uuid.uuid4(), dynamic_research=False, confirm_api_usage=False))
+            self.assertNotIn('--api-key-stdin', spawn.call_args.args[0])
+            self.assertNotIn('OPENAI_API_KEY', spawn.call_args.kwargs['env'])
+            self.assertEqual(spawn.call_args.kwargs['stdin'], api.subprocess.DEVNULL)
+
+    async def test_missing_server_key_cannot_start_paid_research(self):
+        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}), patch.object(api.subprocess, 'Popen') as spawn:
+            with self.assertRaises(HTTPException) as error:
+                await api.trigger_prediction_pipeline(api.RunRequest(request_id=uuid.uuid4(), dynamic_research=True, confirm_api_usage=True))
+            self.assertEqual(error.exception.status_code, 400)
+            spawn.assert_not_called()
 
 
 if __name__ == '__main__':

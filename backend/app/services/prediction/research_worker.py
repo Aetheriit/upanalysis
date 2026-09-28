@@ -12,9 +12,9 @@ from app.services.prediction.evidence import timestamp
 from app.services.prediction.corpus_analysis import corpus_summary
 
 
-def _research(row, evidence, cutoff):
+def _research(row, evidence, cutoff, api_key=None):
     try:
-        return research_seat(row, evidence, cutoff)
+        return research_seat(row, evidence, cutoff, api_key=api_key)
     except ResearchError as error:
         code = str(error)
     except Exception:
@@ -23,12 +23,12 @@ def _research(row, evidence, cutoff):
             'facts': [], 'events': [], 'sources': [], 'missing_data': ['Research could not finish; previous official data retained.']}
 
 
-def collect(job_id, rows, evidence_id):
+def collect(job_id, rows, evidence_id, api_key=None):
     job = jobs.status(job_id)
     cutoff = job.get('cutoff') or utcnow()
     evidence_id = job.get('evidence_snapshot_id') or evidence_id
     jobs.update(job_id, phase='web_research', cutoff=cutoff, evidence_snapshot_id=evidence_id)
-    if not configured():
+    if not configured(api_key):
         jobs.update(job_id, phase='research_bypassed', research_status='openai_not_configured')
         return {}, {'job_id': job_id, 'model': MODEL, 'status': 'bypassed_not_configured', 'cutoff': cutoff}
     if len(rows) != 403:
@@ -44,11 +44,12 @@ def collect(job_id, rows, evidence_id):
     pending_rows = sorted((row for row in rows if str(row['code']) not in saved), key=lambda row: int(row['code']))
     if job.get('resume_unknown_inflight') and pending_rows:
         uncertain.add(str(pending_rows[0]['code']))
-    concurrency = max(1, min(8, int(os.getenv('PREDICTION_RESEARCH_CONCURRENCY', '8'))))
+    concurrency = max(1, min(8, int(os.getenv('PREDICTION_RESEARCH_CONCURRENCY', '2'))))
     pending = iter(pending_rows)
     active, inflight = {}, set()
     exhausted, stop_reason = False, None
-    fatal = {'openai_authentication_failed', 'openai_access_denied', 'gpt_6_luna_unavailable', 'openai_rate_or_quota_limit'}
+    fatal = {'openai_authentication_failed', 'openai_access_denied', 'gpt_6_luna_unavailable',
+             'openai_rate_or_quota_limit', 'openai_rate_limited', 'openai_quota_exhausted'}
 
     def persist(row, result):
         nonlocal completed, failed, stop_reason
@@ -88,7 +89,7 @@ def collect(job_id, rows, evidence_id):
                 evidence = get_seat_evidence(code, evidence_id)
                 inflight.add(code)
                 jobs.update(job_id, inflight_codes=sorted(inflight), current_request_code=None)
-                active[executor.submit(_research, row, evidence, cutoff)] = row
+                active[executor.submit(_research, row, evidence, cutoff, api_key)] = row
             if not active:
                 break
             done, _ = wait(active, return_when=FIRST_COMPLETED)

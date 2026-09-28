@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from app.services.prediction.evidence import artifact_dir, utcnow, dump
 
 ACTIVE = {'queued', 'running'}
+RETRYABLE_REJECTIONS = {'openai_rate_or_quota_limit', 'openai_rate_limited', 'openai_quota_exhausted',
+                       'openai_authentication_failed', 'openai_access_denied', 'gpt_6_luna_unavailable'}
 
 
 @contextmanager
@@ -70,8 +72,11 @@ def reserve(request_id, dynamic, resume_job_id=None):
                        resume_unknown_inflight=previous.get('phase') == 'web_research' and 'current_request_code' not in previous)
         db.execute('INSERT INTO jobs VALUES (?,?,?)', (job['job_id'], request_id, dump(job)))
         if resume_job_id:
-            db.execute('INSERT INTO research SELECT ?, code, payload FROM research WHERE job_id=?',
-                       (job['job_id'], resume_job_id))
+            for code, payload in db.execute('SELECT code, payload FROM research WHERE job_id=?', (resume_job_id,)).fetchall():
+                # A definite provider rejection did not produce research and
+                # may be tried again on an explicitly resumed run.
+                if json.loads(payload).get('error_code') not in RETRYABLE_REJECTIONS:
+                    db.execute('INSERT INTO research VALUES (?,?,?)', (job['job_id'], code, payload))
     return job, True
 
 
