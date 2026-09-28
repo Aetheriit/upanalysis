@@ -65,6 +65,7 @@ const externalApi = process.env.NEXT_PUBLIC_PREDICTION_API_URL?.replace(/\/$/, "
 const labelParty = (party: string) => party === "IPT" ? "Others / Independent (IPT)" : party;
 const date = (value?: string) => value ? new Date(value).toLocaleString("en-IN") : "Unavailable";
 const color = (party: string) => getPartyColor(party === "IPT" ? "Others" : party);
+const signedChange = (value: number) => `${value > 0 ? "+" : ""}${value !== 0 && Math.abs(value) < .00005 ? value.toExponential(2) : value.toFixed(4)}`;
 const endpoint = (path: string) => externalApi ? `${externalApi}${path}` : apiUrl(`/api/v1/predictions${path}`);
 const marginReason = (status?: string) => ({
   withheld_failed_hindcast_gate: "Historical error gate not passed",
@@ -210,7 +211,7 @@ export default function PredictionPage() {
           <thead className="bg-[var(--bg-app)]"><tr>{["Constituency", "Winning Party", "Winning Margin", "Vote Share", "Change"].map(label => <th scope="col" key={label} className="px-5 py-4 text-xs uppercase whitespace-nowrap">{label}</th>)}</tr></thead>
           <tbody className="divide-y divide-[var(--border-subtle)]">{rows.map(row => <tr key={row.code}>
             <td className="px-5 py-3"><button id={`prediction-seat-${row.code}`} className="text-sm font-semibold underline underline-offset-4 text-left" onClick={() => state && setSelected({row, runId: state.run_id})}>{row.name}</button><div className="text-xs text-[var(--text-tertiary)]">AC {row.code} · {row.district}</div></td>
-            <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div></td>
+            <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div><div className="text-xs mt-1 text-[var(--text-tertiary)]">{row.final.weights.atmosphere > 0 ? `Web effect ${signedChange(row.final.probability_change_pp?.[row.predicted_party] ?? 0)} pp for ${row.predicted_party}` : "No reviewed directional evidence applied"}</div></td>
             <td className="px-5 py-3 text-sm">{row.predicted_margin == null ? (row.vote_estimate ? "Withheld" : "Unavailable") : `~${row.predicted_margin.toLocaleString()} votes`}<div className="text-xs text-[var(--text-secondary)]">{row.predicted_margin == null ? marginReason(row.margin_estimate_status) : row.vote_estimate?.margin_basis === "candidate_contest_regression" ? "Contest-size estimate · not winner-conditional" : "Implied by vote estimates"}</div></td>
             <td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}{row.predicted_vote_share != null && <div className="text-xs text-[var(--text-secondary)]">{row.predicted_party === "IPT" ? "Pooled IPT share" : "Estimated party share"}</div>}</td>
             <td className="px-5 py-3 text-sm">{row.change}</td>
