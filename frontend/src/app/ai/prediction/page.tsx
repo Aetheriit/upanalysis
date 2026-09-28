@@ -9,7 +9,7 @@ import { getPartyColor } from "@/lib/party-colors";
 import { downloadCsv, downloadJson } from "@/lib/export";
 import { RunControls } from "./run-controls";
 import { ResearchPanel } from "./research-panel";
-import { ComputationAudit, type FusionAudit, type SimulationAudit, type ResearchAudit } from "./computation-audit";
+import { ComputationAudit, formatWebChange, type FusionAudit, type SimulationAudit, type ResearchAudit } from "./computation-audit";
 
 const PARTIES = ["BJP", "SP", "BSP", "RLD", "INC", "IPT"] as const;
 type Party = typeof PARTIES[number];
@@ -65,7 +65,6 @@ const externalApi = process.env.NEXT_PUBLIC_PREDICTION_API_URL?.replace(/\/$/, "
 const labelParty = (party: string) => party === "IPT" ? "Others / Independent (IPT)" : party;
 const date = (value?: string) => value ? new Date(value).toLocaleString("en-IN") : "Unavailable";
 const color = (party: string) => getPartyColor(party === "IPT" ? "Others" : party);
-const signedChange = (value: number) => `${value > 0 ? "+" : ""}${value !== 0 && Math.abs(value) < .00005 ? value.toExponential(2) : value.toFixed(4)}`;
 const endpoint = (path: string) => externalApi ? `${externalApi}${path}` : apiUrl(`/api/v1/predictions${path}`);
 const marginReason = (status?: string) => ({
   withheld_failed_hindcast_gate: "Historical error gate not passed",
@@ -199,7 +198,7 @@ export default function PredictionPage() {
     {state && <ComputationAudit audit={state.manifest.fusion_audit} simulation={state.simulation} research={state.manifest.research} />}
     {state && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">{state.summary.parties.map(item => {
       const effect = state.simulation?.evidence_sensitivity?.parties.find(row => row.party === item.party);
-      return <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div>{effect && <div className="text-xs mt-3 text-[var(--text-secondary)]">Combined expectation {effect.combined.toFixed(3)}<br />Web contribution {effect.change > 0 ? "+" : ""}{effect.change.toFixed(4)} seats</div>}</PremiumCard>;
+      return <PremiumCard key={item.party} padding="sm" className="border-t-4" style={{ borderTopColor: color(item.party) }}><div className="text-xs text-[var(--text-secondary)]">{labelParty(item.party)}</div><div className="text-3xl font-bold mt-2">{item.predicted}</div><div className="text-xs text-[var(--text-tertiary)]">simulated seats · 90% range {item.low}–{item.high}</div>{effect && <div className="text-xs mt-3 text-[var(--text-secondary)]">Combined expectation {effect.combined.toFixed(3)}<br />Web contribution {formatWebChange(effect.change)} seats</div>}</PremiumCard>;
     })}</div>}
     <PremiumCard className="p-5 space-y-2"><h2 className="font-semibold">Live evidence coverage</h2>{scan ? <><p>{scan.completed} / {scan.expected} constituencies searched · {scan.seats_with_results ?? 0} with results · {(scan.unique_urls ?? 0).toLocaleString()} unique links</p><p className="text-xs text-[var(--text-secondary)]">{scan.status} · {scan.queries_ok ?? 0} successful queries · {scan.queries_failed ?? 0} failed · cut-off {date(scan.cutoff)}</p></> : <p>{evidenceError || "Loading search coverage…"}</p>}<p className="text-xs text-[var(--text-secondary)]">Discovery coverage is not verified atmosphere coverage. News volume is not public opinion. Select a constituency to inspect sources, dates, geography and missing inputs.</p></PremiumCard>
     {selected && selected.runId === state?.run_id && <EvidencePanel key={`${selected.runId}:${selected.row.code}`} row={selected.row} runId={selected.runId} close={() => { const code = selected.row.code; setSelected(null); requestAnimationFrame(() => document.getElementById(`prediction-seat-${code}`)?.focus()); }} />}
@@ -211,7 +210,7 @@ export default function PredictionPage() {
           <thead className="bg-[var(--bg-app)]"><tr>{["Constituency", "Winning Party", "Winning Margin", "Vote Share", "Change"].map(label => <th scope="col" key={label} className="px-5 py-4 text-xs uppercase whitespace-nowrap">{label}</th>)}</tr></thead>
           <tbody className="divide-y divide-[var(--border-subtle)]">{rows.map(row => <tr key={row.code}>
             <td className="px-5 py-3"><button id={`prediction-seat-${row.code}`} className="text-sm font-semibold underline underline-offset-4 text-left" onClick={() => state && setSelected({row, runId: state.run_id})}>{row.name}</button><div className="text-xs text-[var(--text-tertiary)]">AC {row.code} · {row.district}</div></td>
-            <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div><div className="text-xs mt-1 text-[var(--text-tertiary)]">{row.final.weights.atmosphere > 0 ? `Web effect ${signedChange(row.final.probability_change_pp?.[row.predicted_party] ?? 0)} pp for ${row.predicted_party}` : "No reviewed directional evidence applied"}</div></td>
+            <td className="px-5 py-3"><span className="font-semibold" style={{ color: color(row.predicted_party) }}>{row.predicted_party}</span><div className="text-xs text-[var(--text-secondary)]">{(row.final.probabilities[row.predicted_party] * 100).toFixed(1)}% win probability</div><div className="text-xs mt-1 text-[var(--text-tertiary)]">{row.final.weights.atmosphere > 0 ? `Web effect ${formatWebChange(row.final.probability_change_pp?.[row.predicted_party] ?? 0)} pp for ${row.predicted_party}` : "No reviewed directional evidence applied"}</div></td>
             <td className="px-5 py-3 text-sm">{row.predicted_margin == null ? (row.vote_estimate ? "Withheld" : "Unavailable") : `~${row.predicted_margin.toLocaleString()} votes`}<div className="text-xs text-[var(--text-secondary)]">{row.predicted_margin == null ? marginReason(row.margin_estimate_status) : row.vote_estimate?.margin_basis === "candidate_contest_regression" ? "Contest-size estimate · not winner-conditional" : "Implied by vote estimates"}</div></td>
             <td className="px-5 py-3 text-sm">{row.predicted_vote_share == null ? "Unavailable" : `${row.predicted_vote_share.toFixed(1)}%`}{row.predicted_vote_share != null && <div className="text-xs text-[var(--text-secondary)]">{row.predicted_party === "IPT" ? "Pooled IPT share" : "Estimated party share"}</div>}</td>
             <td className="px-5 py-3 text-sm">{row.change}</td>

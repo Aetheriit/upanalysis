@@ -16,6 +16,7 @@ export type ResearchAudit = {
     unique_links_assessed: number; unique_links_used_in_events: number; unique_articles_cited: number;
     unique_links_unresolved: number; unique_links_historical_context?: number; unique_links_duplicate?: number };
 };
+export const formatWebChange = (value: number) => `${value > 0 ? "+" : ""}${value !== 0 && Math.abs(value) < .00005 ? value.toExponential(2) : value.toFixed(4)}`;
 
 export function ComputationAudit({ audit, simulation, research }: { audit?: FusionAudit; simulation?: SimulationAudit; research?: ResearchAudit }) {
   const effects = simulation?.evidence_sensitivity?.parties;
@@ -35,7 +36,7 @@ export function ComputationAudit({ audit, simulation, research }: { audit?: Fusi
     {effects && <details><summary className="cursor-pointer text-sm font-medium">Static versus combined — measured web contribution</summary>
       <div className="overflow-x-auto mt-3"><table className="w-full text-sm text-left"><caption className="text-left text-xs mb-2 text-[var(--text-secondary)]">Expected seats integrated over the same shocks, without drawing another election. These fractional expectations isolate the web contribution; the headline cards use sampled seat counts.</caption>
         <thead><tr>{["Party", "Static expectation", "Combined expectation", "Web change", "Change MC error (±1 SE)"].map(label => <th key={label} scope="col" className="p-2">{label}</th>)}</tr></thead>
-        <tbody>{effects.map(row => <tr key={row.party}><th scope="row" className="p-2 font-medium">{row.party}</th><td className="p-2">{row.static.toFixed(3)}</td><td className="p-2">{row.combined.toFixed(3)}</td><td className="p-2">{row.change > 0 ? "+" : ""}{row.change.toFixed(4)}</td><td className="p-2">{row.change_mc_se.toFixed(5)}</td></tr>)}</tbody>
+        <tbody>{effects.map(row => <tr key={row.party}><th scope="row" className="p-2 font-medium">{row.party}</th><td className="p-2">{row.static.toFixed(6)}</td><td className="p-2">{row.combined.toFixed(6)}</td><td className="p-2">{formatWebChange(row.change)}</td><td className="p-2">{row.change_mc_se !== 0 && row.change_mc_se < .000005 ? row.change_mc_se.toExponential(2) : row.change_mc_se.toFixed(5)}</td></tr>)}</tbody>
       </table></div></details>}
     {simulation?.max_mean_mc_se != null && <p className="text-xs text-[var(--text-secondary)]">Largest seat-mean Monte Carlo standard error: ±{simulation.max_mean_mc_se.toFixed(3)} seats. Four independent streams; seed {simulation.seed}. This measures simulation noise, not election forecast accuracy.</p>}
     {simulation?.convergence?.within_diagnostic_tolerances === false && <p className="text-sm text-amber-700 dark:text-amber-300">Independent-stream numerical checks exceeded the diagnostic tolerance. Interpret seat ranges cautiously; no extra draws were silently added.</p>}
