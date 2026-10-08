@@ -1,8 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
-const LOGIN_ID = process.env.PREMIUM_LOGIN_ID || "rahul@admin";
-const LOGIN_PASSWORD = process.env.PREMIUM_LOGIN_PASSWORD || "Rahul@up";
+const LOGIN_ID = process.env.PREMIUM_LOGIN_ID || "up@rahul";
+const LOGIN_PASSWORD = process.env.PREMIUM_LOGIN_PASSWORD || "Upelection2027";
 const AUTH_SECRET = process.env.AUTH_SECRET || "up-election-intelligence-private-access";
 
 function sessionToken() {

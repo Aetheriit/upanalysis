@@ -40,7 +40,7 @@ export default function PartiesPage() {
         title="Political Parties"
         description="Party performance, alliances, vote share footprint, and historical trajectory."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Parties" }]}
-        action={<button onClick={exportParties} disabled={!filteredParties.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button title="Exports are disabled" onClick={exportParties} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

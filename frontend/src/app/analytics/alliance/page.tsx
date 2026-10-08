@@ -51,7 +51,7 @@ export default function AlliancePage() {
         title="Alliance Impact Analysis"
         description={`Simulate and analyze pre-poll alliance effects on seat tallies and vote shares for ${year}.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Alliance Impact" }]}
-        action={<button onClick={exportAlliance} disabled={!alliance} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button title="Exports are disabled" onClick={exportAlliance} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export</button>}
       />
 
       {loading ? (

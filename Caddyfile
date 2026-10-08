@@ -2,6 +2,7 @@
     # Route API and docs requests to the FastAPI backend
     @api {
         path /api/* /docs /openapi.json
+        not path /api/auth/*
     }
     handle @api {
         reverse_proxy backend:8000

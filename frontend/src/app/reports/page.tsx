@@ -75,7 +75,7 @@ export default function ReportsPage() {
                 <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {r.pages} pages</span>
               </div>
             </div>
-            <button onClick={() => downloadReport(r)} className="mt-4 w-full py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center justify-center gap-2">
+            <button title="Exports are disabled" disabled onClick={() => downloadReport(r)} className="mt-4 w-full py-2 bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
               <Download className="w-4 h-4" /> Download Report Data
             </button>
           </PremiumCard>

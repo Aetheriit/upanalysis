@@ -203,7 +203,7 @@ export default function DistrictsPage() {
           { label: "Districts" }
         ]}
         action={
-            <button onClick={exportDistricts} disabled={!filteredDistricts.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <button title="Exports are disabled" onClick={exportDistricts} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed">
             <Download className="w-4 h-4" /> Export
           </button>
         }

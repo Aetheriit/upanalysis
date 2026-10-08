@@ -54,7 +54,7 @@ export default function MarginPage() {
         title="Voting Analysis"
         description={`Verified victory margins, close contest tracking, and vulnerability assessment across 403 constituencies for ${viewMode}.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Voting Analysis" }]}
-        action={<button onClick={exportMargin} disabled={!data} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button title="Exports are disabled" onClick={exportMargin} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export</button>}
       />
 
       {loading ? (

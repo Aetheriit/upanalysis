@@ -111,7 +111,7 @@ export default function CandidatesPage() {
         title="Candidates"
         description="Candidate profiles, historical performance, and election results."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Candidates" }]}
-        action={<button onClick={exportCandidates} disabled={!displayCandidates.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button title="Exports are disabled" onClick={exportCandidates} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

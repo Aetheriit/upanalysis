@@ -193,7 +193,7 @@ export default function BoothsPage() {
         title="Polling Booths"
         description="Micro-level booth data, voter behavior patterns, and granular result analysis by constituency."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Workspace" }, { label: "Booths" }]}
-        action={<button onClick={exportBooths} disabled={filteredData.length === 0} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export CSV</button>}
+        action={<button title="Exports are disabled" onClick={exportBooths} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export CSV</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -135,7 +135,7 @@ export default function VoteShareAnalytics() {
             <button className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--border-subtle)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
               <Share2 className="w-4 h-4" /> Share
             </button>
-            <button onClick={exportVoteShare} disabled={!regionalData.length && !historicalTrendData.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+            <button title="Exports are disabled" onClick={exportVoteShare} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed">
               <Download className="w-4 h-4" /> Export Report
             </button>
           </>

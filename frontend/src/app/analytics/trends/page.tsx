@@ -36,7 +36,7 @@ export default function TrendsPage() {
         title="Winning Trends"
         description="Long-term electoral patterns from 2002 to 2022, with a clearly labelled 2027 forecast seat projection."
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Winning Trends" }]}
-        action={<button onClick={exportTrends} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export</button>}
+        action={<button title="Exports are disabled" disabled onClick={exportTrends} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export</button>}
       />
 
       <PremiumCard className="p-6 h-[450px] flex flex-col">

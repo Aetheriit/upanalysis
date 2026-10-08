@@ -107,7 +107,7 @@ export default function SwingPage() {
         title="Swing Analysis"
         description={isComparison ? "Real constituency-level change in winning-margin share between the 2017 and 2022 results." : `Real ${is2017 ? "2017" : "2022"} constituency winning-margin analysis.`}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Analytics Lab" }, { label: "Swing Analysis" }]}
-        action={<button onClick={exportSwing} disabled={!rows.length} className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"><Download className="w-4 h-4" /> Export Report</button>}
+        action={<button title="Exports are disabled" onClick={exportSwing} disabled className="px-4 py-2 bg-[var(--accent-primary)] text-[var(--bg-app)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"><Download className="w-4 h-4" /> Export Report</button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
