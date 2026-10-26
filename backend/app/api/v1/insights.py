@@ -1,58 +1,40 @@
-"""AI insights endpoints."""
-from fastapi import APIRouter
+"""AI assistance behind the application's authenticated server proxy."""
+import asyncio
+import hashlib
+import secrets
+from typing import Literal
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
+from app.services.assistant import answer_question, runtime_config, usage_status
 
 router = APIRouter()
 
+def require_ai_proxy(authorization: str = Header(default='')):
+    token = runtime_config()['proxy_token']
+    if not token or not secrets.compare_digest(authorization, 'Bearer '+token):
+        raise HTTPException(403, 'Use the signed-in application to access AI assistance.')
 
-@router.get("/summary")
-async def get_ai_summary():
-    """Get AI-generated election summary."""
-    return {
-        "insights": [
-            {
-                "type": "key_finding",
-                "title": "BJP Strengthens Urban Hold",
-                "description": "BJP's vote share in urban constituencies increased by 4.2% compared to 2019, driven by strong performance in Mumbai and Pune districts.",
-                "severity": "high",
-                "icon": "trending-up",
-            },
-            {
-                "type": "anomaly",
-                "title": "Unusual Turnout Spike in Nagpur",
-                "description": "Nagpur district recorded 78.3% turnout, significantly higher than the state average of 61.4%. This correlates with aggressive ground mobilization efforts.",
-                "severity": "medium",
-                "icon": "alert-triangle",
-            },
-            {
-                "type": "trend",
-                "title": "NOTA Votes Rising Steadily",
-                "description": "NOTA votes have increased by 0.3% every election since 2014, indicating growing voter disillusionment with available candidates.",
-                "severity": "low",
-                "icon": "info",
-            },
-            {
-                "type": "opportunity",
-                "title": "INC Recovery in Rural Belts",
-                "description": "INC showed a 2.8% swing recovery in rural constituencies, suggesting potential gains if rural outreach is intensified.",
-                "severity": "medium",
-                "icon": "target",
-            },
-            {
-                "type": "threat",
-                "title": "Alliance Fragmentation Risk",
-                "description": "NCP's vote share decline of 1.5% in alliance seats suggests potential seat-sharing conflicts in upcoming elections.",
-                "severity": "high",
-                "icon": "alert-circle",
-            },
-        ]
-    }
+class Message(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    role: Literal['user','assistant']
+    content: str = Field(min_length=1,max_length=1600)
 
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    query: str = Field(min_length=2,max_length=1500)
+    election_year: Literal[2017,2022] = 2022
+    history: list[Message] = Field(default_factory=list,max_length=6)
 
-@router.post("/chat")
-async def chat_with_ai(query: str):
-    """Chat with AI about election data."""
-    return {
-        "query": query,
-        "response": f"Based on the available election data, here's my analysis regarding '{query}': The data shows significant patterns that would require further investigation. Please upload your election datasets for detailed AI-powered analysis.",
-        "sources": [],
-    }
+@router.get('/status', dependencies=[Depends(require_ai_proxy)])
+async def ai_status():
+    return await asyncio.to_thread(usage_status)
+
+@router.post('/chat', dependencies=[Depends(require_ai_proxy)])
+async def chat_with_ai(payload: ChatRequest, db: AsyncSession = Depends(get_db), x_ai_client: str = Header(default='application')):
+    return await answer_question(db,payload.query,[item.model_dump() for item in payload.history],payload.election_year,'chat',hashlib.sha256(x_ai_client[:200].encode()).hexdigest())
+
+@router.post('/gis', dependencies=[Depends(require_ai_proxy)])
+async def gis_with_ai(payload: ChatRequest, db: AsyncSession = Depends(get_db), x_ai_client: str = Header(default='application')):
+    return await answer_question(db,payload.query,[item.model_dump() for item in payload.history],payload.election_year,'gis',hashlib.sha256(x_ai_client[:200].encode()).hexdigest())

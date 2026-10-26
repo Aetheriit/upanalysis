@@ -6,6 +6,7 @@ import { PremiumCard } from "@/components/ds/premium-card";
 import UPMap from "@/components/UPMap";
 import { apiUrl } from "@/lib/api";
 import { getPartyColor } from "@/lib/party-colors";
+import { AssistantPanel, type AIResult } from "@/components/ai/assistant-panel";
 import { BarChart3, CheckCircle2, Database, Layers, Search } from "lucide-react";
 
 type QueryType = "Constituencies by party" | "Turnout heatmap" | "Margin heatmap" | "Demographic overlay" | "Swing corridors";
@@ -24,21 +25,33 @@ export default function GISExplorerPage() {
   const [selected, setSelected] = useState<Selected | null>(null);
   const [mapData, setMapData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [aiCodes, setAiCodes] = useState<string[] | undefined>();
+  const [dataError, setDataError] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(apiUrl(`/api/v1/analytics/constituencies-map?election_year=${applied.year}`), { cache: "no-store" });
+      if (!response.ok) throw new Error("Map data could not load. Please run the query again.");
       const payload = await response.json();
       setMapData(payload.constituencies || {});
-    } finally { setLoading(false); }
+      setDataError("");
+    } catch (cause) { setDataError(cause instanceof Error ? cause.message : "Map data is unavailable."); }
+    finally { setLoading(false); }
   }, [applied.year]);
   useEffect(() => { loadData(); }, [loadData]);
 
-  const resultCount = useMemo(() => Object.values(mapData).filter((item: any) => applied.party === "All Parties" || item.winner === applied.party).length, [mapData, applied.party]);
+  const resultCount = useMemo(() => aiCodes ? aiCodes.length : Object.values(mapData).filter((item: any) => applied.party === "All Parties" || item.winner === applied.party).length, [mapData, applied.party, aiCodes]);
   const activeCount = Object.values(layers).filter(Boolean).length;
   const mapLayers = { districts: layers.districts, highways: layers.highways, urban: layers.urban, rivers: layers.rivers, railways: layers.railways };
-  const runQuery = () => { setApplied({ queryType, year, party, demographic }); setSelected(null); };
+  const runQuery = () => { setAiCodes(undefined); setApplied({ queryType, year, party, demographic }); setSelected(null); if (year === applied.year) loadData(); };
+  const applyAI = (result: AIResult) => {
+    const nextYear = String(result.gis.year) as "2017" | "2022";
+    const nextQuery = result.gis.query_type as QueryType;
+    setYear(nextYear); setQueryType(nextQuery); setParty("All Parties"); setDemographic("None");
+    setApplied({ queryType: nextQuery, year: nextYear, party: "All Parties", demographic: "None" });
+    setAiCodes(result.gis.codes); setSelected(null);
+  };
   const toggle = (key: keyof ActiveLayers) => setLayers((current) => ({ ...current, [key]: !current[key] }));
   const mappedQueryType = applied.queryType === "Constituencies by party" ? "winner" : 
                           applied.queryType === "Margin heatmap" ? "margin" :
@@ -47,6 +60,9 @@ export default function GISExplorerPage() {
 
   return <div className="p-8 max-w-[1920px] mx-auto min-h-screen space-y-6">
     <PageHeader title="GIS Explorer" description="Run spatial queries, inspect live constituency results, and compare map overlays." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Maps & GIS" }, { label: "GIS Explorer" }]} />
+    <AssistantPanel mode="gis" electionYear={Number(year) as 2017 | 2022} onResult={applyAI} />
+    {dataError && <p role="alert" className="text-rose-500">{dataError}</p>}
+    {applied.demographic !== "None" && <p role="status" className="text-sm text-amber-600">Verified constituency demographic data is not loaded. Demographic values cannot be inferred from election results.</p>}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-3 flex flex-col gap-6">
         <PremiumCard className="p-6"><h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4 flex items-center gap-2"><Search className="w-4 h-4" /> Spatial Query</h3><div className="space-y-4">
@@ -62,7 +78,7 @@ export default function GISExplorerPage() {
       </div>
       <div className="lg:col-span-9"><PremiumCard className="p-0 overflow-hidden flex flex-col" style={{ minHeight: "760px" }}>
         <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between"><div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"><Database className="w-4 h-4" /><span>GIS Engine: {loading ? "Loading" : "Ready"}</span><span className={`w-1.5 h-1.5 ${loading ? "bg-amber-500" : "bg-emerald-500"} rounded-full`} /></div><div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]"><span>Layers: {activeCount}</span><span>Results: {resultCount || 0}</span><span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Live API</span></div></div>
-        <div className="flex-1 bg-[var(--bg-app)]" style={{ minHeight: "500px" }}><UPMap electionYear={applied.year} partyFilter={applied.party} queryType={mappedQueryType} showPartyWinners={layers.party} activeLayers={mapLayers} onSelect={setSelected} preloadedData={mapData} /></div>
+        <div className="flex-1 bg-[var(--bg-app)]" style={{ minHeight: "500px" }}><UPMap electionYear={applied.year} partyFilter={applied.party} visibleCodes={aiCodes} queryType={mappedQueryType} showPartyWinners={layers.party} activeLayers={mapLayers} onSelect={setSelected} preloadedData={mapData} /></div>
         <div className="px-5 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-secondary)]"><span>{applied.queryType}{applied.demographic !== "None" ? ` · ${applied.demographic}` : ""} · {applied.year}</span><span>{selected ? `Selected: ${selected.name}` : "Click a constituency to inspect it"}</span></div>
       </PremiumCard></div>
     </div>

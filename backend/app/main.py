@@ -18,6 +18,15 @@ from app.api.v1 import upload, projects, analytics, filters, maps, insights, rep
 async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup
+    # Share the protected runtime credential with existing explicit AI Run workers.
+    # Reading configuration does not trigger provider requests.
+    import os
+    from app.services.assistant import runtime_config
+    ai_config = runtime_config()
+    if ai_config["api_key"]:
+        os.environ["OPENAI_API_KEY"] = ai_config["api_key"]
+        settings.OPENAI_API_KEY = ai_config["api_key"]
+        settings.AI_PROVIDER = "openai"
     print("🚀 Election Intelligence Platform API starting...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

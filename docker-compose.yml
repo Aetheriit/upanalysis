@@ -5,6 +5,7 @@ services:
   db:
     image: postgis/postgis:16-3.4
     container_name: election_intel_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -23,6 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: election_intel_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
@@ -37,6 +39,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: election_intel_api
+    restart: unless-stopped
     # We no longer expose the backend directly, Caddy will proxy to it
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/election_intel
@@ -46,6 +49,8 @@ services:
       - PREDICTION_ATMOSPHERE_API_KEY=${PREDICTION_ATMOSPHERE_API_KEY:-}
       - PREDICTION_ADMIN_TOKEN=${PREDICTION_ADMIN_TOKEN:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - AI_DAILY_BUDGET_USD=${AI_DAILY_BUDGET_USD:-0.25}
+      - AI_DAILY_REQUEST_LIMIT=${AI_DAILY_REQUEST_LIMIT:-250}
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +58,7 @@ services:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
+      - ./.ai-runtime.json:/run/secrets/election-ai.json:ro
       - "./2017 data:/2017 data"
       - "./2022 data:/2022 data"
       - "./2022 data 2:/2022 data 2"
@@ -88,6 +94,7 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=https://${DOMAIN_NAME:-212.38.94.114.sslip.io}
+      - AI_PROXY_TOKEN=${AI_PROXY_TOKEN:-}
     depends_on:
       - backend
 

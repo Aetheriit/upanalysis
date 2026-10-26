@@ -26,6 +26,7 @@ class SettingsUpdate(BaseModel):
     sessionTimeout: Optional[str] = None
     apiKey: Optional[str] = None
 
+@router.get("", include_in_schema=False)
 @router.get("/")
 async def get_settings(db: AsyncSession = Depends(get_db)):
     """Fetch global application settings. Creates default if none exist."""
@@ -40,6 +41,7 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
         
     return setting.to_dict()
 
+@router.put("", include_in_schema=False)
 @router.put("/")
 async def update_settings(payload: SettingsUpdate, db: AsyncSession = Depends(get_db)):
     """Update the global application settings."""

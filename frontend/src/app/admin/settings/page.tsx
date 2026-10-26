@@ -6,6 +6,7 @@ import { Bell, Check, Copy, Key, Palette, Shield, User } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { PremiumCard } from "@/components/ds/premium-card";
 import { AppSettings, useSettings } from "@/context/SettingsContext";
+import { AIUsage } from "@/components/ai/assistant-panel";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={onChange} className={`relative h-7 w-12 rounded-full transition-colors ${checked ? "bg-[var(--accent-primary)]" : "bg-[var(--border-subtle)]"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`} /></button>;
@@ -29,6 +30,7 @@ export default function SettingsPage() {
   const fieldClass = "w-[240px] rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-app)] px-3 py-2 text-right text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)]";
 
   return <div className="mx-auto min-h-screen max-w-[1920px] space-y-6 p-8">
+    <AIUsage />
     <PageHeader title="System Settings" description="Configure application preferences, user profile, security, and access controls." breadcrumbs={[{ label: "Home", href: "/" }, { label: "Administration" }, { label: "Settings" }]} />
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <PremiumCard className="p-6"><h2 className="mb-6 flex items-center gap-2 text-lg font-serif font-bold text-[var(--text-primary)]"><User className="h-5 w-5 text-[var(--accent-primary)]" />Profile</h2><div className="space-y-5">{([['Display Name', 'displayName'], ['Email', 'email'], ['Role', 'role'], ['Organization', 'organization']] as const).map(([label, key]) => <div key={key} className="flex items-center justify-between gap-4"><label className="text-sm font-medium text-[var(--text-secondary)]">{label}</label><input value={draft[key]} onChange={(event) => update(key, event.target.value)} className={fieldClass} /></div>)}</div></PremiumCard>

@@ -13,6 +13,7 @@ out/
 .env
 .env.local
 .env.*.local
+.ai-runtime.json
 
 # IDE
 .vscode/
@@ -61,6 +62,8 @@ backend/.venv312/
 !backend/app/services/prediction_engine.py
 !backend/app/services/prediction/
 !backend/app/services/prediction/*.py
+!backend/app/services/assistant.py
+!backend/app/services/test_assistant.py
 
 # Raw 2017 booth workbooks are deployed to the VPS, not stored in Git history.
 2017 data/2017_data_3/

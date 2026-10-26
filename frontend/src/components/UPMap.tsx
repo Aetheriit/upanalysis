@@ -68,6 +68,7 @@ type UPMapProps = {
   selectedName?: string;
   activeLayers?: Record<MapLayerKey, boolean>;
   partyFilter?: string;
+  visibleCodes?: string[];
   queryType?: string;
   showPartyWinners?: boolean;
   preloadedData?: Record<string, any>;
@@ -98,7 +99,7 @@ const matchesRegion = (district: string, region: string) => {
   return (REGION_DISTRICTS[region] || []).some((item) => normalized.includes(item.toLowerCase()));
 };
 
-export default function UPMap({ electionYear, region = "All Regions", selectedName, activeLayers = DEFAULT_LAYERS, partyFilter = "All Parties", queryType = "Constituencies by party", showPartyWinners = true, preloadedData, onSelect }: UPMapProps) {
+export default function UPMap({ electionYear, region = "All Regions", selectedName, activeLayers = DEFAULT_LAYERS, partyFilter = "All Parties", visibleCodes, queryType = "Constituencies by party", showPartyWinners = true, preloadedData, onSelect }: UPMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const geoLayerRef = useRef<any>(null);
@@ -215,7 +216,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
             const d = resolveConstituencyData(feature, constituencyData);
             const district = feature?.properties?.DIST_NAME || feature?.properties?.dtname11 || "";
             const visibleInRegion = matchesRegion(district, region);
-            const partyMatches = partyFilter === "All Parties" || d?.winner === partyFilter;
+            const partyMatches = (partyFilter === "All Parties" || d?.winner === partyFilter) && (!visibleCodes || visibleCodes.includes(String(getFeatureCode(feature))));
             const fillColor = showPartyWinners && d && d.winner ? (PARTY_COLORS[d.winner] || PARTY_COLORS.Others) : "#D1D5DB";
             const margin = Number(d?.margin || 0);
             
@@ -240,8 +241,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                 else if (turnout > 50) queryColor = "#f97316";
                 else queryColor = "#ef4444";
             } else if (queryType === "demographic") {
-                const pseudo = constName.length % 3;
-                queryColor = pseudo === 0 ? "#1e3a8a" : pseudo === 1 ? "#3b82f6" : "#93c5fd";
+                queryColor = "#D1D5DB";
             }
             
             const isSelected = normalizeConstituencyName(selectedName || "") === constName;
@@ -260,7 +260,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
             const d = resolveConstituencyData(feature, constituencyData);
             const district = feature?.properties?.DIST_NAME || feature?.properties?.dtname11 || "";
             const visibleInRegion = matchesRegion(district, region);
-            const partyMatches = partyFilter === "All Parties" || d?.winner === partyFilter;
+            const partyMatches = (partyFilter === "All Parties" || d?.winner === partyFilter) && (!visibleCodes || visibleCodes.includes(String(getFeatureCode(feature))));
 
             const tooltipHtml = `<div style="font-family: system-ui; padding: 4px 0;">
                 <strong style="font-size: 13px;">${rawName}</strong>
@@ -303,6 +303,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
                 });
               },
               mouseover: (e: any) => {
+                if (!visibleInRegion || !partyMatches) return;
                 e.target.setStyle({
                   weight: 2,
                   color: "#1a1a1a",
@@ -342,7 +343,7 @@ export default function UPMap({ electionYear, region = "All Regions", selectedNa
         mapRef.current = null;
       }
     };
-  }, [activeYear, constituencyData, isLoading, selectedName, region, partyFilter, queryType, showPartyWinners]);
+  }, [activeYear, constituencyData, isLoading, selectedName, region, partyFilter, visibleCodes, queryType, showPartyWinners]);
 
   useEffect(() => {
     const map = mapRef.current;

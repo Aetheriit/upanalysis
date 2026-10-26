@@ -642,7 +642,7 @@ async def get_booth_analysis(
 
         return {"booths": booths, "total": len(booths)}
 
-        return {"booths": [], "total": 0}
+    return {"booths": [], "total": 0}
 
 
 
