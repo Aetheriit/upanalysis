@@ -28,6 +28,8 @@ export default function AlliancePage() {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     fetch(apiUrl(`/api/v1/analytics/alliance?election_year=${year}`), { cache: "no-store" })
       .then(async response => { if (!response.ok) throw new Error(`Alliance data request failed (${response.status})`); return response.json(); })
       .then(json => { if (!cancelled) { setData(json); setSelectedIndex(0); setError(null); } })

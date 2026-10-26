@@ -25,6 +25,7 @@ from app.models.election import Election
 from app.models.party import Party
 
 MODEL = 'gpt-6-luna'
+CACHE_VERSION = 'assistant-20261026-v1'
 CALLS = asyncio.Semaphore(2)
 
 def runtime_config():
@@ -234,7 +235,7 @@ async def context_for_plan(db,plan):
 async def answer_question(db,query,history,year,mode,client):
     if not runtime_config()['api_key']:
         raise HTTPException(503,'AI is not configured on the server.')
-    plan_input = {'question':query,'current_year':year,'mode':mode,'history':history[-6:]}
+    plan_input = {'version':CACHE_VERSION,'question':query,'current_year':year,'mode':mode,'history':history[-6:]}
     plan_key = 'plan:'+hashlib.sha256(json.dumps(plan_input,sort_keys=True).encode()).hexdigest()
     plan_value = await asyncio.to_thread(cached,plan_key)
     day = await asyncio.to_thread(reserve,client)
@@ -256,7 +257,7 @@ async def answer_question(db,query,history,year,mode,client):
                 token_usage = usage
                 await asyncio.to_thread(save_cache,plan_key,plan.model_dump(),21600)
             facts,caveats,sources,codes = await context_for_plan(db,plan)
-            context = {'question':query,'history':history[-6:],'facts':facts,'limitations':caveats,'plan':plan.model_dump()}
+            context = {'version':CACHE_VERSION,'question':query,'history':history[-6:],'facts':facts,'limitations':caveats,'plan':plan.model_dump()}
             key = 'answer:'+hashlib.sha256(json.dumps(context,sort_keys=True).encode()).hexdigest()
             old = await asyncio.to_thread(cached,key)
             if old:
