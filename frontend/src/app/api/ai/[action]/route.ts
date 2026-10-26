@@ -19,10 +19,20 @@ function authenticated(request: NextRequest) {
   return timingSafeEqual(expected, Buffer.from(parts[1], "hex"));
 }
 
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("x-forwarded-host")?.split(",")[0].trim() || request.headers.get("host") || request.nextUrl.host;
+  if (!origin) return false;
+  try {
+    const source = new URL(origin);
+    return source.host === host && (source.protocol === "https:" || /^(localhost|127\.0\.0\.1)(:|$)/.test(host));
+  } catch { return false; }
+}
+
 async function proxy(request: NextRequest, action: string, method: "GET" | "POST") {
   if (!authenticated(request)) return NextResponse.json({ detail: "Please sign in again to use AI." }, { status: 401 });
   if (!["chat", "gis", "status"].includes(action) || (method === "GET") !== (action === "status")) return NextResponse.json({ detail: "Unknown AI action." }, { status: 404 });
-  if (method === "POST" && request.headers.get("origin") !== request.nextUrl.origin) return NextResponse.json({ detail: "Use the signed-in application to ask questions." }, { status: 403 });
+  if (method === "POST" && !sameOrigin(request)) return NextResponse.json({ detail: "Use the signed-in application to ask questions." }, { status: 403 });
   const token = process.env.AI_PROXY_TOKEN;
   if (!token) return NextResponse.json({ detail: "AI is not configured for this deployment." }, { status: 503 });
   let body: string | undefined;
